@@ -35,8 +35,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.2.1" }
-def appVerDate() { "10-15-2017" }
+def appVersion() { "5.2.2" }
+def appVerDate() { "11-07-2017" }
 def minVersions() {
 	return [
 		"automation":["val":517, "desc":"5.1.7"],
@@ -3906,7 +3906,7 @@ def didChange(old, newer, type, src) {
 		if(type == "str") {
 			atomicState?.lastStrucDataUpd = getDtNow()
 			atomicState.needStrPoll = false
-			log.debug "NestAPI AWAY Debug | Current: (${newer[atomicState?.structures]?.away})${(newer[atomicState?.structures]?.away != old[atomicState?.structures]?.away) ? " | Previous: (${old[atomicState?.structures]?.away})" : ""}"
+			LogAction("NestAPI AWAY Debug | Current: (${newer[atomicState?.structures]?.away})${(newer[atomicState?.structures]?.away != old[atomicState?.structures]?.away) ? " | Previous: (${old[atomicState?.structures]?.away})" : ""}", "trace", false)
 		}
 		if(type == "dev") {
 			atomicState?.lastDevDataUpd = getDtNow()
@@ -4929,11 +4929,6 @@ def sendNestApiCmd(cmdTypeId, cmdType, cmdObj, cmdObjVal, childId) {
 			} else {
 				tempQueue << cmdData
 			}
-			// tempQueue?.each { qi->
-			// 	if(qi[2]?.cmdObj?.away) {
-            //     	tempQueue
-			// 	}
-			// }
 			atomicState."cmdQ${qnum}" = tempQueue
 
 			def str = "Adding"
@@ -5107,10 +5102,10 @@ void workQueue() {
 				atomicState?.pollBlocked = true
 				atomicState?.pollBlockedReason = "Processing Queue"
 				cmdQueue = atomicState?."cmdQ${qnum}"
-				log.trace "cmdQueue(workqueue): $cmdQueue"
+				// log.trace "cmdQueue(workqueue): $cmdQueue"
 				def cmd = cmdQueue?.remove(0)
-				log.trace "cmdQueue(workqueue-after): $cmdQueue"
-				log.debug "cmd: $cmd"
+				// log.trace "cmdQueue(workqueue-after): $cmdQueue"
+				// log.debug "cmd: $cmd"
 				atomicState?."cmdQ${qnum}" = cmdQueue
 				def cmdres
 
