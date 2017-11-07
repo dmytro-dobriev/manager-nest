@@ -13,7 +13,7 @@
 import java.text.SimpleDateFormat
 import groovy.time.*
 
-def devVer() { return "5.1.5" }
+def devVer() { return "5.1.6" }
 
 // for the UI
 metadata {
@@ -480,7 +480,7 @@ void processEvent(data) {
 			if(eventData?.data?.is_locked != null) { tempLockOnEvent(eventData?.data?.is_locked.toString() == "true" ? true : false) }
 			canHeatCool(eventData?.data?.can_heat, eventData?.data?.can_cool)
 			hasFan(eventData?.data?.has_fan.toString())
-			presenceEvent(eventData?.pres.toString())
+			presenceEvent(eventData?.pres)
 
 			def curMode = device?.currentState("nestThermostatMode")?.stringValue
 			hvacModeEvent(eventData?.data?.hvac_mode.toString())
@@ -967,19 +967,24 @@ def humidityEvent(humidity) {
 	} else { LogAction("Humidity is (${humidity}) | Original State: (${hum})") }
 }
 
-def presenceEvent(presence) {
+def presenceEvent(String presence) {
+	// log.trace "presenceEvent($presence)"
 	def val = getPresence()
-	def pres = (presence == "home") ? "present" : "not present"
+	def pres = (presence == "away" || presence == "auto-away") ? "not present" : "present"
 	def nestPres = state?.nestPresence
-	def newNestPres = (presence == "home") ? "home" : ((presence == "auto-away") ? "auto-away" : "away")
-	def statePres = state?.present
-	state?.present = (pres == "present") ? true : false
+	def newNestPres = (pres == "present") ? "home" : ((presence == "auto-away") ? "auto-away" : "away")
+	def statePres = state?.isPresent
+	state?.isPresent = (pres == "not present") ? false : true
 	state?.nestPresence = newNestPres
-	if(!val.equals(pres) || !nestPres.equals(newNestPres) || !nestPres) {
-		Logger("UPDATED | Presence: ${pres.toString().capitalize()} | Original State: ${val.toString().capitalize()} | State Variable: ${statePres}")
+	if(isStateChange(device, "presence", pres.toString()) || isStateChange(device, "nestPresence", newNestPres.toString()) || nestPres == null) {
+		def chgType = ""
+		chgType += isStateChange(device, "presence", pres.toString()) ? "ST " : ""
+		chgType += isStateChange(device, "presence", pres.toString()) && isStateChange(device, "nestPresence", newNestPres.toString()) ? "| " : ""
+		chgType += isStateChange(device, "nestPresence", newNestPres.toString()) ? "Nest " : ""
+		Logger("UPDATED | ${chgType} Presence: ${pres.toString().capitalize()} | Original State: ${val.toString().capitalize()} | State Variable: ${statePres}")
 		sendEvent(name: 'presence', value: pres, descriptionText: "Device is: ${pres}", displayed: false, isStateChange: true, state: pres )
 		sendEvent(name: 'nestPresence', value: newNestPres, descriptionText: "Nest Presence is: ${newNestPres}", displayed: true, isStateChange: true )
-	} else { LogAction("Presence - Present: (${pres}) | Original State: (${val}) | State Variable: ${state?.present}") }
+	} else { LogAction("Presence - Present: (${pres}) | Original State: (${val}) | State Variable: ${state?.isPresent}") }
 }
 
 void whoMadeChanges(autoType, desc, dt) {
