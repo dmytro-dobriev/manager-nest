@@ -220,13 +220,15 @@ def keepAwakeEvent() {
 
 void repairHealthStatus(data) {
 	Logger("repairHealthStatus($data)")
-	if(data?.flag) {
-		sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false, isStateChange: true)
-		state?.healthInRepair = false
-	} else {
-		state.healthInRepair = true
-		sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false, isStateChange: true)
-		runIn(7, repairHealthStatus, [data: [flag: true]])
+	if(state?.hcRepairEnabled != false) {
+		if(data?.flag) {
+			sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false, isStateChange: true)
+			state?.healthInRepair = false
+		} else {
+			state.healthInRepair = true
+			sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false, isStateChange: true)
+			runIn(7, repairHealthStatus, [data: [flag: true]])
+		}
 	}
 }
 
@@ -328,6 +330,7 @@ def processEvent(data) {
 		if(eventData) {
 			def results = eventData?.data
 			state.isBeta = eventData?.isBeta == true ? true : false
+			state.hcRepairEnabled = eventData?.hcRepairEnabled == true ? true : false
 			state.restStreaming = eventData?.restStreaming == true ? true : false
 			state.showLogNamePrefix = eventData?.logPrefix == true ? true : false
 			state.enRemDiagLogging = eventData?.enRemDiagLogging == true ? true : false
@@ -887,6 +890,13 @@ def disclaimerMsg() {
 	} else { return "" }
 }
 
+def androidDisclaimerMsg() {
+	if(state?.mobileClientType == "android" && !state?.androidDisclaimerShown) {
+		state.androidDisclaimerShown = true
+		return """<div class="androidAlertBanner">FYI... The Android Client has a bug with reloading the HTML a second time.\nIt will only load once!\nYou will be required to completely close the client and reload to view the content again!!!</div>"""
+	} else { return "" }
+}
+
 def getChgLogHtml() {
 	def chgStr = ""
 	if(!state?.shownChgLog == true) {
@@ -957,6 +967,7 @@ def getInfoHtml() {
 			<body>
 			  ${getChgLogHtml()}
 			  ${disclaimerMsg()}
+			  ${androidDisclaimerMsg()}
 			  ${devBrdCastHtml}
 			  ${testModeHTML}
 			  ${clientBl}
@@ -1042,8 +1053,9 @@ def getInfoHtml() {
 				</div>
 			  <script>
 				  function reloadProtPage() {
-					  var url = "https://" + window.location.host + "/api/devices/${device?.getId()}/getInfoHtml"
-					  window.location = url;
+					  // var url = "https://" + window.location.host + "/api/devices/${device?.getId()}/getInfoHtml"
+					  // window.location = url;
+					  window.location.reload();
 				  }
 			  </script>
 			  <div class="pageFooterBtn">
