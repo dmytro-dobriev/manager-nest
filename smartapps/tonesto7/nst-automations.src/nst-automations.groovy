@@ -27,8 +27,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.1.8" }
-def appVerDate() { "11-7-2017" }
+def appVersion() { "5.2.0" }
+def appVerDate() { "11-8-2017" }
 
 preferences {
 	//startPage
