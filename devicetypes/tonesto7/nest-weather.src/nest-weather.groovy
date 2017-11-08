@@ -309,6 +309,7 @@ void processEvent() {
 		initialize()
 		state.swVersion = devVer()
 		state?.shownChgLog = false
+		state.androidDisclaimerShown = false
 	}
 	def eventData = state?.eventData
 	//LogAction("processEvent Parsing data ${eventData}", "trace")

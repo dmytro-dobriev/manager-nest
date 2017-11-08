@@ -320,6 +320,7 @@ def processEvent(data) {
 		initialize()
 		state.swVersion = devVer()
 		state?.shownChgLog = false
+		state.androidDisclaimerShown = false
 	}
 	def eventData = data?.evt
 	state.remove("eventData")

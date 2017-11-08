@@ -473,6 +473,7 @@ void processEvent(data) {
 				initialize()
 				state.swVersion = devVer()
 				state?.shownChgLog = false
+				state.androidDisclaimerShown = false
 			}
 			state?.childWaitVal = eventData?.childWaitVal.toInteger()
 			state.clientBl = eventData?.clientBl == true ? true : false
