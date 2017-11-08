@@ -783,45 +783,6 @@ def getStateVal(var) {
 	return state[var] ?: null
 }
 
-/*
-def getAutoIcon(type) {
-	if(type) {
-		switch(type) {
-			case "remSen":
-				return getAppImg("remote_sensor_icon.png")
-				break
-			case "fanCtrl":
-				return getAppImg("fan_control_icon.png")
-				break
-			case "conWat":
-				return getAppImg("open_window.png")
-				break
-			case "leakWat":
-				return getAppImg("leak_icon.png")
-				break
-			case "humCtrl":
-				return getAppImg("humidity_automation_icon.png")
-				break
-			case "extTmp":
-				return getAppImg("external_temp_icon.png")
-				break
-			case "nMode":
-				return getAppImg("mode_automation_icon.png")
-				break
-			case "schMot":
-				return getAppImg("thermostat_automation_icon.png")
-				break
-			case "tMode":
-				return getAppImg("mode_setpoints_icon.png")
-				break
-			case "watchDog":
-				return getAppImg("watchdog_icon.png")
-				break
-		}
-	}
-}
-*/
-
 def automationsInst() {
 	atomicState.isNestModesConfigured = 	isNestModesConfigured() ? true : false
 	atomicState.isWatchdogConfigured = 	isWatchdogConfigured() ? true : false
@@ -1248,9 +1209,9 @@ def scheduleAutomationEval(schedtime = defaultAutomationTime()) {
 		if(timeLeftPrev > (theTime + 5) || waitOverride) {
 			if(Math.abs(timeLeftPrev - theTime) > 3) {
 				runIn(theTime, "runAutomationEval", [overwrite: true])
-				LogAction("scheduleAutomationEval: changed time ${timeLeftPrev} to ${theTime}", "debug", true)
+				LogAction("scheduleAutomationEval: Eval Schedule Changed from (${timeLeftPrev}sec) to (${theTime}sec)", "debug", true)
 			}
-		} else { LogAction("scheduleAutomationEval: skipped time ${theTime} because ${timeLeftPrev}", "debug", true) }
+		} else { LogAction("scheduleAutomationEval: Skipping Schedule Change: (${theTime}sec) because (${timeLeftPrev}sec) Left", "debug", true) }
 	}
 }
 

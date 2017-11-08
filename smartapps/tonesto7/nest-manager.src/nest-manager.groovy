@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.2.2" }
-def appVerDate() { "11-07-2017" }
+def appVerDate() { "11-08-2017" }
 def minVersions() {
 	return [
 		"automation":["val":517, "desc":"5.1.7"],
@@ -3652,7 +3652,7 @@ def getApiData(type = null) {
 					def chg = didChange(atomicState?.structData, t0, "str", "poll")
 					if(chg) {
 						result = true
-						def newStrucName = atomicState?.structData && atomicState?.structures ? atomicState?.structData[atomicState?.structures]?.name : null
+						def newStrucName = atomicState?.structData?.size() && atomicState?.structures ? atomicState?.structData[atomicState?.structures]?.name : null
 						atomicState.structName = newStrucName ?: atomicState?.structName
 						locationPresNotify(getLocationPresence())
 					}
@@ -3906,7 +3906,9 @@ def didChange(old, newer, type, src) {
 		if(type == "str") {
 			atomicState?.lastStrucDataUpd = getDtNow()
 			atomicState.needStrPoll = false
-			LogAction("NestAPI AWAY Debug | Current: (${newer[atomicState?.structures]?.away})${(newer[atomicState?.structures]?.away != old[atomicState?.structures]?.away) ? " | Previous: (${old[atomicState?.structures]?.away})" : ""}", "trace", false)
+			if(atomicState?.structures) {
+				LogAction("NestAPI AWAY Debug | Current: (${newer[atomicState?.structures]?.away})${(newer[atomicState?.structures]?.away != old[atomicState?.structures]?.away) ? " | Previous: (${old[atomicState?.structures]?.away})" : ""}", "trace", false)
+			}
 		}
 		if(type == "dev") {
 			atomicState?.lastDevDataUpd = getDtNow()
@@ -3918,7 +3920,7 @@ def didChange(old, newer, type, src) {
 		}
 		if(old != newer) {
 			if(type == "str") {
-				def t0 = atomicState?.structData && atomicState?.structures ? atomicState?.structData[atomicState?.structures] : null
+				def t0 = atomicState?.structData?.size() && atomicState?.structures ? atomicState?.structData[atomicState?.structures] : null
 				def t1 = newer && atomicState?.structures ? newer[atomicState?.structures] : null
 				if(t1 && t0 != t1) {
 					result = true
@@ -7055,7 +7057,6 @@ def revokeNestToken() {
 
 def revokeCleanState() {
 	unschedule()
-	unsubscribe()
 	atomicState.authToken = null
 	atomicState.authTokenCreatedDt = null
 	atomicState.authTokenExpires = getDtNow()
