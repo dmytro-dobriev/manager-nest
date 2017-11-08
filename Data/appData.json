@@ -93,7 +93,8 @@
         "tstatTimeout": 35,
         "longTimeout": 120,
         "timeout": 35,
-        "enabled": true
+        "enabled": true,
+        "repairEnabled": false
     },
     "devStatusPage": {
         "enabled": false,
