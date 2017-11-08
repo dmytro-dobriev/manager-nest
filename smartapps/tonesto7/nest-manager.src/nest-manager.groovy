@@ -39,7 +39,7 @@ def appVersion() { "5.2.3" }
 def appVerDate() { "11-08-2017" }
 def minVersions() {
 	return [
-		"automation":["val":521, "desc":"5.2.0"],
+		"automation":["val":520, "desc":"5.2.0"],
 		"thermostat":["val":520, "desc":"5.2.0"],
 		"protect":["val":520, "desc":"5.2.0"],
 		"presence":["val":520, "desc":"5.2.0"],
@@ -2868,7 +2868,6 @@ def getInstAutoTypesDesc() {
 			sData.autoSaVer = updVer
 			atomicState?.swVer = sData
 		}
-
 		if(ver==null || (versionStr2Int(ver) < minVersions()?.automation?.val) || (versionStr2Int(ver) > minVersions()?.automation?.val && !getDevOpt() )) {
 			LogAction("NST AUTOMATIONS UPDATE REQUIRED: Automation ${a?.label} (v${ver}) | REQUIRED: (v${minVersions()?.automation?.desc}) | Please install the current NST Automations software in the IDE", "error", true)
 			appUpdateNotify(true)
