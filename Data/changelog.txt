@@ -2,6 +2,7 @@ V5.2.3 (November 8th, 2017):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
  • FIXED: Empty Locations on New Installs
+ • FIXED: Tweaked the way app updates messages are determined
  • ADDED: Workaround step added to stop the issues preventing users from uninstalling the App
  • UPDATED: Minor Device Health Tweaks
 
