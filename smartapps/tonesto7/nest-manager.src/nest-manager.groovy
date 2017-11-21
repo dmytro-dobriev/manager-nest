@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.2.3" }
-def appVerDate() { "11-08-2017" }
+def appVerDate() { "11-20-2017" }
 def minVersions() {
 	return [
 		"automation":["val":520, "desc":"5.2.0"],
@@ -1658,7 +1658,7 @@ def diagnosticPage () {
 				paragraph "This will automatically turn off 48 hours"
 				input (name: "enRemDiagLogging", type: "bool", title: "Enable Log Collection?", required: false, defaultValue: (atomicState?.enRemDiagLogging ?: false), submitOnChange: true, image: getAppImg("log.png"))
 				if(atomicState?.enRemDiagLogging) {
-					def str = "Press Done all the way back to the main smartapp page to allow the Diagnostic App to Install"
+					def str = "Press Done/Save all the way back to the main smartapp page to allow the Diagnostic App to Install"
 					paragraph str, required: true, state: "complete"
 				}
 			}
@@ -2010,7 +2010,8 @@ def nestTokenResetPage() {
 	return dynamicPage(name: "nestTokenResetPage", install: false) {
 		section ("Resetting Nest Token") {
 			revokeNestToken()
-			paragraph "Token reset\nPress Done to return to Login page"
+			paragraph "Token Reset Complete...", state: "complete" 
+			paragraph "Press Done/Save to return to Login page"
 		}
 	}
 }
