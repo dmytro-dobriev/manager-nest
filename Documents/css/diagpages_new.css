@@ -269,6 +269,7 @@ pre {
     top: 0;
     z-index: 9999;
     background: #191918;
+    opacity: 0.6;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     /* enables momentum scrolling in iOS overflow elements */
