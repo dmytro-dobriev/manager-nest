@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "5.2.0" }
+def devVer() { return "5.3.0" }
 
 metadata {
 	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
@@ -1732,7 +1732,7 @@ def getWeatherHTML() {
 	}
 }
 
-def getDeviceTile() {
+def getDeviceTile(devNum="") {
 	try {
 		if(!state?.curWeather || !state?.curForecast) {
 			return hideWeatherHtml()
@@ -1807,7 +1807,7 @@ def getDeviceTile() {
 }
 
 
-def historyGraphHtml() {
+def historyGraphHtml(devNum="") {
 	def html = ""
 	if(state?.showGraphs) {
 		if (state?.temperatureTable?.size() > 0 && state?.dewpointTable?.size() > 0) {
@@ -1897,7 +1897,7 @@ def historyGraphHtml() {
 							width: '100%'
 						}
 					};
-					var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));
+					var chart = new google.visualization.AreaChart(document.getElementById('chart_div${devNum}'));
 					chart.draw(data, options);
 				}
 			</script>

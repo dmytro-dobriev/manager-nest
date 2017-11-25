@@ -13,7 +13,7 @@ import groovy.time.TimeCategory
 
 preferences { }
 
-def devVer() { return "5.2.0" }
+def devVer() { return "5.3.0" }
 
 metadata {
 	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
@@ -1413,7 +1413,7 @@ def getDeviceTile(devNum) {
 		def mainHtml = """
 			${clientBl}
 			${updateAvail}
-			<div class="device" style="max-width: 1000px;">
+			<div class="device">
 				<div class="swiper-container-${devNum}">
 					<div class="swiper-wrapper">
 						${camHtml}
@@ -1514,12 +1514,13 @@ def getDeviceTile(devNum) {
 					loop: true,
 					slidesPerView: '1',
 					centeredSlides: true,
-					spaceBetween: 100,
+					spaceBetween: 200,
 					autoHeight: true,
 					iOSEdgeSwipeDetection: true,
 					parallax: true,
 					slideToClickedSlide: true,
 					effect: 'coverflow',
+					// resistance: true,
 					coverflow: {
 					  rotate: 50,
 					  stretch: 0,
