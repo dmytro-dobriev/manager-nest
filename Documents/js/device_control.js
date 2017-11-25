@@ -88,9 +88,9 @@ var thermostatDial = (function() {
 		options = options || {};
 		options = {
 			diameter: options.diameter || 400,
-			minValue: options.minValue || 10, // Minimum value for target temperature
-			maxValue: options.maxValue || 30, // Maximum value for target temperature
-			numTicks: options.numTicks || 150, // Number of tick lines to display around the dial
+			minValue: options.minValue || 50, // Minimum value for target temperature
+			maxValue: options.maxValue || 90, // Maximum value for target temperature
+			numTicks: options.numTicks || 15, // Number of tick lines to display around the dial
 			onSetTargetTemperature: options.onSetTargetTemperature || function() {}, // Function called when new target temperature set by the dial
 		};
 
@@ -105,8 +105,8 @@ var thermostatDial = (function() {
 			ticksInnerRadius: options.diameter / 8,
 			hvac_states: ['off', 'heating', 'cooling'],
 			dragLockAxisDistance: 15,
-		}
-		properties.lblAmbientPosition = [properties.radius, properties.ticksOuterRadius-(properties.ticksOuterRadius-properties.ticksInnerRadius)/2]
+		};
+		properties.lblAmbientPosition = [properties.radius, properties.ticksOuterRadius-(properties.ticksOuterRadius-properties.ticksInnerRadius)/2];
 		properties.offsetDegrees = 180-(360-properties.tickDegrees)/2;
 
 		/*
@@ -215,7 +215,7 @@ var thermostatDial = (function() {
 		var tickArray = [];
 		for (var iTick=0; iTick<options.numTicks; iTick++) {
 			tickArray.push(createSVGElement('path',{d:pointsToPath(tickPoints)},ticks));
-		};
+		}
 
 		/*
 		 * Labels
@@ -261,8 +261,8 @@ var thermostatDial = (function() {
 		var leafDef = ["M", 3, 84, "c", 24, 17, 51, 18, 73, -6, "C", 100, 52, 100, 22, 100, 4, "c", -13, 15, -37, 9, -70, 19, "C", 4, 32, 0, 63, 0, 76, "c", 6, -7, 18, -17, 33, -23, 24, -9, 34, -9, 48, -20, -9, 10, -20, 16, -43, 24, "C", 22, 63, 8, 78, 3, 84, "z"].map(function(x) {
 			return isNaN(x) ? x : x*leafScale;
 		}).join(' ');
-		var translate = [properties.radius-(leafScale*100*0.5),properties.radius*1.5]
-		var icoLeaf = createSVGElement('path',{
+		var translate = [properties.radius-(leafScale*100*0.5),properties.radius*1.5];
+		icoLeaf = createSVGElement('path',{
 			class: 'dial__ico__leaf',
 			d: leafDef,
 			transform: 'translate('+translate[0]+','+translate[1]+')'
@@ -350,7 +350,7 @@ var thermostatDial = (function() {
 			Array.prototype.slice.call(svg.classList).forEach(function(c) {
 				if (c.match(/^dial--state--/)) {
 					svg.classList.remove(c);
-				};
+				}
 			});
 			svg.classList.add('dial--state--'+self.hvac_state);
 		}
@@ -377,7 +377,7 @@ var thermostatDial = (function() {
 				return  [ev.targetTouches[0].clientX, ev.targetTouches[0].clientY];
 			} else {
 				return [ev.x, ev.y];
-			};
+			}
 		}
 
 		var startDelay;
@@ -389,7 +389,7 @@ var thermostatDial = (function() {
 				_drag.startTemperature = self.target_temperature || options.minValue;
 				_drag.lockAxis = undefined;
 			},1000);
-		};
+		}
 
 		function dragEnd (ev) {
 			clearTimeout(startDelay);
@@ -399,9 +399,9 @@ var thermostatDial = (function() {
 			if (self.target_temperature != _drag.startTemperature) {
 				if (typeof options.onSetTargetTemperature == 'function') {
 					options.onSetTargetTemperature(self.target_temperature);
-				};
-			};
-		};
+				}
+			}
+		}
 
 		function dragMove(ev) {
 			ev.preventDefault();
@@ -422,7 +422,7 @@ var thermostatDial = (function() {
 				dxy = dx;
 			} else {
 				dxy = (Math.abs(dy) > Math.abs(dx)) ? dy : dx;
-			};
+			}
 			var dValue = (dxy*getSizeRatio())/(options.diameter)*properties.rangeValue;
 			self.target_temperature = roundHalf(_drag.startTemperature+dValue);
 		}
@@ -459,7 +459,7 @@ var thermostatDial = (function() {
 				theta = 90-theta+270;
 			}
 			return theta;
-		};
+		}
 
 		function getSizeRatio() {
 			return options.diameter / targetElement.clientWidth;
