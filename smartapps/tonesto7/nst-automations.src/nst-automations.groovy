@@ -267,7 +267,6 @@ void finishFixState(migrate=false) {
 		}
 		if(!migrate) { initAutoApp() }
 		//updated()
-		}
 	}
 }
 
