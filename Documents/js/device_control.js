@@ -490,4 +490,4 @@ var nest = new thermostatDial(document.getElementById('thermostat'),{
 // });
 // document.getElementById('input_away').addEventListener('change',function() {
 // 	nest.away = this.value;
-});
+//});
