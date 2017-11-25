@@ -245,6 +245,8 @@ def getDataByName(String name) {
 	state[name] ?: device.getDataValue(name)
 }
 
+def getDevTypeId() { return device?.getTypeId() }
+
 def getDeviceStateData() {
 	return getState()
 }

@@ -410,6 +410,7 @@ def getTimeDiffSeconds(strtDate, stpDate=null, methName=null) {
 
 def getStateSize()      { return state?.toString().length() }
 def getStateSizePerc()  { return (int) ((stateSize/100000)*100).toDouble().round(0) }
+def getDevTypeId() { return device?.getTypeId() }
 
 def getDataByName(String name) {
 	state[name] ?: device.getDataValue(name)
@@ -759,7 +760,7 @@ def getMetricCntData() {
 	return [protHtmlLoadCnt:(state?.htmlLoadCnt ?: 0)]//, protInfoBtnTapCnt:(state?.infoBtnTapCnt ?: 0)]
 }
 
-def getCarbonImg() {
+def getCarbonImg(b64=true) {
 	def carbonVal = device.currentState("nestCarbonMonoxide")?.value
 	//values in ST are tested, clear, detected
 	//values from nest are ok, warning, emergency
@@ -768,22 +769,22 @@ def getCarbonImg() {
 	def captionClass = ""
 	switch(carbonVal) {
 		case "warning":
-			img = getFileBase64(getImg("co2_warn_status.png"), "image", "png")
+			img = b64 ? getFileBase64(getImg("co2_warn_status.png"), "image", "png") : getImg("co2_warn_status.png")
 			captionClass = "alarmWarnCap"
 			break
 		case "emergency":
-			img = getFileBase64(getImg("co2_emergency_status.png"), "image", "png")
+			img = b64 ? getFileBase64(getImg("co2_emergency_status.png"), "image", "png") : getImg("co2_emergency_status.png")
 			captionClass = "alarmEmerCap"
 			break
 		default:
-			img = getFileBase64(getImg("co2_clear_status.png"), "image", "png")
+			img = b64 ? getFileBase64(getImg("co2_clear_status.png"), "image", "png") : getImg("co2_clear_status.png")
 			captionClass = "alarmClearCap"
 			break
 	}
 	return ["img":img, "caption": caption, "captionClass":captionClass]
 }
 
-def getSmokeImg() {
+def getSmokeImg(b64=true) {
 	def smokeVal = device.currentState("nestSmoke")?.value
 	//values in ST are tested, clear, detected
 	//values from nest are ok, warning, emergency
@@ -792,15 +793,15 @@ def getSmokeImg() {
 	def captionClass = ""
 	switch(smokeVal) {
 		case "warning":
-			img = getFileBase64(getImg("smoke_warn_status.png"), "image", "png")
+			img = b64 ? getFileBase64(getImg("smoke_warn_status.png"), "image", "png") : getImg("smoke_warn_status.png")
 			captionClass = "alarmWarnCap"
 			break
 		case "emergency":
-			img = getFileBase64(getImg("smoke_emergency_status.png"), "image", "png")
+			img = b64 ? getFileBase64(getImg("smoke_emergency_status.png"), "image", "png") : getImg("smoke_emergency_status.png")
 			captionClass = "alarmEmerCap"
 			break
 		default:
-			img = getFileBase64(getImg("smoke_clear_status.png"), "image", "png")
+			img = b64 ? getFileBase64(getImg("smoke_clear_status.png"), "image", "png") : getImg("smoke_clear_status.png")
 			captionClass = "alarmClearCap"
 			break
 	}
@@ -919,6 +920,8 @@ def getChgLogHtml() {
 	}
 	return chgStr
 }
+
+def hasHtml() { return true }
 
 def getInfoHtml() {
 	try {
@@ -1075,6 +1078,111 @@ def getInfoHtml() {
 		exceptionDataHandler(ex.message, "getInfoHtml")
 	}
 }
+
+def getDeviceTile(devNum) {
+	try {
+		def battImg = (state?.battVal == "low") ? "<img class='battImg' src=\"${getImg("battery_low_h.png")}\">" :
+				"<img class='battImg' src=\"${getImg("battery_ok_h.png")}\">"
+
+		def testVal = device.currentState("isTesting")?.value
+		def testModeHTML = (testVal.toString() == "true") ? "<h3>Test Mode</h3>" : ""
+		def updateAvail = !state.updateAvailable ? "" : """<div class="greenAlertBanner">Device Update Available!</div>"""
+		def clientBl = state?.clientBl ? """<div class="brightRedAlertBanner">Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</div>""" : ""
+
+		def smokeImg = getSmokeImg(false)
+		def carbonImg = getCarbonImg(false)
+		def html = """
+		  ${testModeHTML}
+		  ${clientBl}
+		  ${updateAvail}
+		  <div class="device" style="padding: 10px; max-width: 1000px;">
+			  <section class="sectionBg">
+				  <h3>Alarm Status</h3>
+				  <table class="devInfo">
+				    <col width="48%">
+				    <col width="48%">
+				    <thead>
+					  <th>Smoke Detector</th>
+					  <th>Carbon Monoxide</th>
+				    </thead>
+				    <tbody>
+					  <tr>
+					    <td>
+							<img class='alarmImg' src="${smokeImg?.img}">
+							<span class="${smokeImg?.captionClass}">${smokeImg?.caption}</span>
+						</td>
+					    <td>
+							<img class='alarmImg' src="${carbonImg?.img}">
+							<span class="${carbonImg?.captionClass}">${carbonImg?.caption}</span>
+						</td>
+					  </tr>
+				    </tbody>
+				  </table>
+			  </section>
+			  <br>
+			  <section class="sectionBg">
+			  	<h3>Device Info</h3>
+				<table class="devInfo">
+					<col width="33%">
+					<col width="33%">
+					<col width="33%">
+					<thead>
+					  <th>Network Status</th>
+					  <th>Power Type</th>
+					  <th>API Status</th>
+					</thead>
+					<tbody>
+					  <tr>
+					  <td${state?.onlineStatus != "online" ? """ class="redText" """ : ""}>${state?.onlineStatus.toString().capitalize()}</td>
+					  <td>${state?.powerSource.toString().capitalize()}</td>
+					  <td${state?.apiStatus != "Good" ? """ class="orangeText" """ : ""}>${state?.apiStatus}</td>
+					  </tr>
+					</tbody>
+				</table>
+			</section>
+			<section class="sectionBg">
+				<table class="devInfo">
+					<col width="40%">
+					<col width="20%">
+					<col width="40%">
+					<thead>
+					  <th>Firmware Version</th>
+					  <th>Debug</th>
+					  <th>Device Type</th>
+					</thead>
+					<tbody>
+					  <tr>
+						<td>v${state?.softwareVer.toString()}</td>
+						<td>${state?.debugStatus}</td>
+						<td>${state?.devTypeVer.toString()}</td>
+					  </tr>
+					</tbody>
+			  	</table>
+			  </section>
+			  <section class="sectionBg">
+  				<table class="devInfo">
+				  <thead>
+					<th>Last Check-In</th>
+					<th>Data Last Received</th>
+				  </thead>
+				  <tbody>
+					<tr>
+					  <td class="dateTimeText">${state?.lastConnection.toString()}</td>
+					  <td class="dateTimeText">${state?.lastUpdatedDt.toString()}</td>
+					</tr>
+				  </tbody>
+				</table>
+			  </section>
+			</div>
+		"""
+		return html
+	}
+	catch (ex) {
+		log.error "getDeviceTile Exception:", ex
+		exceptionDataHandler(ex.message, "getInfoHtml")
+	}
+}
+
 
 private def textDevName()   { return "Nest Protect${appDevName()}" }
 private def appDevType()    { return false }

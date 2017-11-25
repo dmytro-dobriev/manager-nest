@@ -7490,12 +7490,11 @@ def devPageFooter(var, eTime) {
 	def res = []
 	if(getDevOpt()) {
 		res += 	section() {
-					paragraph "       Page Loads: (${atomicState?.usageMetricsStore["${var}"] ?: 0}) | LoadTime: (${eTime ? (now()-eTime) : 0}ms)"
+					paragraph "   Page Loads: (${atomicState?.usageMetricsStore["${var}"] ?: 0}) | LoadTime: (${eTime ? (now()-eTime) : 0}ms)"
 				}
 	}
 	return res?.size() ? res : ""
 }
-
 
 def askAlexaImgUrl() { return "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/AskAlexa512.png" }
 
@@ -7530,7 +7529,7 @@ def savetoRemDiagChild(List newdata) {
 				stateSz = getStateSizePerc()
 				cnt += 1
 			}
-			log.debug "(${data?.size()} | State: ${stateSz}%)"
+			log.debug "Log Items (${data?.size()}) | State Size: (${stateSz}%)"
 		} else { log.error "bad call to savetoRemDiagChild - no data" }
 	} else { Logger("bad call to savetoRemDiagChild - wrong automation") }
 }

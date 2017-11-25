@@ -35,8 +35,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.2.3" }
-def appVerDate() { "11-20-2017" }
+def appVersion() { "5.3.0" }
+def appVerDate() { "11-24-2017" }
 def minVersions() {
 	return [
 		"automation":["val":520, "desc":"5.2.0"],
@@ -87,6 +87,7 @@ preferences {
 	page(name: "automationSchedulePage")
 	page(name: "feedbackPage")
 	page(name: "sendFeedbackPage")
+	page(name: "codeUpdatesPage")
 
 	page(name: "setNotificationPage")
 	page(name: "notifConfigPage")
@@ -103,6 +104,7 @@ mappings {
 		//Web Diagnostics Pages
 		if(settings?.enDiagWebPage == true || getDevOpt()) {
 			path("/diagHome")		{action: [GET: "renderDiagHome"]}
+			path("/deviceTiles")	{action: [GET: "renderDeviceTiles"]}
 			path("/getLogData")		{action: [GET: "renderLogData"]}
 			//path("/getLogMap")	{action: [GET: "getLogMap"]}
 			path("/getManagerData")	{action: [GET: "renderManagerData"]}
@@ -114,6 +116,7 @@ mappings {
 		// path("/execCmd/:command")	{action: [GET: "execCmd"]}
 		// path("/setData/:value")		{action: [GET: "getSetData", POST: "updateSetData", DELETE: "delSetData"]}
 		// path("/stateData/:value")	{action: [GET: "getStateData", POST: "updateStateData", DELETE: "delStateData"]}
+		path("/stupdate") 			{action: [GET: "runStUpdateHtml"]}
 		path("/renderInstallData")	{action: [GET: "renderInstallData"]}
 		path("/receiveEventData") 	{action: [POST: "receiveEventData"]}
 		path("/streamStatus")		{action: [POST: "receiveStreamStatus"]}
@@ -235,6 +238,7 @@ def mainPage() {
 				if(isAppUpdateAvail()) {
 					href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!",
 							description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in Browser", state: "complete", image: getAppImg("update_icon.png")
+					href "codeUpdatesPage", title: "SmartApp and Device Code Updates", description: "Tap Here to Update", state: "complete", image: getAppImg("update_icon.png")
 				}
 				if(atomicState?.clientBlacklisted) {
 					paragraph "This ID is blacklisted, please update software!\nIf software is up to date, contact developer", required: true, state: null
@@ -285,6 +289,7 @@ def mainPage() {
 				if(descStr.size() != sz) { descStr += "\n\n"; sz = descStr.size() }
 				def prefDesc = (descStr != "") ? "" : "Tap to configure"
 				href "prefsPage", title: "Application\nPreferences", description: prefDesc, state: (descStr ? "complete" : ""), image: getAppImg("settings_icon.png")
+				href "codeUpdatesPage", title: "SmartApp and Device Code Updates", description: "Tap Here to Update", state: "complete", image: getAppImg("update_icon.png")
 			}
 			section("Donate, Release and License Info") {
 				href "infoPage", title: "Info and More", description: "", image: getAppImg("info_bubble.png")
@@ -548,6 +553,31 @@ def getWeatherQueryResults(query) {
 		}
 	}
 	return objMap
+}
+
+def codeUpdatesPage(){
+    dynamicPage(name: "codeUpdatesPage", uninstall: false, install: false) {
+        def theURL = "https://consigliere-regional.api.smartthings.com/?redirect=" + URLEncoder.encode(getAppEndpointUrl("stupdate"))
+        section() {
+            def saDes = ""
+            saDes += atomicState?.swVer?.mgrVer != null ? "${saDes != "" ? "\n":""}Manager Version: (${atomicState?.swVer?.mgrVer})" : ""
+            saDes += atomicState?.swVer?.autoSaVer != null ? "${saDes != "" ? "\n":""}Automations Version: (${atomicState?.swVer?.autoSaVer})" : ""
+            paragraph title: "SmartApp Info:", saDes
+        }
+		section() {
+            def devDes = ""
+            devDes += atomicState?.swVer?.tDevVer != null ? "${devDes != "" ? "\n":""}Thermostat Version: (${automicState?.swVer?.tDevVer})" : ""
+            devDes += atomicState?.swVer?.pDevVer != null ? "${devDes != "" ? "\n":""}Protect Version: (${atomicState?.swVer?.pDevVer})" : ""
+            devDes += atomicState?.swVer?.camDevVer != null ? "${devDes != "" ? "\n":""}Camera Version: (${atomicState?.swVer?.camDevVer})" : ""
+            devDes += atomicState?.swVer?.presDevVer != null ? "${devDes != "" ? "\n":""}Presence Version: (${atomicState?.swVer?.presDevVer})" : ""
+			devDes += atomicState?.swVer?.weatDevVer != null ? "${devDes != "" ? "\n":""}Weather Version: (${atomicState?.swVer?.weatDevVer})" : ""
+            paragraph title: "Device Info:", devDes
+        }
+        section() {
+            paragraph title: "What will this do?", "This process will make sure all SmartApp and Device Handler code is updated to the latest versions available.  All you will need to do is sign in to the IDE and watch it go..."
+            href url: theURL, title: "SmartApp | Device Code Updater\nTap to Update", description: null, image: getAppImg("update_icon.png")
+        }
+    }
 }
 
 def reviewSetupPage() {
@@ -2010,7 +2040,7 @@ def nestTokenResetPage() {
 	return dynamicPage(name: "nestTokenResetPage", install: false) {
 		section ("Resetting Nest Token") {
 			revokeNestToken()
-			paragraph "Token Reset Complete...", state: "complete" 
+			paragraph "Token Reset Complete...", state: "complete"
 			paragraph "Press Done/Save to return to Login page"
 		}
 	}
@@ -2031,7 +2061,7 @@ def installed() {
 
 def updated() {
 	LogAction("${app.label} Updated...with settings: ${settings}", "debug", true)
-	if(atomicState?.migrationInProgress == true) { LogAction("Skipping updated() as migration in-progress", "warn", true); return }
+	// if(atomicState?.migrationInProgress == true) { LogAction("Skipping updated() as migration in-progress", "warn", true); return }
 	if(atomicState?.needToFinalize == true) { LogAction("Skipping updated() as auth change in-progress", "warn", true); return }
 	initialize()
 	sendNotificationEvent("${appName()} has updated settings")
@@ -2052,7 +2082,6 @@ def uninstalled() {
 
 def initialize() {
 	//LogTrace("initialize")
-
 	if(atomicState?.resetAllData || settings?.resetAllData) {
 		if(fixState()) { return }	// runIn of fixState will call initAutoApp() or initManagerApp()
 		if (!parent) { settingUpdate("resetAllData", "false", "bool") }
@@ -2061,7 +2090,6 @@ def initialize() {
 		runIn(6, "initAutoApp", [overwrite: true])
 	}
 	else {
-		if(checkMigrationRequired()) { return true }	// This will call updated later
 		reInitBuiltins()	// These are to have these apps release subscriptions to devices (in case of delete)
 		runIn(21, "initManagerApp", [overwrite: true])	// need to give time for watchdog updates before we try to delete devices.
 		//runIn(34, "reInitBuiltins", [overwrite: true])	// need to have watchdog/nestmode check if we created devices
@@ -2174,11 +2202,11 @@ def initManagerApp() {
 	if(settings?.thermostats || settings?.protects || settings?.cameras || settings?.presDevice || settings?.weatherDevice) {
 		atomicState?.isInstalled = true
 	} else { atomicState.isInstalled = false }
-	if(atomicState?.autoMigrationComplete == true) { // fix for bug that removed this setting - temporary
-		def iData = atomicState?.installData
-		iData["usingNewAutoFile"] = true
-		atomicState?.installData = iData
-	}
+	// if(atomicState?.autoMigrationComplete == true) { // fix for bug that removed this setting - temporary
+	// 	def iData = atomicState?.installData
+	// 	iData["usingNewAutoFile"] = true
+	// 	atomicState?.installData = iData
+	// }
 	subscriber()
 	setPollingState()
 	startStopStream()
@@ -2187,11 +2215,15 @@ def initManagerApp() {
 
 def finishInitManagerApp() {
 	LogTrace("finishInitManagerApp")
-	if(atomicState?.isInstalled && atomicState?.installData?.usingNewAutoFile) {
-		createSavedNest()
+	if(atomicState?.isInstalled) {// && atomicState?.installData?.usingNewAutoFile) {
+		// createSavedNest()
 		if(app.label == "Nest Manager") { app.updateLabel("NST Manager") }
-
-		getChildApps()?.sort()?.each { chld -> chld?.update() }
+		def autoId = null
+		getChildApps()?.sort()?.each { chld ->
+			if(autoId == null) {shId = chld?.smartAppId}
+			chld?.update()
+		}
+		if(autoId) { updCodeId("auto", autoId) }
 		def tstatAutoApp = getChildApps()?.find {
 			try {
 				def aa = it?.getAutomationType()
@@ -3031,9 +3063,24 @@ private gcd(input = []) {
 
 def onAppTouch(event) {
 	stateCleanup()
-	createSavedNest()
-	fixStuckMigration()
+	settingsUpdate
 	poll(true)
+}
+
+void updAppCodeId(type,id) {
+	def appCodeId = atomicState?.appCodeIdData ?: [:]
+	if(appCodeId) {
+		appCodeId[type] = id
+	}
+	atomicState?.appCodeIdData = appCodeId
+}
+
+void updDevCodeId(type,id) {
+	def devCodeId = atomicState?.devCodeIdData ?: [:]
+	if(devCodeId) {
+		devCodeId[type] = id
+	}
+	atomicState?.devCodeIdData = devCodeId
 }
 
 def refresh(child = null) {
@@ -3048,72 +3095,8 @@ def refresh(child = null) {
 
 def pollFollow() { poll() }
 
-def fixStuckMigration() {
-	if(atomicState?.migrationInProgress == true) {
-		atomicState?.migrationInProgress = false
-		atomicState?.pollBlocked = false
-		atomicState?.pollBlockedReason = null
-		atomicState?.autoMigrationComplete = true
-		def t0 = atomicState?.installData
-		t0["usingNewAutoFile"] = true
-		atomicState?.installData = t0
-	}
-}
-
-def cleanRestAutomationTest() {
-	/*
-		NOTE:
-		This is only here to allow testing.
-		It will be removed after testing is complete
-	*/
-	//log.trace "cleanRestAutomationTest..."
-	def cApps = getChildApps()
-	atomicState?.pollBlocked = true
-	atomicState.pollBlockedReason = "Cleaning Automation Migration"
-	atomicState?.migrationInProgress = true
-	atomicState?.autoMigrationComplete = true
-	def foundAll = true
-	if(keepBackups() == false) {
-		cApps.each { ca ->
-			def restId = ca?.getSettingVal("restoreId")
-			if(restId == null) {
- 				foundAll = false
-			}
-		}
-		if(foundAll) {
-			cApps.each { ca ->
-				def restId = ca?.getSettingVal("restoreId")
-				if(restId != null) {
-					ca?.settingUpdate("restoreId", null)
-				}
-			}
-		}
-	}
-	cApps.each { ca ->
-		def restId = ca?.getSettingVal("restoreId")
-		if(restId != null) {
-			LogAction("CleanRestAutomationTest: removing ${ca?.label} ${restId}", "warn", true)
-			deleteChildApp(ca)
-		}
-		else {
-			LogAction("CleanRestAutomationTest: enabling ${ca?.label} ${restId}", "warn", true)
-			ca?.settingUpdate("disableAutomationreq", "false", "bool")
-			ca?.stateUpdate("disableAutomation", false)
-			ca?.stateUpdate("disableAutomationDt", null)
-			ca?.update()
-		}
-	}
-	atomicState?.migrationInProgress = false
-	atomicState?.pollBlocked = false
-	atomicState?.pollBlockedReason = null
-	atomicState?.autoMigrationComplete = false
-	def t0 = atomicState?.installData
-	t0["usingNewAutoFile"] = false
-	atomicState?.installData = t0
-}
-
 def checkIfSwupdated() {
-	if(checkMigrationRequired()) { return true }
+	// if(checkMigrationRequired()) { return true }
 	if(atomicState?.swVer?.mgrVer != appVersion()) {
 		LogAction("checkIfSwupdated: new version ${appVersion()}", "info", true)
 		def iData = atomicState?.installData
@@ -3138,329 +3121,6 @@ def checkIfSwupdated() {
 		return true
 	}
 	return false
-}
-
-/* NOTE:
-	MIGRATION Pre-Check
-	This will be called as part of the version change logic.
-	It looks to see if the file version is greater than a set number and that the atomicState.autoMigrationComplete is false or null,
-	If the to are ok it schedules the "doAutoMigrationProcess" method for 5 seconds.
-*/
-def checkMigrationRequired() {
-	if(atomicState?.migrationInProgress == true) { return true }
-	else if(atomicState?.installData?.usingNewAutoFile == true) { return false }
-	if(allowMigration()) {
-		if((versionStr2Int(appVersion()) >= 454 && !atomicState?.autoMigrationComplete == true)) {
-			LogAction("checkMigrationRequired: Scheduled Migration Process to New Automation File...(5 seconds)", "info", true)
-			//atomicState?.migrationInProgress == true
-			runIn(5, "doAutoMigrationProcess", [overwrite: true])
-			return true
-		}
-	}
-	return false
-}
-
-/* NOTE:
-	This is method creates the settings map with these items [type, value] so it can be easily restored.
-	The input reference data used is stored on our firebase
-*/
-def buildSettingsMap() {
-	def inputData = getWebData([uri: "https://st-nest-manager.firebaseio.com/restoreInputData.json", contentType:"application/json"], "inputType", false)
-	def settingsMap = [:]
-	def setData = getSettings()?.sort()?.findAll { it }
-	setData?.sort().each { item ->
-		def itemType = inputData?.inputs?.find { item?.key.toString().contains(it?.key.toString()) }
-		settingsMap[item?.key] = ["type":itemType?.value, "value":item?.value]
-	}
-	return settingsMap
-}
-
-/* NOTE:
-	This is method creates the JSON that is sent to Firebase with the Settings and State data
-*/
-def createAutoBackupJson() {
-	//log.trace "createAutoBackupJson..."
-	def noShow = ["curAlerts", "curAstronomy", "curForecast", "curWeather", "detailEventHistory", "detailExecutionHistory", "evalExecutionHistory", "activeSchedData", "resetAllData"]
-	for(def i=1; i <= 8; i++) { noShow.push("schMot_${i}_MotionActiveDt"); noShow.push("schMot_${i}_MotionInActiveDt"); noShow.push("schMot_${i}_oldMotionActive"); }
-	def stData = getState()?.sort()?.findAll { !(it.key in noShow) }
-	def stateData = [:]
-	stData?.sort().each { item ->
-		stateData[item?.key] = item?.value
-	}
-	def setData = buildSettingsMap()
-	setData?.sort().each { item ->
-		//log.debug "item: $item"
-		def itemVal = item?.value?.value
-		def itemType = item?.value?.type
-		def tmpList = []
-		def getIds4These = ["phone", "contact"]
-		def setObj = null
-		if(itemType?.contains("capability") || itemType in getIds4These) {
-			if(itemVal instanceof List) { setObj = settings[item?.key]?.collect { it?.id } }
-			else { setObj = settings[item?.key]?.id }
-		}
-		else {
-			if(itemType == "mode" || itemVal instanceof Integer || itemVal instanceof Double || itemVal instanceof Boolean || itemVal instanceof Float || itemVal instanceof Long || itemVal instanceof BigDecimal) {
-				setObj = itemVal
-			}
-			else { setObj = itemVal.toString() }
-		}
-		//log.debug "setting item ${item?.key}: ${getObjType(itemVal)} | result: $setObj"
-		setData[item?.key]?.value = setObj
-	}
-	setData["automationTypeFlag"] = getAutoType().toString()
-	//setData["backedUpData"] = true
-	def data = [:]
-	data["appLabel"] = app.label
-	data["stateData"] = stateData
-	data["settingsData"] = setData
-	data["backupDt"] = getDtNow()
-	def resultJson = new groovy.json.JsonOutput().toJson(data)
-	//log.debug "resultJson: $resultJson"
-	return resultJson
-}
-
-// Child Method
-// This is only necessary in the manager code to allow the backup to be created for migration to the new automation file
-def backupConfigToFirebase() {
-	//log.trace "backupConfigToFirebase..."
-	unschedule()
-	unsubscribe()
-	uninstAutomationApp() 			// Cleanup any parent state this child owns
-	def data = createAutoBackupJson()
-	return parent?.sendAutomationBackupData(data, app.id)
-}
-
-//Manager only
-def sendAutomationBackupData(data, appId) {
-	try {
-		sendFirebaseData(data, "backupData/clients/${atomicState?.installationId}/automationApps/${appId}.json", null, "Automation ($appId) Backup", true)
-	} catch (ex) {
-		LogAction("sendAutomationBackupData Exception: ${ex}", "error", true)
-		return false
-	}
-}
-
-def removeAutomationBackupData(childId, lbl=null) {
-	LogAction("removeAutomationBackupData(${lbl ? "$lbl" : "$childId"})", "info", true)
-	return removeFirebaseData("backupData/clients/${atomicState?.installationId}/automationApps/${childId}.json")
-}
-
-def clearAllAutomationBackupData() {
-	LogAction("cleanAllAutomationBackupData()...", "trace", true)
-	return removeFirebaseData("backupData/clients/${atomicState?.installationId}.json")
-}
-
-def getAutomationBackupData() {
-	return getWebData([uri: "https://st-nest-manager.firebaseio.com/backupData/clients/${atomicState?.installationId}/automationApps.json", contentType:"application/json"], "getAutomationBackup", false)
-}
-
-def migrationInProgress() {
-	return atomicState?.migrationInProgress == true ? true : false
-}
-
-/*
-	NOTE: MIGRATION STEP 1
-	This is the process that is called to kick off the backup/restore process.
-	It set the state values of pollBlocked and migrationInProgress to true to prevent any polling
-	PARENT METHOD
-*/
-void doAutoMigrationProcess() {
-	LogAction("doAutoMigrationProcess...", "trace", true)
-	if(atomicState?.migrationInProgress == true) { LogAction("Migration already in progress", "error", true) }
-	atomicState?.pollBlocked = true
-	atomicState?.pollBlockedReason = "Automation Migration in Progress"
-	atomicState?.migrationInProgress = true
-	atomicState?.migrationState1 = "Step 1 Start"
-
-	// This is to control the parent/child state to reset using fixState()
-	atomicState?.resetAllData = false
-	settingUpdate("resetAllData", "false")
-
-	def cApps = getChildApps()
-	if(cApps) {
-		cApps?.each { ca ->
-			def t0 = ca?.settings?.restoredFromBackup
-			atomicState?.migrationState1 = "Step 1 Backup - ${ca.label}"
-			if(t0 == null && backupAutomation(ca)) {
-				LogAction("backed up ${ca?.label}", "debug", true)
-			} else {
-				if(t0) { LogAction("skipping backup of the new style automation ${ca.label}", "debug", true) }
-				else { LogAction("backup failed of automation ${ca.label}", "warn", true) }
-			}
-		}
-		atomicState?.migrationState1 = "Step 1 Finish - Restore Scheduled"
-		runIn(15, "processAutoRestore", [overwrite:true])
-		LogAction("Scheduled restore process for (15 seconds)...", "info", true)
-	} else {
-		atomicState?.migrationState1 = "Step 1 Finish - Nothing to Restore"
-		LogAction("There are no automations to restore.", "warn", true)
-		finishMigrationProcess(false)
-	}
-}
-
-/*
-	NOTE: MIGRATION STEP 2
-	This is the process calls the backupConfigToFirebase method on every child
-	PARENT METHOD
-*/
-def backupAutomation(child) {
-	if(child?.backupConfigToFirebase()) {
-		child?.stateUpdate("lastBackupDt", getDtNow())
-		return true
-	}
-	return false
-}
-
-/*
-	NOTE: MIGRATION STEP 3
-	This process calls the automationRestore method with all of the backup data to restore
-	PARENT METHOD
-*/
-void processAutoRestore() {
-	LogAction("processAutoRestore...", "trace", true)
-	atomicState?.migrationState3 = "Step 3 Start"
-	def backupData = getAutomationBackupData()
-	if(backupData instanceof List || backupData instanceof Map) {
-		atomicState?.migrationState3 = "Step 3 Automation Restore"
-		automationRestore(backupData)
-	}
-	atomicState?.migrationState3 = "Step 3 Finish"
-}
-
-/*
-	NOTE: MIGRATION STEP 4
-	This is the actual automation restore method for installing the automations from the backups
-	It loops through each backed up automation id and creates the map to send and creates the new automation
-	using the new file.
-	PARENT METHOD
-*/
-def automationRestore(data, id=null) {
-	LogAction("automationRestore... size: ${data?.size()}", "trace", true)
-	try {
-		if(data) {
-			data?.each { bApp ->
-				if(id && id.toString() != bApp?.key.toString()) { return }
-				def appLbl = bApp?.value?.appLabel.toString()
-				def setData = bApp?.value?.settingsData
-				setData["restoreId"] = ["type":"text", "value":bApp?.key]
-				setData["restoredFromBackup"] = ["type":"bool", "value":true]
-				setData["restoreCompleted"] = ["type":"bool", "value":false]
-				setData["automationTypeFlag"] = ["type":"text", "value":setData?.automationTypeFlag]
-
-				atomicState?.migrationState4 = "Step 4 Automation Restore - Restoring [${setData?.automationTypeFlag?.value}] Automation Named: ($appLbl)...."
-				LogAction("Restoring [${setData?.automationTypeFlag?.value}] Automation Named: ($appLbl)....", "info", true)
-				// log.debug "setData: $setData"
-				try {
-					addChildApp(appNamespace(), autoAppName(), "${appLbl} (NST)", [settings:setData])
-				} catch (ex) {
-					appUpdateNotify(true)
-					return false
-				}
-				postChildRestore(bApp?.key)
-			}
-			atomicState?.migrationState4 = "Step 4 Automation Restore - Finishing"
-			runIn(25, "finishMigrationProcess", [overwrite:true])
-			LogAction("Scheduling finishMigrationProcess for (25 seconds)...", "debug", true)
-			return true
-		}
-	} catch (ex) {
-		log.error "automationRestore Exception:", ex
-	}
-	return false
-}
-
-/*
-	NOTE: MIGRATION STEP 5
-	This is called by the child automations initAutoApp() method after the addChildApp()
-	creates that app from backup.  On the first initialazation of the child it calls the
-	parent to restore the stateData from backup.   BACKUP MUST STILL EXIST
-	PARENT METHOD
-*/
-def callRestoreState(child, restId) {
-	atomicState?.migrationState5 = "Step 5 callRestoreState - Start ${child.label}   RestoreID: ${restId}"
-	LogAction("callRestoreState ${child.label}   RestoreID: ${restId}", "trace", true)
-	//log.debug "child: [Name: ${child.label} || ID: ${child?.getId()} | RestoreID: $restId"
-	if(restId) {
-		def data = getAutomationBackupData()
-		//log.debug "callRestoreState data: $data"
-		def newData = data.find { it?.key?.toString() == restId?.toString() }
-		if(newData?.value?.stateData) {
-			atomicState?.migrationState5 = "Step 5 callRestoreState - restoring child ${child.label} state  RestoreID: ${restId}"
-			newData?.value?.stateData?.each { sKey ->
-				child?.stateUpdate(sKey?.key, sKey?.value)
-			}
-			return true
-		} else {
-			atomicState?.migrationState5 = "Step 5 callRestoreState - no backup data child ${child.label} RestoreID: ${restId}"
-			LogAction("Backup Data not found: ${child.label}   RestoreID: ${restId}", "error", true)
-		}
-	}
-	return false
-}
-
-/*
-	NOTE: MIGRATION STEP 3  (Really part of STEP 3)
-	This is called by the child once it's state data has been restored and it's purpose is
-	finalize the restore setting values and disable or remove the old automations.
-	The removal is controlled by the method keepBackups().
-	PARENT METHOD
-*/
-def postChildRestore(childId) {
-	atomicState?.migrationState3A = "Step 3A Start postChildRestore(childId: $childId)"
-	LogAction("postChildRestore(childId: $childId)", "trace", true)
-	def cApp = getChildApps()
-	cApp?.each { ca ->
-		atomicState?.migrationState3A = "Step 3A postChildRestore Checking Automation (${ca?.label})..."
-		LogAction("postChildRestore Checking Automation (${ca?.label})...", "info", true)
-		if(ca?.id.toString() == childId) {
-			if(keepBackups() == false) {
-				atomicState?.migrationState3A = "Step 3A postChildRestore Removing Old Automation (${ca?.label})..."
-				LogAction("postChildRestore Removing Old Automation (${ca?.label})...", "warn", true)
-				deleteChildApp(ca)
-			} else {
-				ca?.settingUpdate("disableAutomationreq", "true", "bool")
-				ca?.stateUpdate("disableAutomation", true)
-				ca?.stateUpdate("disableAutomationDt", getDtNow())
-				ca?.update()
-			}
-		} else {
-			atomicState?.migrationState3A = "Step 3A postChildRestore No Match for Automation (${ca?.label})..."
-			LogAction("postChildRestore No Match for Automation (${ca?.label})...", "info", true)
-		}
-	}
-}
-
-/*
-	NOTE: MIGRATION 6
-	This is the final part of the migration process. It's supposed to if Successful restore polling state,
-	and mark the migration complete.  Otherwise it leaves them set so the migration will try again after the
-	update is called.
-	PARENT METHOD
-*/
-void finishMigrationProcess(result=true) {
-	atomicState?.migrationState6 = "Step 6 start - finishMigrationProcess result: $result"
-	LogAction("finishMigrationProcess result: $result", "trace", true)
-	if(result) {
-		LogAction("Auto Migration Process is complete...", "info", true)
-		def t0 = atomicState?.installData
-		t0["usingNewAutoFile"] = true
-		atomicState?.installData = t0
-	} else {
-		LogAction("Auto Migration did not do anything...", "warn", true)
-	}
-	atomicState?.pollBlocked = false
-	atomicState?.pollBlockedReason = null
-	atomicState?.migrationInProgress = false
-	atomicState?.autoMigrationComplete = true
-
-	// This is to force the parent/child state to reset using fixState()
-	atomicState?.resetAllData = false
-	settingUpdate("resetAllData", "true")
-
-	// This will perform a cleanup of any backup data that wasn't removed
-	if(keepBackups() == false) { clearAllAutomationBackupData() }
-	app.update()
 }
 
 def poll(force = false, type = null) {
@@ -4164,12 +3824,13 @@ def updateChildData(force = false) {
 			settingUpdate("devNameOverride", "true", "bool")
 		}
 		def overRideNames = (atomicState?.devNameOverride) ? true : false
-
+		def devCodeIds = atomicState?.devCodeIdData ?: [:]
 		def devices = app.getChildDevices(true)
 		devices?.each {
 			if(atomicState?.pollBlocked) { return true }
 			def devId = it?.deviceNetworkId
 			if(devId && atomicState?.thermostats && atomicState?.deviceData?.thermostats && atomicState?.deviceData?.thermostats[devId]) {
+				devCodeIds["tstat"] = it?.getDevTypeId()
 				def defmin = fixTempSetting(atomicState?."${devId}_safety_temp_min" ?: null)
 				def defmax = fixTempSetting(atomicState?."${devId}_safety_temp_max" ?: null)
 				def safetyTemps = [ "min":defmin, "max":defmax ]
@@ -4213,6 +3874,7 @@ def updateChildData(force = false) {
 				return true
 			}
 			else if(devId && atomicState?.protects && atomicState?.deviceData?.smoke_co_alarms && atomicState?.deviceData?.smoke_co_alarms[devId]) {
+				devCodeIds["protect"] = it?.getDevTypeId()
 				def pData = ["data":atomicState?.deviceData?.smoke_co_alarms[devId], "mt":useMt, "debug":dbg, "showProtActEvts":(!showProtActEvts ? false : true), "logPrefix":logNamePrefix,
 						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestProtVer()?.ver?.toString(), "clientBl":clientBl,
 						"hcWireTimeout":hcProtWireTimeout, "hcBattTimeout":hcProtBattTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg,
@@ -4245,6 +3907,7 @@ def updateChildData(force = false) {
 				return true
 			}
 			else if(devId && atomicState?.cameras && atomicState?.deviceData?.cameras && atomicState?.deviceData?.cameras[devId]) {
+				devCodeIds["camera"] = it?.getDevTypeId()
 				def camData = ["data":atomicState?.deviceData?.cameras[devId], "mt":useMt, "debug":dbg, "logPrefix":logNamePrefix,
 						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestCamVer()?.ver?.toString(), "clientBl":clientBl,
 						"hcTimeout":hcCamTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg,
@@ -4278,6 +3941,7 @@ def updateChildData(force = false) {
 				return true
 			}
 			else if(devId && atomicState?.presDevice && devId == getNestPresId()) {
+				devCodeIds["presence"] = it?.getDevTypeId()
 				def pData = ["debug":dbg, "logPrefix":logNamePrefix, "tz":nestTz, "mt":useMt, "pres":locPresence, "apiIssues":api, "allowDbException":allowDbException,
 							"latestVer":latestPresVer()?.ver?.toString(), "clientBl":clientBl, "hcTimeout":hcLongTimeout, "mobileClientType":mobClientType, "hcRepairEnabled":hcRepairEnabled,
 							"enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg, "lastStrucDataUpd": atomicState?.lastStrucDataUpd, "isBeta":isBeta ]
@@ -4308,6 +3972,7 @@ def updateChildData(force = false) {
 				return true
 			}
 			else if(devId && atomicState?.weatherDevice && devId == getNestWeatherId()) {
+				devCodeIds["weather"] = it?.getDevTypeId()
 				def wData1 = ["weatCond":getWData(), "weatForecast":getWForecastData(), "weatAstronomy":getWAstronomyData(), "weatAlerts":getWAlertsData()]
 				def wData = ["data":wData1, "tz":nestTz, "mt":useMt, "debug":dbg, "logPrefix":logNamePrefix, "apiIssues":api, "htmlInfo":htmlInfo,
 							"allowDbException":allowDbException, "weathAlertNotif":settings?.weathAlertNotif, "latestVer":latestWeathVer()?.ver?.toString(),
@@ -4340,10 +4005,8 @@ def updateChildData(force = false) {
 				}
 				return true
 			}
-
 			else if(devId && atomicState?.vThermostats && atomicState?."vThermostat${devId}") {
 				def physdevId = atomicState?."vThermostatMirrorId${devId}"
-
 				if(physdevId && atomicState?.thermostats && atomicState?.deviceData?.thermostats && atomicState?.deviceData?.thermostats[physdevId]) {
 					def data = atomicState?.deviceData?.thermostats[physdevId]
 					def defmin = fixTempSetting(atomicState?."${physdevId}_safety_temp_min" ?: null)
@@ -4452,6 +4115,7 @@ def updateChildData(force = false) {
 				return true
 			}
 		}
+		atomicState?.devCodeIdData = devCodeIds
 	}
 	catch (ex) {
 		log.error "updateChildData Exception:", ex
@@ -6129,7 +5793,7 @@ def isStreamUpdateAvail() {
 def reqSchedInfoRprt(child, report=true) {
 	LogTrace("reqSchedInfoRprt: (${child.device.label})")
 	def result = null
-	if(!atomicState?.installData?.usingNewAutoFile) { return result }
+	// if(!atomicState?.installData?.usingNewAutoFile) { return result }
 
 	def tstat = getChildDevice(child.device.deviceNetworkId)
 	if (tstat) {
@@ -6796,14 +6460,6 @@ def addRemoveDevices(uninst = null) {
 	return retVal
 }
 
-/*
-def setMyLockId(val) {
-	if(atomicState?.myID == null && parent && val) {
-		atomicState.myID = val
-	}
-}
-*/
-
 def getMyLockId() {
 	if(parent) { return atomicState?.myID } else { return null }
 }
@@ -6833,9 +6489,10 @@ def addRemoveVthermostat(tstatdni, tval, myID) {
 
 	def devId = "v${odevId}"
 
-	def migrate = migrationInProgress()
+	// def migrate = migrationInProgress()
 
-	if(!migrate && atomicState?."vThermostat${devId}" && myID != atomicState?."vThermostatChildAppId${devId}") {
+	// if(!migrate && atomicState?."vThermostat${devId}" && myID != atomicState?."vThermostatChildAppId${devId}") {
+	if(atomicState?."vThermostat${devId}" && myID != atomicState?."vThermostatChildAppId${devId}") {
 		LogAction("addRemoveVthermostat() not ours ${myID} ${atomicState?."vThermostat${devId}"} ${atomicState?."vThermostatChildAppId${devId}"}", "trace", true)
 		//atomicState?."vThermostat${devId}" = false
 		//atomicState?."vThermostatChildAppId${devId}" = null
@@ -7377,18 +7034,6 @@ void finishFixState() {
 
 			def structs = getNestStructures()
 
-/* initManagerApp will do this
-			if(settings?.structures && atomicState?.structures && !atomicState.structName) {
-				if(structs && structs?."${atomicState?.structures}") {
-					atomicState.structName = "${structs[atomicState?.structures]}"
-				}
-			}
-			//def str = getApiData("str")
-			//def dev = getApiData("dev")
-			//def meta = getApiData("meta")
-*/
-
-// TODO ERS
 			fixDevAS()
 
 			if(settings?.thermostats || settings?.protects || settings?.cameras || settings?.presDevice || settings?.weatherDevice) {
@@ -7398,15 +7043,6 @@ void finishFixState() {
 			} else { atomicState.isInstalled = false }
 
 			initManagerApp()
-
-/* initManagerApp does this
-			def cApps = getChildApps()
-			if(cApps) {
-				cApps?.sort()?.each { chld ->
-					chld?.update()
-				}
-			}
-*/
 		}
 	} else {
 		LogAction("finishFixState called as CHILD", "error", true)
@@ -7472,13 +7108,13 @@ def stateCleanup() {
 		"curAlerts", "curAstronomy", "curForecast", "curWeather", "detailEventHistory", "detailExecutionHistory", "evalExecutionHistory", "lastForecastUpdDt", "lastWeatherUpdDt",
 		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName"
  	]
-	data.each { item ->
+	data?.each { item ->
 		state.remove(item?.toString())
 	}
 
 	data = [ "tDevVer", "pDevVer", "camDevVer", "presDevVer", "weatDevVer", "vtDevVer", "streamDevVer" ]
 	def sData = atomicState?.swVer ?: [:]
-	data.each { item ->
+	data?.each { item ->
 		state.remove(item?.toString())
 		sData["${item}"] = null
 	}
@@ -7687,29 +7323,23 @@ def daysOk(days) {
 
 // parent only Method
 def notificationTimeOk() {
-//	try {
-		def strtTime = null
-		def stopTime = null
-		def now = new Date()
-		def sun = getSunriseAndSunset() // current based on geofence, previously was: def sun = getSunriseAndSunset(zipCode: zipCode)
-		if(settings?.qStartTime && settings?.qStopTime) {
-			if(settings?.qStartInput == "sunset") { strtTime = sun.sunset }
-			else if(settings?.qStartInput == "sunrise") { strtTime = sun.sunrise }
-			else if(settings?.qStartInput == "A specific time" && settings?.qStartTime) { strtTime = settings?.qStartTime }
+	def strtTime = null
+	def stopTime = null
+	def now = new Date()
+	def sun = getSunriseAndSunset() // current based on geofence, previously was: def sun = getSunriseAndSunset(zipCode: zipCode)
+	if(settings?.qStartTime && settings?.qStopTime) {
+		if(settings?.qStartInput == "sunset") { strtTime = sun.sunset }
+		else if(settings?.qStartInput == "sunrise") { strtTime = sun.sunrise }
+		else if(settings?.qStartInput == "A specific time" && settings?.qStartTime) { strtTime = settings?.qStartTime }
 
-			if(settings?.qStopInput == "sunset") { stopTime = sun.sunset }
-			else if(settings?.qStopInput == "sunrise") { stopTime = sun.sunrise }
-			else if(settings?.qStopInput == "A specific time" && settings?.qStopTime) { stopTime = settings?.qStopTime }
-		} else { return true }
-		if(strtTime && stopTime) {
-			return timeOfDayIsBetween(strtTime, stopTime, new Date(), getTimeZone()) ? false : true
-		} else { return true }
-/*
-	} catch (ex) {
-		log.error "notificationTimeOk Exception:", ex
-		sendExceptionData(ex, "notificationTimeOk")
-	}
-*/
+		if(settings?.qStopInput == "sunset") { stopTime = sun.sunset }
+		else if(settings?.qStopInput == "sunrise") { stopTime = sun.sunrise }
+		else if(settings?.qStopInput == "A specific time" && settings?.qStopTime) { stopTime = settings?.qStopTime }
+	} else { return true }
+	if(strtTime && stopTime) {
+		return timeOfDayIsBetween(strtTime, stopTime, new Date(), getTimeZone()) ? false : true
+	} else { return true }
+
 }
 
 def time2Str(time) {
@@ -8042,6 +7672,226 @@ def sendFeedbackPage() {
 	}
 }
 
+def getAppIds() {
+	def appIds = atomicState?.appCodeIdData ?: [:]
+	if(appIds["main"] == null) {
+		appIds["main"] = app?.smartAppId
+		atomicState?.appCodeIdData = appIds
+	}
+    return appIds
+}
+
+def getDevIds() {
+    return atomicState?.devCodeIdData ?: [:]
+}
+
+def runStUpdateHtml() {
+    def html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>NST Manager Updates</title>
+        <meta http-equiv="cache-control" content="max-age=0"/>
+    	<meta http-equiv="cache-control" content="no-cache"/>
+    	<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
+    	<meta http-equiv="pragma" content="no-cache"/>
+        <meta name="viewport" content="width=640">
+        <meta charset="utf-8">
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
+        <script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
+		<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
+    </head>
+
+    <body>
+      <h1>NST Manager Updates</h1>
+      <svg id="loader" width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="rgb(0%, 51.3%, 100%)">
+        <g fill="none" fill-rule="evenodd">
+          <g transform="translate(1 1)" stroke-width="2">
+            <circle stroke-opacity=".5" cx="18" cy="18" r="18" />
+            <path d="M36 18c0-9.94-8.06-18-18-18">
+              <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite" />
+            </path>
+            <text x="50%" y="50%" text-anchor="middle" stroke="gray" style="font-size:0.3em; font-weight:normal;" fill="gray" stroke-width="0">Please Wait...</text>
+          </g>
+        </g>
+      </svg>
+      <div id="results"></div>
+      </br>
+      <div class="listDiv centered">
+    	 <div id="resultList">
+            <ul style="list-style: none;"></ul>
+         </div>
+      </div>
+      <script type="text/javascript">
+	  var appIds = new JsonOutput().toJson(${getAppIds()});
+	  var devIds = new JsonOutput().toJson(${getDevIds()});
+	  // console.log( "appIds", appIds);
+	  var createXhrRequest = function (url, appId, appDesc, httpMethod, message, callback) {
+		var xhr = new XMLHttpRequest();
+		xhr.open(httpMethod, url + appId, true);
+		xhr.onload = function () {
+		  if (xhr.readyState === xhr.DONE) {
+			callback(null, xhr, appId, appDesc);
+		  }
+		};
+		xhr.onerror = function () {
+		  callback(xhr);
+		};
+		xhr.send(message);
+	  };
+
+	  function runStUpdates() {
+		var request = new XMLHttpRequest();
+		request.open('GET', '${apiServerUrl("/hub")}', false);
+		request.send(null);
+		if (request.status === 200) {
+
+		  for (var i in appIds) {
+			  var appDesc = i.toString();
+			  if (appDesc !== undefined) {
+				if (appDesc.toString() === "main") { appType = "Manager"; }
+				else if (appDesc.toString() === "auto") { appType = "Automations"; }
+			  }
+			  \$('#loader text').text('Checking');
+			  createXhrRequest('${apiServerUrl("/github/appRepoStatus?appId=")}', appIds[i], appType, 'GET', null, function(err, resp, appId, appDesc) {
+				  if (err) {
+					installError(err);
+				  } else {
+					  // console.log("resp1(" + appId + "):", JSON.parse(resp.response));
+					  if (resp.status === 200) {
+						  let respData = JSON.parse(resp.response);
+						  if (respData.hasDifference === true) {
+							\$('#loader text').text('Updating');
+							createXhrRequest('${apiServerUrl("/ide/app/updateOneFromRepo/")}', appId, appDesc, 'GET', null, function(err, resp, appId, appDesc) {
+							  if (err) {
+								installError(err);
+							  } else {
+								  if (resp.status === 200) {
+									  if (!(JSON.parse(resp.response).errors.length)) {
+										  \$('#loader text').text('Compiling');
+										  // console.log("resp2(" + appId + "):", JSON.parse(resp.response));
+										  createXhrRequest('${apiServerUrl("/ide/app/publishAjax/")}', appId, appDesc,  'GET', null, function(err, resp, appId, appDesc) {
+											  if (err) {
+												installError(err);
+											  } else {
+												  if (resp.status === 200) {
+													  //console.log("resp3(" + appId + "):", JSON.parse(resp.response));
+													  \$("#resultList ul").append('<li><span style="color: #25c225;"><i class="fa fa-check"></i> </span>' + appDesc + ' is Up-to-Date</li>');
+												  }
+											  }
+										  });
+									  }
+								  }
+							  }
+							});
+						  } else {
+							\$("#resultList ul").append('<li><span style="color: #25c225;"><i class="fa fa-check"></i> </span>' + appDesc + ' is Up-to-Date</li>');
+						  }
+					  }
+				  }
+			  });
+		  }
+		  for (var i in devIds) {
+			  var devDesc = i.toString();
+			  if (devDesc !== undefined) {
+				if (devDesc.toString() === "tstat") { devType = "Thermostat"; }
+				else if (devDesc.toString() === "protect") { devType = "Protect"; }
+				else if (devDesc.toString() === "camera") { devType = "Camera"; }
+				else if (devDesc.toString() === "presence") { devType = "Presence"; }
+				else if (devDesc.toString() === "weather") { devType = "Weather"; }
+			  }
+			  \$('#loader text').text('Checking');
+			  createXhrRequest('${apiServerUrl("/github/deviceRepoStatus?deviceTypeId=")}', devIds[i], devType, 'GET', null, function(err, resp, devId, devDesc) {
+				  if (err) {
+					installError(err);
+				  } else {
+					  // console.log("resp1(" + appId + "):", JSON.parse(resp.response));
+					  if (resp.status === 200) {
+						  let respData = JSON.parse(resp.response);
+						  if (respData.hasDifference === true) {
+							\$('#loader text').text('Updating');
+							createXhrRequest('${apiServerUrl("/ide/device/updateOneFromRepo/")}', devId, devDesc, 'GET', null, function(err, resp, devId, devDesc) {
+							  if (err) {
+								installError(err);
+							  } else {
+								  if (resp.status === 200) {
+									  if (!(JSON.parse(resp.response).errors.length)) {
+										  \$('#loader text').text('Compiling');
+										  // console.log("resp2(" + appId + "):", JSON.parse(resp.response));
+										  createXhrRequest('${apiServerUrl("/ide/device/publishAjax/")}', devId, devDesc,  'GET', null, function(err, resp, devId, devDesc) {
+											  if (err) {
+												installError(err);
+											  } else {
+												  if (resp.status === 200) {
+													  //console.log("resp3(" + appId + "):", JSON.parse(resp.response));
+													  \$("#resultList ul").append('<li><span style="color: #25c225;"><i class="fa fa-check"></i> </span>' + devDesc + ' is Up-to-Date</li>');
+												  }
+											  }
+										  });
+									  }
+								  }
+							  }
+							});
+						  } else {
+							\$("#resultList ul").append('<li><span style="color: #25c225;"><i class="fa fa-check"></i> </span>' + devDesc + ' is Up-to-Date</li>');
+						  }
+					  }
+				  }
+			  });
+		  }
+		  installComplete();
+		} else {
+		  installError(request.response);
+		}
+	  }
+
+        function installError(err) {
+          console.log('installError:', err);
+          if (sessionStorage.refreshCount < 7) {
+            document.getElementById('results').innerHTML = 'Reloading Page in 3 seconds';
+            location.reload(true);
+          } else {
+            loader.style.display = 'none';
+            results.style.display = 'block';
+            document.getElementById('results').innerHTML = '<br><button onclick="location.reload();">Reload page</button>';
+          }
+        }
+
+        function installComplete() {
+          loader.style.display = 'none';
+          results.style.display = 'block';
+          document.getElementById('results').innerHTML = 'Update Progress!<br />';
+        }
+
+        window.onload = function() {
+          if (sessionStorage.refreshAgain === "false") {
+            document.getElementById('results').innerHTML = 'Waiting for connection...';
+          } else {
+            document.getElementById('results').innerHTML = 'Getting Updates';
+            runStUpdates();
+          }
+        }
+      	</script>
+        </body>
+        <script>
+            var url = new URL(window.location);
+            if (sessionStorage.refreshAgain === undefined || sessionStorage.refreshAgain === "true") {
+              sessionStorage.refreshCount = 1;
+              sessionStorage.refreshAgain = "false";
+              document.write('<meta http-equiv="refresh" content="3;' + url + '"/>');
+            } else {
+              sessionStorage.refreshAgain = "true";
+              sessionStorage.refreshCount = Number(sessionStorage.refreshCount) + 1;
+            }
+        </script>
+        </html>
+        """
+
+    render contentType: "text/html", data: html
+}
+
+
 def createManagerBackupDataJson() {
 	def noShow = ["authToken", "accessToken", "curAlerts", "curAstronomy", "curForecast", "curWeather"]
 	def sData = getSettings()?.sort()?.findAll { !(it.key in noShow) }
@@ -8261,7 +8111,7 @@ def renderDiagHome() {
 							<div class="row">
 								<div class="col-xs-2"></div>
 								<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Diagnostics Home (${atomicState?.structName})</img></h3>
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Diagnostics Home</img></h3>
 								</div>
 								<div class="col-xs-2 right-head-col pull-right">
 									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
@@ -8382,6 +8232,50 @@ def renderDiagHome() {
 		"""
 		render contentType: "text/html", data: html
 	} catch (ex) { log.error "renderDiagUrl Exception:", ex }
+}
+
+def renderDeviceTiles() {
+	def html = """
+		<head>
+			<meta charset="utf-8"/>
+			<meta http-equiv="cache-control" content="max-age=0"/>
+			<meta http-equiv="cache-control" content="no-cache"/>
+			<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
+			<meta http-equiv="pragma" content="no-cache"/>S
+			<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+			<meta name="description" content="NST Diagnostics">
+			<meta name="author" content="Anthony Santilli.">
+
+			<title>NST Device Tiles ${atomicState?.structName}</title>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+			<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+			<script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
+			<script src="https://fastcdn.org/FlowType.JS/1.1/flowtype.js"></script>
+			<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
+			<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+			<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+			<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
+			<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+			<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.1/css/swiper.min.css" />
+			<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css" />
+			<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css" />
+
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.1/js/swiper.min.js"></script>
+		</head>
+		<body>
+		"""
+		getChildDevices()?.each { cd->
+			if(cd?.hasHtml() != null) {
+				log.debug cd.getDeviceTile()
+				html += """${cd?.getDeviceTile()}"""
+			}
+		}
+
+		html += """
+		</body>
+
+	"""
+	render contentType: "text/html", data: html, status: 200
 }
 
 def dumpListDesc(data, level, List lastLevel, listLabel, html=false) {
@@ -8526,6 +8420,24 @@ def renderManagerData() {
 				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/src/html2pdf.js"></script>
 				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
 				<style>
+				.pushy {
+				    position: fixed;
+				    width: 250px;
+				    height: 100%;
+				    top: 0;
+				    z-index: 9999;
+				    background: #191918;
+				    opacity: 0.6;
+				    overflow: auto;
+				    -webkit-overflow-scrolling: touch;
+				    /* enables momentum scrolling in iOS overflow elements */
+				}
+				.nav-home-btn {
+				    padding: 20px 10px 0 10px;
+				    font-size: 22px;
+				    -webkit-text-stroke: white;
+				    -webkit-text-stroke-width: thin;
+				}
 				</style>
 			</head>
 			<body>
@@ -8558,7 +8470,7 @@ def renderManagerData() {
 									</div>
 						 		</div>
 						 		<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Manager Data ${atomicState?.structName}</img></h3>
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Manager Data</img></h3>
 						 		</div>
 						 		<div class="col-xs-2 right-head-col pull-right">
 									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
@@ -8585,7 +8497,6 @@ def renderManagerData() {
 
 									<div class="panel-body">
 					  					<div>
-
 										  	<div class="panel panel-default">
 										   		<div id="item${appNum}-settings" class="panel-heading">
 													<h1 class="panel-title subpanel-title-text">Setting Data:</h1>
@@ -8612,7 +8523,6 @@ def renderManagerData() {
 													<div><pre class="pre-scroll mapDataFmt">${metaDesc.toString().replaceAll("\n", "<br>")}</pre></div>
 										   		</div>
 										   	</div>
-
 										</div>
 									</div>
 
@@ -8749,7 +8659,7 @@ def renderAutomationData() {
 									</div>
 								</div>
 								<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Automation Data ${atomicState?.structName}</img></h3>
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Automation Data</img></h3>
 								</div>
 								<div class="col-xs-2 right-head-col pull-right">
 									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
@@ -8823,7 +8733,8 @@ def renderDeviceData() {
 		def devNum = 1
 		devices?.sort {it?.getLabel()}.each { dev ->
 			def navMap = [:]
-			navMap = ["key":dev?.getLabel(), "items":["Settings", "State", "Attributes", "Commands", "Capabilities"]]
+			def hasHtml = (dev?.hasHtml() == true)
+			navMap = ["key":dev?.getLabel(), "items":(hasHtml ? ["Tile", "Settings", "State", "Attributes", "Commands", "Capabilities"] : ["Settings", "State", "Attributes", "Commands", "Capabilities"])]
 			def navItems = navHtmlBuilder(navMap, devNum)
 			if(navItems?.html) { navHtml += navItems?.html }
 			if(navItems?.js) { scrStr += navItems?.js }
@@ -8842,7 +8753,16 @@ def renderDeviceData() {
 				commDesc += "${cnt>1 ? "\n\n" : "\n"} • ${cmd.name}(${!cmd?.arguments ? "" : cmd?.arguments.toString().toLowerCase().replaceAll("\\[|\\]", "")})"
 				cnt = cnt+1
 			}
-
+			def devTileHtml = !hasHtml ? "" : """
+				<div id="item${devNum}-tile" class="panel panel-default">
+					<div class="panel-heading">
+						<h1 class="panel-title subpanel-title-text">Device Tile:</h1>
+					</div>
+					<div class="panel-body">
+						<div>${dev?.getDeviceTile()}</div>
+					</div>
+				</div>
+			"""
 			def data = dev?.capabilities?.sort()?.collect {it as String}
 			def t0 = [ "capabilities":data ]
 			def capDesc = getMapDescStr(t0)
@@ -8853,6 +8773,7 @@ def renderDeviceData() {
 			 	</div>
 			 	<div class="panel-body">
 					<div>
+						${devTileHtml}
 					  	<div id="item${devNum}-settings" class="panel panel-default">
 					   		<div class="panel-heading">
 								<h1 class="panel-title subpanel-title-text">Setting Data:</h1>
@@ -8910,7 +8831,7 @@ def renderDeviceData() {
 				<meta name="HandheldFriendly" content="True">
 				<meta name="apple-mobile-web-app-capable" content="yes">
 
-				<title>NST Diagnostics ${atomicState?.structName} - Automation Data</title>
+				<title>NST Diagnostics (${atomicState?.structName}) - Device Data</title>
 
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 				<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
@@ -8925,9 +8846,20 @@ def renderDeviceData() {
 				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/vendor/jspdf.min.js"></script>
 				<script src="https://cdn.rawgit.com/eKoopmans/html2canvas/develop/dist/html2canvas.min.js"></script>
 				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/src/html2pdf.js"></script>
-				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
-				<style>
+				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/js/vex.combined.min.js"></script>
+				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.1/css/swiper.min.css" />
+				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css" />
+				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css" />
+				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.1/js/swiper.min.js"></script>
+				<script src="https://www.gstatic.com/charts/loader.js"></script>
+				<script>vex.defaultOptions.className = 'vex-theme-default'</script>
 
+				<style>
+				h1, h2, h3, h4, h5, h6 {
+					padding: 20px;
+				    margin: 4px;
+				}
 				</style>
 			</head>
 			<body>
@@ -8960,7 +8892,7 @@ def renderDeviceData() {
 									</div>
 								</div>
 								<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Device Data ${atomicState?.structName}</img></h3>
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Device Data</img></h3>
 								</div>
 								<div class="col-xs-2 right-head-col pull-right">
 									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
@@ -8985,6 +8917,7 @@ def renderDeviceData() {
 			  	</script>
 			</body>
 		"""
+		log.debug apiServerUrl("/api/rooms")
 		render contentType: "text/html", data: html
 	} catch (ex) { log.error "renderDeviceData Exception:", ex }
 }
@@ -9311,27 +9244,7 @@ def sendDataToSlack(data, pathVal, cmdType=null, type=null) {
 		if(!cmdType || cmdType == "post") {
 			asynchttp_v1.post(processFirebaseSlackResponse, params, [ type: "${typeDesc}"])
 			result = true
-/*
-			httpPostJson(params) { resp ->
-				respData = resp
-			}
-*/
 		}
-/*
-		if(respData) {
-			//log.debug "respData: ${respData}"
-			if(respData?.status == 200) {
-				LogAction("sendDataToSlack: ${typeDesc} Data Sent SUCCESSFULLY", "info", false)
-				result = true
-			}
-			else if(respData?.status == 400) {
-				LogAction("sendDataToSlack: 'Bad Request': ${respData?.status}", "error", true)
-			}
-			else {
-				LogAction("sendDataToSlack: 'Unexpected' Response: ${respData?.status}", "warn", true)
-			}
-		}
-*/
 	}
 	catch (ex) {
 		if(ex instanceof groovyx.net.http.HttpResponseException) {
@@ -9458,7 +9371,6 @@ def initAutoApp() {
 def uninstAutomationApp() {
 	LogTrace("uninstAutomationApp")
 	def autoType = getAutoType()
-	//def migrate = parent?.migrationInProgress()
 	if(autoType == "schMot") {
 		def myID = getMyLockId()
 		//if(schMotTstat && myID && parent && !migrate) {
@@ -9531,29 +9443,6 @@ def getAutoType() { return !parent ? "" : atomicState?.automationType }
 def getAutoIcon(type) {
 	if(type) {
 		switch(type) {
-/*
-			case "remSen":
-				return getAppImg("remote_sensor_icon.png")
-				break
-			case "fanCtrl":
-				return getAppImg("fan_control_icon.png")
-				break
-			case "conWat":
-				return getAppImg("open_window.png")
-				break
-			case "leakWat":
-				return getAppImg("leak_icon.png")
-				break
-			case "extTmp":
-				return getAppImg("external_temp_icon.png")
-				break
-			case "tMode":
-				return getAppImg("mode_setpoints_icon.png")
-				break
-			case "humCtrl":
-				return getAppImg("humidity_automation_icon.png")
-				break
-*/
 			case "nMode":
 				return getAppImg("mode_automation_icon.png")
 				break
@@ -9585,14 +9474,14 @@ def isSchMotConfigured() {
 }
 
 //These are here to catch any events that occur before the migration occurs
-def heartbeatAutomation() { return }
-def runAutomationEval() { return }
-def automationGenericEvt(evt) { return }
-def automationSafetyTempEvt(evt) { return }
-def nModeGenericEvt(evt) { return }
-def leakWatSensorEvt(evt) { return }
-def conWatContactEvt(evt) { return }
-def extTmpGenericEvt(evt) { return }
+// def heartbeatAutomation() { return }
+// def runAutomationEval() { return }
+// def automationGenericEvt(evt) { return }
+// def automationSafetyTempEvt(evt) { return }
+// def nModeGenericEvt(evt) { return }
+// def leakWatSensorEvt(evt) { return }
+// def conWatContactEvt(evt) { return }
+// def extTmpGenericEvt(evt) { return }
 
 def getAutomationType() {
 	return atomicState?.automationType ?: null
@@ -9634,131 +9523,6 @@ private timeDayOfWeekOptions() {
 	return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 }
 
-/*
-private getDayOfWeekName(date = null) {
-	if (!date) {
-		date = adjustTime(now())
-	}
-	switch (date.day) {
-		case 0: return "Sunday"
-		case 1: return "Monday"
-		case 2: return "Tuesday"
-		case 3: return "Wednesday"
-		case 4: return "Thursday"
-		case 5: return "Friday"
-		case 6: return "Saturday"
-	}
-	return null
-}
-
-private getDayOfWeekNumber(date = null) {
-	if (!date) {
-		date = adjustTime(now())
-	}
-	if (date instanceof Date) {
-		return date.day
-	}
-	switch (date) {
-		case "Sunday": return 0
-		case "Monday": return 1
-		case "Tuesday": return 2
-		case "Wednesday": return 3
-		case "Thursday": return 4
-		case "Friday": return 5
-		case "Saturday": return 6
-	}
-	return null
-}
-
-//adjusts the time to local timezone
-private adjustTime(time = null) {
-	if (time instanceof String) {
-		//get UTC time
-		time = timeToday(time, location.timeZone).getTime()
-	}
-	if (time instanceof Date) {
-		//get unix time
-		time = time.getTime()
-	}
-	if (!time) {
-		time = now()
-	}
-	if (time) {
-		return new Date(time + location.timeZone.getOffset(time))
-	}
-	return null
-}
-
-private formatLocalTime(time, format = "EEE, MMM d yyyy @ h:mm a z") {
-	if (time instanceof Long) {
-		time = new Date(time)
-	}
-	if (time instanceof String) {
-		//get UTC time
-		time = timeToday(time, location.timeZone)
-	}
-	if (!(time instanceof Date)) {
-		return null
-	}
-	def formatter = new java.text.SimpleDateFormat(format)
-	formatter.setTimeZone(location.timeZone)
-	return formatter.format(time)
-}
-
-private convertDateToUnixTime(date) {
-	if (!date) {
-		return null
-	}
-	if (!(date instanceof Date)) {
-		date = new Date(date)
-	}
-	return date.time - location.timeZone.getOffset(date.time)
-}
-
-private convertTimeToUnixTime(time) {
-	if (!time) {
-		return null
-	}
-	return time - location.timeZone.getOffset(time)
-}
-
-private formatTime(time, zone = null) {
-	//we accept both a Date or a settings' Time
-	return formatLocalTime(time, "h:mm a${zone ? " z" : ""}")
-}
-
-private formatHour(h) {
-	return (h == 0 ? "midnight" : (h < 12 ? "${h} AM" : (h == 12 ? "noon" : "${h-12} PM"))).toString()
-}
-
-def getActiveScheduleState() {
-	return atomicState?.activeSchedData ?: null
-}
-
-def okSym() {
-	return "✓"// ☑"
-}
-def notOkSym() {
-	return "✘"
-}
-
-def getRemSenTempSrc() {
-	return atomicState?.remoteTempSourceStr ?: null
-}
-
-def getAbrevDay(vals) {
-	def list = []
-	if(vals) {
-		//log.debug "days: $vals | (${vals?.size()})"
-		def len = (vals?.toString().length() < 7) ? 3 : 2
-		vals?.each { d ->
-			list.push(d?.toString().substring(0, len))
-		}
-	}
-	return list
-}
-*/
-
 def roundTemp(Double temp) {
 	if(temp == null) { return null }
 	def newtemp
@@ -9782,30 +9546,6 @@ def roundTemp(Double temp) {
 	}
 	return newtemp
 }
-
-/*
-def deviceInputToList(items) {
-	def list = []
-	if(items) {
-		items?.sort().each { d ->
-			list.push(d?.displayName.toString())
-		}
-		return list
-	}
-	return null
-}
-
-def inputItemsToList(items) {
-	def list = []
-	if(items) {
-		items?.each { d ->
-			list.push(d)
-		}
-		return list
-	}
-	return null
-}
-*/
 
 def getInputToStringDesc(inpt, addSpace = null) {
 	def cnt = 0
@@ -9906,17 +9646,6 @@ def getSafetyTemps(tstat, usedefault=true) {
 	return null
 }
 
-/*
-def getComfortHumidity(tstat) {
-	def maxHum = tstat?.currentValue("comfortHumidityMax") ?: 0
-	if(maxHum) {
-		//return ["min":minHumidity, "max":maxHumidity]
-		return maxHum
-	}
-	return null
-}
-*/
-
 def getComfortDewpoint(tstat, usedefault=true) {
 	def maxDew = tstat?.currentState("comfortDewpointMax")?.doubleValue
 	maxDew = maxDew ?: 0.0
@@ -9953,7 +9682,7 @@ def betaMarker()	{ return false }
 def appDevType()	{ return false }
 def inReview()		{ return false }
 def keepBackups()	{ return false }
-def allowMigration()	{ return true }
+// def allowMigration()	{ return true }
 def appDevName()	{ return appDevType() ? " (Dev)" : "" }
 def appInfoDesc()	{
 	def cur = atomicState?.appData?.updater?.versions?.app?.ver.toString()
