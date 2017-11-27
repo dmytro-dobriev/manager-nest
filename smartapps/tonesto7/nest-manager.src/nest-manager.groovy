@@ -6669,8 +6669,7 @@ def callback() {
 				atomicState.needStrPoll = true
 				atomicState?.needDevPoll = true
 				atomicState?.needMetaPoll = true
-				runIn(5, "finishRemap", [overwrite: true])
-
+				//runIn(5, "finishRemap", [overwrite: true])
 				success()
 
 			} else {
@@ -6685,20 +6684,20 @@ def callback() {
 	}
 }
 
-// ERSERS check remapping
-def finishRemap() {
-	checkRemapping()
-	atomicState.needToFinalize = true
-	runIn(21, "finalizeRemap", [overwrite: true])
-}
-
-def finalizeRemap() {
-	fixDevAS()
-	sendInstallSlackNotif(false)
-	atomicState.needToFinalize = false
-	initManagerApp()
-	state.remove("needToFinalize")
-}
+// // ERSERS check remapping
+// def finishRemap() {
+// 	checkRemapping()
+// 	atomicState.needToFinalize = true
+// 	runIn(21, "finalizeRemap", [overwrite: true])
+// }
+//
+// def finalizeRemap() {
+// 	fixDevAS()
+// 	sendInstallSlackNotif(false)
+// 	atomicState.needToFinalize = false
+// 	initManagerApp()
+// 	state.remove("needToFinalize")
+// }
 
 def revokeNestToken() {
 	if(atomicState?.authToken) {
