@@ -107,7 +107,7 @@ mappings {
 			path("/deviceTiles")	{action: [GET: "renderDeviceTiles"]}
 			path("/tstatTiles")		{action: [GET: "getTstatTiles"]}
 			path("/protectTiles")	{action: [GET: "getProtectTiles"]}
-			path("/cameraTiles")		{action: [GET: "getCamTiles"]}
+			path("/cameraTiles")	{action: [GET: "getCamTiles"]}
 			path("/weatherTile")	{action: [GET: "getWeatherTile"]}
 			path("/getLogData")		{action: [GET: "renderLogData"]}
 			//path("/getLogMap")	{action: [GET: "getLogMap"]}
@@ -393,6 +393,12 @@ def devicesPage() {
 			atomicState.weatherDevice = settings?.weatherDevice ?: null
 		}
 		if(isInstalled) {
+			section("Device Web Tiles:") {
+				if(atomicState?.thermostats) { href url: getAppEndpointUrl("tstatTiles"), style:"external", title:"Thermostat Tiles", description:"Tap to view", required: true,state: "complete", image: getAppImg("thermostat_icon.png") }
+				if(atomicState?.protects) { href url: getAppEndpointUrl("protectTiles"), style:"external", title:"Protect Tiles", description:"Tap to view", required: true,state: "complete", image: getAppImg("protect_icon.png") }
+				if(atomicState?.cameras) { href url: getAppEndpointUrl("cameraTiles"), style:"external", title:"Camera Tiles", description:"Tap to view", required: true,state: "complete", image: getAppImg("camera_icon.png") }
+				if(atomicState?.weatherDevice) { href url: getAppEndpointUrl("weatherTile"), style:"external", title:"Weather Tile", description:"Tap to view", required: true,state: "complete", image: getAppImg("weather_icon.png") }
+			}
 			if(atomicState?.protects) {
 				section("Nest Protect Alarm Simulation:") {
 					def dt = atomicState?.isAlarmCoTestActiveDt
@@ -3301,6 +3307,7 @@ def getApiData(type = null) {
 				if(type == "str") {
 					def t0 = resp?.data
 					//LogTrace("API Structure Resp.Data: ${t0}")
+					if(atomicState?.structData == null) { atomicState?.structData = t0 }
 					def chg = didChange(atomicState?.structData, t0, "str", "poll")
 					if(chg) {
 						result = true
@@ -3409,6 +3416,7 @@ def procNestResponse(resp, data) {
 			if(type == "str") {
 				def t0 = resp?.json
 				//LogTrace("API Structure Resp.Data: ${t0}")
+				if(atomicState?.structData == null) { atomicState?.structData = t0 }
 				def chg = didChange(atomicState?.structData, t0, "str", "poll(async)")
 				if(chg) {
 					str = true
@@ -3458,7 +3466,7 @@ def procNestResponse(resp, data) {
 		}
 
 	} catch (ex) {
-		log.error "procNestResponse (type: $type) Exception:", ex
+		log.error "procNestResponse (type: $type) | Exception:", ex
 		def tstr = (type == "str") ? "Structure" : ((type == "dev") ? "Device" : "Metadata")
 		tstr += " Poll async"
 		//LogAction("procNestResponse - Received $tstr: Resp (${resp?.status})", "error", true)
@@ -4335,7 +4343,7 @@ def setStructureAway(child, value, virtual=false) {
 	} else {
 		LogAction("setStructureAway - Setting Nest Location: (${child?.device?.displayName})${!devId ? "" : " ${devId}"} to (${val ? "Away" : "Home"})", "debug", true)
 		if(val) {
-			def ret = sendNestApiCmd(atomicState?.structures, apiVar().rootTypes.struct, apiVar().cmdObjs.away, "away", devId)
+			def ret = sendNestApiCmd(atomicState?.structures, apiVar()?.rootTypes?.struct, apiVar()?.cmdObjs?.away, "away", devId)
 			// Below is to ensure automations read updated value even if queued
 			if(ret && atomicState?.structData && atomicState?.structures && atomicState?.structData[atomicState?.structures]?.away) {
 				def t0 = atomicState?.structData
@@ -4346,7 +4354,7 @@ def setStructureAway(child, value, virtual=false) {
 			return ret
 		}
 		else {
-			def ret = sendNestApiCmd(atomicState?.structures, apiVar().rootTypes.struct, apiVar().cmdObjs.away, "home", devId)
+			def ret = sendNestApiCmd(atomicState?.structures, apiVar()?.rootTypes?.struct, apiVar()?.cmdObjs?.away, "home", devId)
 			if(ret && atomicState?.structData && atomicState?.structures && atomicState?.structData[atomicState?.structures]?.away) {
 				def t0 = atomicState?.structData
 				t0[atomicState?.structures].away = "home"
@@ -5136,7 +5144,9 @@ def deviceHealthNotify(child, Boolean isHealthy) {
 }
 
 def getLocationPresence() {
-	def away = atomicState?.structData && atomicState?.structures && atomicState?.structData[atomicState?.structures] && atomicState?.structData[atomicState?.structures]?.away ? atomicState?.structData[atomicState?.structures]?.away : null
+	def sData = atomicState?.structData
+	def sKey = atomicState?.structures
+	def away = sData && sKey && sData[sKey] && sData[sKey]?.away ? sData[sKey]?.away : null
 	return (away != null) ? away as String : null
 }
 
@@ -7107,7 +7117,6 @@ def stateCleanup() {
 
 	["oldTstatData", "oldCamData", "oldProtData", "oldPresData", "oldWeatherData", "lastCmdSentDt"]?.each { oi->
 		def oiRem = state?.findAll { it?.key?.toString().startsWith(oi) }.collect { it?.key }
-		log.debug "oiRem: ${oiRem}"
 		data = data+oiRem
 	}
 	data?.each { item ->
