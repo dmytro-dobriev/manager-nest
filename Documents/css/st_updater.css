@@ -94,7 +94,7 @@ h1 {
     font-family: 'Swiss 721 W01 Thin';
     color: #c8c2c2;
     margin-bottom: 0;
-    padding: 0 30px;
+    /* padding: 0 10px; */
     border-radius: 25px;
     border: 2px solid gray;
 }
