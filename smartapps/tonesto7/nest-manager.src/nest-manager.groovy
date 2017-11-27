@@ -6752,7 +6752,7 @@ def revokeCleanState() {
 def success() {
 	def message = """
 	<p>Your SmartThings Account is now connected to Nest!</p>
-	<p>Click 'Done' to finish setup.</p>
+	<p>Click <b>Done</b> or <b>Next</b> to proceed with the rest of the setup.</p>
 	"""
 	connectionStatus(message)
 }
@@ -6760,7 +6760,7 @@ def success() {
 def fail() {
 	def message = """
 	<p>The connection could not be established!</p>
-	<p>Click 'Done' to return to the menu.</p>
+	<p>Click <b>Done</b> or <b>Next</b> to return to the menu.</p>
 	"""
 	connectionStatus(message)
 }
@@ -6772,62 +6772,15 @@ def connectionStatus(message, redirectUrl = null) {
 		<!DOCTYPE html>
 		<html>
 		<head>
-		<meta name="viewport" content="width=640">
-		<title>SmartThings & Nest connection</title>
-		<style type="text/css">
-				@font-face {
-						font-family: 'Swiss 721 W01 Thin';
-						src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot');
-						src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot?#iefix') format('embedded-opentype'),
-								url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.woff') format('woff'),
-								url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.ttf') format('truetype'),
-								url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.svg#swis721_th_btthin') format('svg');
-						font-weight: normal;
-						font-style: normal;
-				}
-				@font-face {
-						font-family: 'Swiss 721 W01 Light';
-						src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot');
-						src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot?#iefix') format('embedded-opentype'),
-								url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.woff') format('woff'),
-								url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.ttf') format('truetype'),
-								url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.svg#swis721_lt_btlight') format('svg');
-						font-weight: normal;
-						font-style: normal;
-				}
-				.container {
-						width: 90%;
-						height: 100%
-						padding: 4%;
-						/*background: #eee;*/
-						text-align: center;
-						top: 0;
-				}
-				img {
-						vertical-align: middle;
-				}
-				p {
-						font-size: 2.2em;
-						font-family: 'Swiss 721 W01 Thin';
-						text-align: center;
-						color: #666666;
-						padding: 0 40px;
-						margin-bottom: 0;
-				}
-				span {
-						font-family: 'Swiss 721 W01 Light';
-				}
-				.logo {
-					width: 30%;
-					max-width: 130px;
-				}
-		</style>
+			<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+			<title>SmartThings & Nest connection</title>
+			<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/authresults.css">
 		</head>
 		<body>
-			<div class="container">
-				<img class="logo" src="https://s3.amazonaws.com/smartapp-icons/Partner/support/st-logo%402x.png" alt="SmartThings logo" />
-				<img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/connected-device-icn%402x.png" alt="connected device icon" />
-				<img class="logo" src="${getAppImg("nst_manager_icon%402x.png")}" alt="nest icon"/>
+			<div class="container" style="margin: auto; position: relative;">
+				<img class="stlogo" src="https://github.com/tonesto7/nest-manager/raw/master/Images/App/st-standalone-logo.png" alt="SmartThings logo" /></br></br>
+				<img class="linklogo" src="https://s3.amazonaws.com/smartapp-icons/Partner/support/connected-device-icn%402x.png" alt="connected device icon" /></br></br>
+				<img class="nestlogo" src="https://github.com/tonesto7/nest-manager/raw/master/Images/App/nst_manager_icon.png" alt="nest icon" />
 				${message}
 			</div>
 		</body>
@@ -7699,10 +7652,15 @@ def runStUpdateHtml() {
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
         <script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
 		<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
+		<style>
+		</style>
     </head>
 
     <body>
-      <h1>NST Manager Updater</h1>
+	  <div style="padding: 30px;">
+		<img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png" style=""/>
+		<span class="title-text"> NST Manager Updater</span>
+	  </div>
       <svg id="loader" width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="rgb(0%, 51.3%, 100%)">
         <g fill="none" fill-rule="evenodd">
           <g transform="translate(1 1)" stroke-width="2">
@@ -7844,9 +7802,7 @@ def runStUpdateHtml() {
 				  }
 			  });
 		  }
-		  if(lastApp === true && lastDev===true) {
-		  	installComplete();
-		  }
+		  installComplete(lastApp, lastDev);
 		} else {
 		  installError(request.response);
 		}
@@ -7864,10 +7820,14 @@ def runStUpdateHtml() {
           }
         }
 
-        function installComplete() {
-          loader.style.display = 'none';
-          results.style.display = 'block';
-          document.getElementById('results').innerHTML = 'Updates are Complete!<br />';
+        function installComplete(appsDone, devsDone) {
+			if(appsDone && devsDone) {
+			  loader.style.display = 'none';
+	          results.style.display = 'block';
+	          document.getElementById('results').innerHTML = 'Updates are Complete!<br />';
+		    } else {
+  	            document.getElementById('results').innerHTML = 'Updates in Progress<br />';
+			}
         }
 
         window.onload = function() {
