@@ -1214,6 +1214,15 @@ def getChgLogHtml() {
 
 def hasHtml() { return true }
 
+def getCamIframHtml() {
+	def id = getPublicVidID() ? getPublicVidID() : null
+	return id ? """
+		<div class="embed-responsive embed-responsive-16by9">
+			<iframe type="text/html" frameborder="0" width="480" height="394" src="//video.nest.com/embedded/live/${id}?autoplay=0" allowfullscreen></iframe>
+		</div>
+	""" : ""
+}
+
 def getCamHtml() {
 	try {
 		// These are used to determine the URL for the nest cam stream
@@ -1221,7 +1230,7 @@ def getCamHtml() {
 		def updateAvail = !state.updateAvailable ? "" : """<div class="greenAlertBanner">Device Update Available!</div>"""
 		def clientBl = state?.clientBl ? """<div class="brightRedAlertBanner">Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</div>""" : ""
 		def pubVidUrl = state?.public_share_url
-		def camHtml = (pubVidUrl && state?.camUUID && state?.isStreaming && state?.isOnline) ? showCamHtml() : hideCamHtml()
+		def camHtml = (pubVidUrl && state?.camUUID && state?.isStreaming && state?.isOnline) ? showCamHtml(false) : hideCamHtml()
 		def devBrdCastData = state?.devBannerData ?: null
 		def devBrdCastHtml = ""
 		if(devBrdCastData) {
@@ -1409,18 +1418,19 @@ def getDeviceTile(devNum) {
 		def updateAvail = !state.updateAvailable ? "" : """<div class="greenAlertBanner">Device Update Available!</div>"""
 		def clientBl = state?.clientBl ? """<div class="brightRedAlertBanner">Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</div>""" : ""
 		def pubVidUrl = state?.public_share_url
-		def camHtml = (pubVidUrl && state?.camUUID && state?.isStreaming && state?.isOnline) ? showCamHtml(false) : hideCamHtml()
+		def camHtml = (pubVidUrl && state?.camUUID && state?.isStreaming && state?.isOnline) ? showCamHtml(true) : hideCamHtml()
 		def mainHtml = """
 			${clientBl}
 			${updateAvail}
+			${getCamIframHtml()}
 			<div class="device">
 				<div class="swiper-container-${devNum}">
 					<div class="swiper-wrapper">
 						${camHtml}
 						<div class="swiper-slide">
-						  <section class="sectionBg">
+						  <section class="sectionBgTile">
 							<h3>Device Info</h3>
-							<table class="devInfo centerText">
+							<table class="devInfoTile centerText">
 							  <col width="40%">
 							  <col width="40%">
 							  <thead>
@@ -1435,8 +1445,8 @@ def getDeviceTile(devNum) {
 							  </tbody>
 							</table>
 						  </section>
-						  <section class="sectionBg">
-							<table class="devInfo centerText">
+						  <section class="sectionBgTile">
+							<table class="devInfoTile centerText">
 							  <col width="50%">
 							  <col width="50%">
 								<thead>
@@ -1451,8 +1461,8 @@ def getDeviceTile(devNum) {
 							  </tbody>
 							</table>
 						  </section>
-						  <section class="sectionBg">
-							<table class="devInfo centerText">
+						  <section class="sectionBgTile">
+							<table class="devInfoTile centerText">
 							  <col width="33%">
 							  <col width="33%">
 							  <col width="33%">
@@ -1468,8 +1478,8 @@ def getDeviceTile(devNum) {
 							  </tbody>
 							</table>
 						  </section>
-						  <section class="sectionBg">
-							<table class="devInfo centerText">
+						  <section class="sectionBgTile">
+							<table class="devInfoTile centerText">
 							  <col width="40%">
 							  <col width="20%">
 							  <col width="40%">
@@ -1485,16 +1495,16 @@ def getDeviceTile(devNum) {
 							  </tbody>
 							</table>
 						  </section>
-						  <section class="sectionBg">
-							<table class="devInfo centerText">
+						  <section class="sectionBgTile">
+							<table class="devInfoTile centerText">
 							   <thead>
 								 <th>Last Online Change</th>
 								 <th>Data Last Received</th>
 							   </thead>
 							   <tbody>
 								 <tr>
-								   <td class="dateTimeText">${state?.lastConnection.toString()}</td>
-								   <td class="dateTimeText">${state?.lastUpdatedDt.toString()}</td>
+								   <td class="dateTimeTextTile">${state?.lastConnection.toString()}</td>
+								   <td class="dateTimeTextTile">${state?.lastUpdatedDt.toString()}</td>
 								 </tr>
 							   </tbody>
 							 </table>
@@ -1503,7 +1513,7 @@ def getDeviceTile(devNum) {
 					</div>
 					<div class="swiper-pagination"></div>
 					<div style="text-align: center;">
-						<p class="slideFooterMsg">Swipe/Tap to Change Slide</p>
+						<p class="slideFooterMsgTile">Swipe/Drag to Change Slide</p>
 					</div>
 				</div>
 			</div>
@@ -1514,7 +1524,7 @@ def getDeviceTile(devNum) {
 					loop: true,
 					slidesPerView: '1',
 					centeredSlides: true,
-					spaceBetween: 200,
+					spaceBetween: 750,
 					autoHeight: true,
 					iOSEdgeSwipeDetection: true,
 					parallax: true,
@@ -1546,7 +1556,7 @@ def getDeviceTile(devNum) {
 	}
 }
 
-def showCamHtml(b64=true) {
+def showCamHtml(tile=false) {
 	def pubVidUrl = state?.public_share_url
 	if(!state?.camUUID) { getCamUUID(getPublicVidID()) }
 	def camUUID = state?.camUUID
@@ -1559,7 +1569,7 @@ def showCamHtml(b64=true) {
 	def camPlaylistUrl = "https://${liveStreamURL}/nexus_aac/${camUUID}/playlist.m3u8"
 
 	def animationUrl = state?.animation_url ? getFileBase64(state?.animation_url, 'image', 'gif') : null
-	def pubSnapUrl = state?.snapshot_url ? (b64 ? getFileBase64(state?.snapshot_url, 'image', 'jpeg') : state?.snapshot_url ) : null
+	def pubSnapUrl = state?.snapshot_url ? (!tile ? getFileBase64(state?.snapshot_url, 'image', 'jpeg') : state?.snapshot_url ) : null
 
 	def vidBtn = (!state?.isStreaming || !liveStreamURL) ? "" : """<a href="#" onclick="toggle_visibility('liveStream');" class="button yellow">Live Video</a>"""
 	def imgBtn = (!state?.isStreaming || !pubSnapUrl) ? "" : """<a href="#" onclick="toggle_visibility('still');" class="button blue">Still Image</a>"""
@@ -1569,9 +1579,9 @@ def showCamHtml(b64=true) {
 		<div class="swiper-slide">
 			${androidDisclaimerMsg()}
 			<div style="padding: 5px;">
-				<section class="sectionBg centerText">
+				<section class="${tile ? "sectionBgTile" : "sectionBg"} centerText">
 					<h3>Last Camera Event</h3>
-					<table class="devInfo">
+					<table class="${tile ? "devInfoTile" : "devInfo"}">
 					  <col width="45%">
 					  <col width="55%">
 					  <tbody>
@@ -1583,8 +1593,8 @@ def showCamHtml(b64=true) {
 					</table>
 				</section>
 				<img src="${animationUrl}" width="100%"/>
-				<section class="sectionBg centerText">
-					<table class="devInfo">
+				<section class="${tile ? "sectionBgTile" : "sectionBg"} centerText">
+					<table class="${tile ? "devInfoTile" : "devInfo"}">
 					  <col width="45%">
 					  <col width="55%">
 					  <thead>
@@ -1602,9 +1612,9 @@ def showCamHtml(b64=true) {
 			</div>
 		</div>
 		<div class="swiper-slide">
-			<section class="sectionBg">
+			<section class="${tile ? "sectionBgTile" : "sectionBg"}">
 				<h3>Still Image</h3>
-				<table class="devInfo centerText">
+				<table class="${tile ? "devInfoTile" : "devInfo"} centerText">
 				  <tbody>
 					<tr>
 					  <td>

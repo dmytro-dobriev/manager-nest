@@ -87,12 +87,19 @@ html, body {
 }
 
 .panel-title-text {
-    padding-top: 0.5em;
-    font-size: 24px;
+    /* padding-top: 0.5em; */
+    font-size: 1.2em;
+}
+.subpanel-title-text {
+    /* padding-top: 0.5em; */
+    font-size: 1em;
 }
 
-.subpanel-title-text {
-    font-size: 18px;
+.panel-heading {
+    padding: 0px 10px;
+    border-bottom: 1px solid transparent;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
 }
 
 .panelHeadTxt {
@@ -701,6 +708,12 @@ pre {
 .devInfo th {
    font-size: 3.8vw;
 }
+.devInfoTile th {
+   font-size: 2.0vw;
+}
+.devInfoTile h4 {
+   font-size: 1.5vw;
+}
 
 .device td {
  color: grey;
@@ -761,6 +774,10 @@ pre {
 
 .dateTimeText {
   font-size: 3.4vw;
+}
+
+.dateTimeTextTile {
+  font-size: 1.5vw;
 }
 
 .dateTimeTextSmall {
@@ -866,6 +883,12 @@ pre {
     margin:1em auto;
 }
 
+.slideFooterMsgTile {
+    font-size: 1.8vw;
+    padding: 20px;
+    margin:1em auto;
+}
+
 .pageFooterBtn {
     padding: 10px;
     horizontal-align: center;
@@ -934,7 +957,24 @@ pre {
     text-shadow: 1px 1px 1px black;
 }
 
+.sectionBgTile {
+    box-shadow: 0 1px 1px rgba(0,0,0,0.16), 0 1px 1px rgba(0,0,0,0.23);
+    background: white;
+}
+
+.sectionBgTile h3 {
+    background-color: #00a1db;
+    font-size: 2.5vw;
+    padding: 0.6vw;
+    text-shadow: 1px 1px 1px black;
+}
+
 .sectionBg table {
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+    background: white;
+}
+
+.sectionBgTile table {
     box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
     background: white;
 }
@@ -947,7 +987,14 @@ pre {
     text-decoration: underline;
     text-align: center;
 }
-
+.devInfoTile th {
+    color: #00a1db;
+    background: transparent;
+    font-size: 2.0vw;
+    text-shadow: 0px 0px 1px lightgray;
+    text-decoration: underline;
+    text-align: center;
+}
 .redText {
     color: red;
 }

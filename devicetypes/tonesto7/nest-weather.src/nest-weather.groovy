@@ -1806,7 +1806,6 @@ def getDeviceTile(devNum="") {
 	}
 }
 
-
 def historyGraphHtml(devNum="") {
 	def html = ""
 	if(state?.showGraphs) {

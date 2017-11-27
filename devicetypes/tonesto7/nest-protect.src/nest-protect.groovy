@@ -527,16 +527,16 @@ def addCheckinTime(val) {
 def determinePwrSrc() {
 	if(!state?.checkinTimeList) { state?.checkinTimeList = [] }
 	def checkins = state?.checkinTimeList
-	def checkinAvg = checkins?.size() ? (checkins?.sum()/checkins?.size()).toDouble().round(0).toInteger() : null //
+	def checkinAvg = checkins?.size() ? ( checkins?.sum()?.div(checkins?.size()))?.toDouble()?.round(0).toInteger() : null //
 	if(checkins?.size() > 7) {
 		if(checkinAvg && checkinAvg < 10000) {
 			powerTypeEvent(true)
-		} else { powerTypeEvent(false) }
+		} else { powerTypeEvent() }
 	}
 	//log.debug "checkins: $checkins | Avg: $checkinAvg"
 }
 
-def powerTypeEvent(wired) {
+def powerTypeEvent(wired=false) {
 	def curVal = device.currentState("powerSourceNest")?.value
 	def newValSt = wired == true ? "wired" : "battery"
 	def newVal = wired == true ? "mains" : "battery"
@@ -765,7 +765,7 @@ def getCarbonImg(b64=true) {
 	//values in ST are tested, clear, detected
 	//values from nest are ok, warning, emergency
 	def img = ""
-	def caption = "${carbonVal?.toString().toUpperCase()}"
+	def caption = "${carbonVal ? carbonVal?.toString().toUpperCase() : ""}"
 	def captionClass = ""
 	switch(carbonVal) {
 		case "warning":
@@ -789,7 +789,7 @@ def getSmokeImg(b64=true) {
 	//values in ST are tested, clear, detected
 	//values from nest are ok, warning, emergency
 	def img = ""
-	def caption = "${smokeVal?.toString().toUpperCase()}"
+	def caption = "${smokeVal ? smokeVal?.toString().toUpperCase() : ""}"
 	def captionClass = ""
 	switch(smokeVal) {
 		case "warning":
@@ -1096,9 +1096,9 @@ def getDeviceTile(devNum) {
 		  ${clientBl}
 		  ${updateAvail}
 		  <div class="device" style="padding: 10px; max-width: 1000px;">
-			  <section class="sectionBg">
+			  <section class="sectionBgTile">
 				  <h3>Alarm Status</h3>
-				  <table class="devInfo">
+				  <table class="devInfoTile">
 				    <col width="48%">
 				    <col width="48%">
 				    <thead>
@@ -1120,9 +1120,9 @@ def getDeviceTile(devNum) {
 				  </table>
 			  </section>
 			  <br>
-			  <section class="sectionBg">
+			  <section class="sectionBgTile">
 			  	<h3>Device Info</h3>
-				<table class="devInfo">
+				<table class="devInfoTile">
 					<col width="33%">
 					<col width="33%">
 					<col width="33%">
@@ -1134,14 +1134,14 @@ def getDeviceTile(devNum) {
 					<tbody>
 					  <tr>
 					  <td${state?.onlineStatus != "online" ? """ class="redText" """ : ""}>${state?.onlineStatus.toString().capitalize()}</td>
-					  <td>${state?.powerSource.toString().capitalize()}</td>
+					  <td>${state?.powerSource != null ? state?.powerSource.toString().capitalize() : "Not Available Yet"}</td>
 					  <td${state?.apiStatus != "Good" ? """ class="orangeText" """ : ""}>${state?.apiStatus}</td>
 					  </tr>
 					</tbody>
 				</table>
 			</section>
-			<section class="sectionBg">
-				<table class="devInfo">
+			<section class="sectionBgTile">
+				<table class="devInfoTile">
 					<col width="40%">
 					<col width="20%">
 					<col width="40%">
@@ -1159,16 +1159,16 @@ def getDeviceTile(devNum) {
 					</tbody>
 			  	</table>
 			  </section>
-			  <section class="sectionBg">
-  				<table class="devInfo">
+			  <section class="sectionBgTile">
+  				<table class="devInfoTile">
 				  <thead>
 					<th>Last Check-In</th>
 					<th>Data Last Received</th>
 				  </thead>
 				  <tbody>
 					<tr>
-					  <td class="dateTimeText">${state?.lastConnection.toString()}</td>
-					  <td class="dateTimeText">${state?.lastUpdatedDt.toString()}</td>
+					  <td class="dateTimeTextTile">${state?.lastConnection.toString()}</td>
+					  <td class="dateTimeTextTile">${state?.lastUpdatedDt.toString()}</td>
 					</tr>
 				  </tbody>
 				</table>

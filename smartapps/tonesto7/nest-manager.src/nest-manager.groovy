@@ -36,15 +36,15 @@ definition(
 }
 
 def appVersion() { "5.3.0" }
-def appVerDate() { "11-25-2017" }
+def appVerDate() { "11-27-2017" }
 def minVersions() {
 	return [
-		"automation":["val":520, "desc":"5.2.0"],
-		"thermostat":["val":520, "desc":"5.2.0"],
-		"protect":["val":520, "desc":"5.2.0"],
-		"presence":["val":520, "desc":"5.2.0"],
-		"weather":["val":520, "desc":"5.2.0"],
-		"camera":["val":520, "desc":"5.2.0"],
+		"automation":["val":530, "desc":"5.3.0"],
+		"thermostat":["val":530, "desc":"5.3.0"],
+		"protect":["val":530, "desc":"5.3.0"],
+		"presence":["val":530, "desc":"5.3.0"],
+		"weather":["val":530, "desc":"5.3.0"],
+		"camera":["val":530, "desc":"5.3.0"],
 		"stream":["val":101, "desc":"1.0.1"]
 	]
 }
@@ -105,6 +105,10 @@ mappings {
 		if(settings?.enDiagWebPage == true || getDevOpt()) {
 			path("/diagHome")		{action: [GET: "renderDiagHome"]}
 			path("/deviceTiles")	{action: [GET: "renderDeviceTiles"]}
+			path("/tstatTiles")		{action: [GET: "getTstatTiles"]}
+			path("/protectTiles")	{action: [GET: "getProtectTiles"]}
+			path("/cameraTiles")		{action: [GET: "getCamTiles"]}
+			path("/weatherTile")	{action: [GET: "getWeatherTile"]}
 			path("/getLogData")		{action: [GET: "renderLogData"]}
 			//path("/getLogMap")	{action: [GET: "getLogMap"]}
 			path("/getManagerData")	{action: [GET: "renderManagerData"]}
@@ -113,9 +117,6 @@ mappings {
 			path("/getInstData")	{action: [GET: "renderInstData"]}
 			path("/getAppData")		{action: [GET: "renderAppData"]}
 		}
-		// path("/execCmd/:command")	{action: [GET: "execCmd"]}
-		// path("/setData/:value")		{action: [GET: "getSetData", POST: "updateSetData", DELETE: "delSetData"]}
-		// path("/stateData/:value")	{action: [GET: "getStateData", POST: "updateStateData", DELETE: "delStateData"]}
 		path("/stupdate") 			{action: [GET: "runStUpdateHtml"]}
 		path("/renderInstallData")	{action: [GET: "renderInstallData"]}
 		path("/receiveEventData") 	{action: [POST: "receiveEventData"]}
@@ -248,7 +249,7 @@ def mainPage() {
 		if(isInstalled) {
 			if(settings?.structures && !atomicState?.structures) { atomicState.structures = settings?.structures }
 			section("Devices & Location:") {
-				paragraph "Home/Away Status: (${strCapitalize(getLocationPresence())})", title: "Location: ${atomicState?.structName}", state: "complete",  image: getAppImg("thermostat_icon.png")
+				paragraph "Home/Away Status: (${strCapitalize(getLocationPresence() ?: "Not Available Yet!")})", title: "Location: ${atomicState?.structName}", state: "complete",  image: getAppImg("thermostat_icon.png")
 				def t1 = getDevicesDesc(false)
 				def devDesc = t1 ? "${t1}\n\nTap to modify devices" : "Tap to configure"
 				href "deviceSelectPage", title: "Manage Devices", description: devDesc, state: "complete", image: "blank_icon.png"
@@ -1658,7 +1659,7 @@ def debugPrefPage() {
 			else { LogAction("Reset Application Data Disabled", "info", true) }
 		}
 		if(settings?.appDebug || settings?.childDebug) {
-			if(atomicState?.timestampDtMap["debugEnableDt"] == null) { updTimestampMap("debugEnableDt", getDtNow()) }
+			if(getTimestampVal("debugEnableDt") == null) { updTimestampMap("debugEnableDt", getDtNow()) }
 		} else { updTimestampMap("debugEnableDt", null) }
 		atomicState.needChildUpd = true
 
@@ -1725,12 +1726,12 @@ void diagLogProcChange(setOn) {
 	def doInit = false
 	def msg = "Remote Diagnostic Logs "
 	if(diagAllowed && setOn) {
-		if(!atomicState?.enRemDiagLogging && atomicState?.timestampDtMap["remDiagLogActivatedDt"] == null) {
+		if(!atomicState?.enRemDiagLogging && getTimestampVal("remDiagLogActivatedDt") == null) {
 			msg += "activated"
 			doInit = true
 		}
 	} else {
-		if(atomicState?.timestampDtMap["remDiagLogActivatedDt"] != null) {
+		if(getTimestampVal("remDiagLogActivatedDt") != null) {
 			msg += "deactivated"
 			settingUpdate("enRemDiagLogging", "false","bool")
 			atomicState?.enRemDiagLogging = false
@@ -1763,18 +1764,7 @@ void diagLogProcChange(setOn) {
 	}
 }
 
-/*
-def genRandId(int length){
-	String alphabet = new String("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
-	int n = alphabet.length()
-	String result = new String()
-	Random r = new Random()
-	for (int i=0; i<length; i++) { result = result + alphabet.charAt(r.nextInt(n)) }
-	return result
-}
-*/
-
-def getRemDiagActSec() { return !atomicState?.timestampDtMap["remDiagLogActivatedDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["remDiagLogActivatedDt"], null, "getRemDiagActSec").toInteger() }
+def getRemDiagActSec() { return !getTimestampVal("remDiagLogActivatedDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("remDiagLogActivatedDt"), null, "getRemDiagActSec").toInteger() }
 def getLastRemDiagSentSec() { return !atomicState?.remDiagDataSentDt ? 1000 : GetTimeDiffSeconds(atomicState?.remDiagDataSentDt, null, "getLastRemDiagSentSec").toInteger() }
 
 def changeLogPage () {
@@ -1948,7 +1938,6 @@ def getNotifSchedDesc() {
 	return (notifDesc != "") ? "${notifDesc}" : null
 }
 
-
 def getWeatherConfDesc() {
 	def str = ""
 	def defZip = getStZipCode() ? getStZipCode() : getNestZipCode()
@@ -2025,10 +2014,10 @@ def nestLoginPrefPage () {
 			def formatVal = settings?.useMilitaryTime ? "MMM d, yyyy - HH:mm:ss" : "MMM d, yyyy - h:mm:ss a"
 			def tf = new SimpleDateFormat(formatVal)
 			if(getTimeZone()) { tf.setTimeZone(getTimeZone()) }
-			updTimestampMap("authTokenCreatedDt", (atomicState?.timestampDtMap["authTokenCreatedDt"] ?: getDtNow()))
+			updTimestampMap("authTokenCreatedDt", (getTimestampVal("authTokenCreatedDt") ?: getDtNow()))
 			section() {
-				paragraph title: "Authorization Info:", "Authorization Date:\n• ${tf?.format(Date.parse("E MMM dd HH:mm:ss z yyyy", atomicState?.timestampDtMap["authTokenCreatedDt"]))}", state: "complete"
-				paragraph "Last Nest Connection:\n• ${tf?.format(Date.parse("E MMM dd HH:mm:ss z yyyy", atomicState?.timestampDtMap["lastDevDataUpd"]))}"
+				paragraph title: "Authorization Info:", "Authorization Date:\n• ${tf?.format(Date.parse("E MMM dd HH:mm:ss z yyyy", getTimestampVal("authTokenCreatedDt")))}", state: "complete"
+				paragraph "Last Nest Connection:\n• ${tf?.format(Date.parse("E MMM dd HH:mm:ss z yyyy", getTimestampVal("lastDevDataUpd")))}"
 			}
 			section("Revoke Authorization Reset:") {
 				href "nestTokenResetPage", title: "Log Out and Reset Nest Token", description: "Tap to Reset Nest Token", required: true, state: null, image: getAppImg("reset_icon.png")
@@ -3033,7 +3022,7 @@ def setPollingState() {
 			LogAction("POLL scheduled (${random_int} ${random_dint}/${timgcd} * * * ?)", "info", true)
 			schedule("${random_int} ${random_dint}/${timgcd} * * * ?", poll)	// this runs every timgcd minutes
 			def timChk = atomicState?.streamPolling ? 1200 : 240
-			if(!atomicState?.timestampDtMap["lastDevDataUpd"] || getLastDevicePollSec() > timChk) {
+			if(!getTimestampVal("lastDevDataUpd") || getLastDevicePollSec() > timChk) {
 				if(atomicState.streamPolling) {
 					poll()
 				} else { poll(true) }
@@ -3930,7 +3919,7 @@ def updateChildData(force = false) {
 				devCodeIds["presence"] = it?.getDevTypeId()
 				def pData = ["debug":dbg, "logPrefix":logNamePrefix, "tz":nestTz, "mt":useMt, "pres":locPresence, "apiIssues":api, "allowDbException":allowDbException,
 							"latestVer":latestPresVer()?.ver?.toString(), "clientBl":clientBl, "hcTimeout":hcLongTimeout, "mobileClientType":mobClientType, "hcRepairEnabled":hcRepairEnabled,
-							"enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg, "lastStrucDataUpd": atomicState?.timestampDtMap["lastStrucDataUpd"], "isBeta":isBeta ]
+							"enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg, "lastStrucDataUpd": getTimestampVal("lastStrucDataUpd"), "isBeta":isBeta ]
 				def oldPresData = atomicState?."oldPresData${devId}"
 				def pDataChecksum = generateMD5_A(pData.toString())
 				atomicState."oldPresData${devId}" = pDataChecksum
@@ -4124,6 +4113,12 @@ void updTimestampMap(keyName, dt=null) {
 	atomicState?.timestampDtMap = data
 }
 
+def getTimestampVal(val) {
+	def tsData = atomicState?.timestampDtMap
+	if(val && tsData && tsData[val]) { return tsData[val] }
+	return null
+}
+
 def tUnitStr() {
 	return "°${getTemperatureScale()}"
 }
@@ -4182,7 +4177,7 @@ void virtDevLblHandler(devId, devLbl, devMethAbrev, abrevStr, ovrRideNames) {
 def apiIssues() {
 	def t0 = atomicState?.apiIssuesList ?: [false, false, false, false, false, false, false]
 	def result = t0[3..-1].every { it == true } ? true : false
-	def dt = atomicState?.timestampDtMap["apiIssueDt"]
+	def dt = getTimestampVal("apiIssueDt")
 	if(result) {
 		LogAction("Nest API Issues ${dt ? "may still be occurring. Status will clear when last updates are good (Last Updates: ${t0}) | Issues began at ($dt) " : "Detected (${getDtNow()})"}", "warn", true)
 	}
@@ -4263,12 +4258,12 @@ def isPollAllowed() {
 		(atomicState?.thermostats || atomicState?.protects || atomicState?.weatherDevice || atomicState?.cameras)) ? true : false
 }
 
-def getLastMetaPollSec() { return !atomicState?.timestampDtMap["lastMetaDataUpd"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastMetaDataUpd"], null, "getLastMetaPollSec").toInteger() }
-def getLastDevicePollSec() { return !atomicState?.timestampDtMap["lastDevDataUpd"] ? 840 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastDevDataUpd"], null, "getLastDevicePollSec").toInteger() }
-def getLastStructPollSec() { return !atomicState?.timestampDtMap["lastStrucDataUpd"] ? 1000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastStrucDataUpd"], null, "getLastStructPollSec").toInteger() }
-def getLastForcedPollSec() { return !atomicState?.timestampDtMap["lastForcePoll"] ? 1000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastForcePoll"], null, "getLastForcedPollSec").toInteger() }
-def getLastChildUpdSec() { return !atomicState?.timestampDtMap["lastChildUpdDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastChildUpdDt"], null, "getLastChildUpdSec").toInteger() }
-def getLastHeardFromNestSec() { return !atomicState?.timestampDtMap["lastHeardFromNestDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastHeardFromNestDt"], null, "getLastHeardFromNestSec").toInteger() }
+def getLastMetaPollSec() { return !getTimestampVal("lastMetaDataUpd") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastMetaDataUpd"), null, "getLastMetaPollSec").toInteger() }
+def getLastDevicePollSec() { return !getTimestampVal("lastDevDataUpd") ? 840 : GetTimeDiffSeconds(getTimestampVal("lastDevDataUpd"), null, "getLastDevicePollSec").toInteger() }
+def getLastStructPollSec() { return !getTimestampVal("lastStrucDataUpd") ? 1000 : GetTimeDiffSeconds(getTimestampVal("lastStrucDataUpd"), null, "getLastStructPollSec").toInteger() }
+def getLastForcedPollSec() { return !getTimestampVal("lastForcePoll") ? 1000 : GetTimeDiffSeconds(getTimestampVal("lastForcePoll"), null, "getLastForcedPollSec").toInteger() }
+def getLastChildUpdSec() { return !getTimestampVal("lastChildUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastChildUpdDt"), null, "getLastChildUpdSec").toInteger() }
+def getLastHeardFromNestSec() { return !getTimestampVal("lastHeardFromNestDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastHeardFromNestDt"), null, "getLastHeardFromNestSec").toInteger() }
 
 /************************************************************************************************
 |										Nest API Commands										|
@@ -4276,7 +4271,7 @@ def getLastHeardFromNestSec() { return !atomicState?.timestampDtMap["lastHeardFr
 
 private cmdProcState(Boolean value) { atomicState?.cmdIsProc = value }
 private cmdIsProc() { return (!atomicState?.cmdIsProc) ? false : true }
-private getLastProcSeconds() { return atomicState?.timestampDtMap["cmdLastProcDt"] ? GetTimeDiffSeconds(atomicState?.timestampDtMap["cmdLastProcDt"], null, "getLastProcSeconds") : 0 }
+private getLastProcSeconds() { return getTimestampVal("cmdLastProcDt") ? GetTimeDiffSeconds(getTimestampVal("cmdLastProcDt"), null, "getLastProcSeconds") : 0 }
 
 def apiVar() {
 	def api = [
@@ -4716,7 +4711,7 @@ def sendEcoActionDescToDevice(dev, desc) {
 	}
 }
 
-private getLastCmdSentSeconds(qnum) { return atomicState?.timestampDtMap["lastCmdSentDt${qnum}"] ? GetTimeDiffSeconds(atomicState?.timestampDtMap["lastCmdSentDt${qnum}"], null, "getLastCmdSentSeconds") : 3601 }
+private getLastCmdSentSeconds(qnum) { return getTimestampVal("lastCmdSentDt${qnum}") ? GetTimeDiffSeconds(getTimestampVal("lastCmdSentDt${qnum}"), null, "getLastCmdSentSeconds") : 3601 }
 
 private setLastCmdSentSeconds(qnum, val) {
 	updTimestampMap("lastCmdSentDt${qnum}", val)
@@ -5106,13 +5101,13 @@ def incAppNotifSentCnt() {
 *************************************************************************************************/
 def pushStatus() { return (settings?.recipients || settings?.phone || settings?.usePush) ? (settings?.usePush ? "Push Enabled" : "Enabled") : null }
 //def getLastMsgSec() { return !atomicState?.lastMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastMsgDt, null, "getLastMsgSec").toInteger() }
-def getLastUpdMsgSec() { return !atomicState?.timestampDtMap["lastUpdMsgDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastUpdMsgDt"], null, "getLastUpdMsgSec").toInteger() }
-def getLastMissPollMsgSec() { return !atomicState?.timestampDtMap["lastMisPollMsgDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastMisPollMsgDt"], null, "getLastMissPollMsgSec").toInteger() }
-def getLastApiIssueMsgSec() { return !atomicState?.timestampDtMap["lastApiIssueMsgDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastApiIssueMsgDt"], null, "getLastApiIssueMsgSec").toInteger() }
-def getLastLogRemindMsgSec() { return !atomicState?.timestampDtMap["lastLogRemindMsgDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastLogRemindMsgDt"], null, "getLastLogRemindMsgSec").toInteger() }
-def getLastFailedCmdMsgSec() { return !atomicState?.timestampDtMap["lastFailedCmdMsgDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastFailedCmdMsgDt"], null, "getLastFailedCmdMsgSec").toInteger() }
+def getLastUpdMsgSec() { return !getTimestampVal("lastUpdMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastUpdMsgDt"), null, "getLastUpdMsgSec").toInteger() }
+def getLastMissPollMsgSec() { return !getTimestampVal("lastMisPollMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastMisPollMsgDt"), null, "getLastMissPollMsgSec").toInteger() }
+def getLastApiIssueMsgSec() { return !getTimestampVal("lastApiIssueMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastApiIssueMsgDt"), null, "getLastApiIssueMsgSec").toInteger() }
+def getLastLogRemindMsgSec() { return !getTimestampVal("lastLogRemindMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastLogRemindMsgDt"), null, "getLastLogRemindMsgSec").toInteger() }
+def getLastFailedCmdMsgSec() { return !getTimestampVal("lastFailedCmdMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastFailedCmdMsgDt"), null, "getLastFailedCmdMsgSec").toInteger() }
 def getLastDevHealthMsgSec() { return !atomicState?.lastDevHealthMsgData?.dt ? 100000 : GetTimeDiffSeconds(atomicState?.lastDevHealthMsgData?.dt, null, "getLastDevHealthMsgSec").toInteger() }
-def getDebugLogsOnSec() { return !atomicState?.timestampDtMap["debugEnableDt"] ? 0 : GetTimeDiffSeconds(atomicState?.timestampDtMap["debugEnableDt"], null, "getDebugLogsOnSec").toInteger() }
+def getDebugLogsOnSec() { return !getTimestampVal("debugEnableDt") ? 0 : GetTimeDiffSeconds(getTimestampVal("debugEnableDt"), null, "getDebugLogsOnSec").toInteger() }
 
 def getRecipientsSize() { return !settings.recipients ? 0 : settings?.recipients?.size() }
 
@@ -5161,9 +5156,9 @@ def apiIssueNotify(msgOn, rateOn, wait) {
 	if(!msgOn || !wait || !(getLastApiIssueMsgSec() > wait.toInteger())) { return }
 	def apiIssue = apiIssues() ? true : false
 	def rateLimit = (rateOn && atomicState?.apiRateLimited) ? true : false
-	if((apiIssue && !atomicState?.timestampDtMap["apiIssueDt"]) || rateLimit) {
+	if((apiIssue && !getTimestampVal("apiIssueDt")) || rateLimit) {
 		def msg = ""
-		msg += !rateLimit && apiIssue ? "\nThe Nest API appears to be having issues. This will effect the updating of device and location data.\nThe issues started at (${atomicState?.timestampDtMap["apiIssueDt"]})" : ""
+		msg += !rateLimit && apiIssue ? "\nThe Nest API appears to be having issues. This will effect the updating of device and location data.\nThe issues started at (${getTimestampVal("apiIssueDt")})" : ""
 		msg += rateLimit ? "${apiIssue ? "\n\n" : "\n"}Your API connection is currently being Rate-limited for excessive commands." : ""
 		if(sendMsg("${app?.name} API Issue Warning", msg, true)) {
 			updTimestampMap("lastApiIssueMsgDt", getDtNow())
@@ -5187,7 +5182,7 @@ def failedCmdNotify(failData, tstr) {
 
 def loggingRemindNotify(msgOn) {
 	if(   !(settings?.appDebug || settings?.childDebug) || !msgOn || !(getLastLogRemindMsgSec() > 86400)) { return }
-	if(atomicState?.timestampDtMap["debugEnableDt"] == null) { updTimestampMap("debugEnableDt", getDtNow()) }
+	if(getTimestampVal("debugEnableDt") == null) { updTimestampMap("debugEnableDt", getDtNow()) }
 	def dbgAlert = (getDebugLogsOnSec() > 86400)
 	if(dbgAlert) {
 		def msg = "Your debug logging has remained enabled for more than 24 hours please disable them to reduce resource usage on ST platform."
@@ -5200,7 +5195,7 @@ def loggingRemindNotify(msgOn) {
 def missPollNotify(on) {
 	def theWait = settings?.misPollNotifyWaitVal ?: 1800
 	if(getLastDevicePollSec() < theWait.toInteger()) {
-		if(!atomicState?.timestampDtMap["lastDevDataUpd"]) {
+		if(!getTimestampVal("lastDevDataUpd")) {
 			def now = new Date()
 			def val = new Date(now.time - ( (theWait.toInteger()+1) * 60 * 1000) ) // if uninitialized, set 31 mins in past
  			updTimestampMap("lastDevDataUpd", formatDt(val))
@@ -5337,11 +5332,11 @@ def sendMsg(msgType, msg, showEvt=true, people = null, sms = null, push = null, 
 	return sent
 }
 
-def getLastWebUpdSec() { return !atomicState?.timestampDtMap["lastWebUpdDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastWebUpdDt"], null, "getLastWebUpdSec").toInteger() }
-def getLastWeatherUpdSec() { return !atomicState?.timestampDtMap["lastWeatherUpdDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastWeatherUpdDt"], null, "getLastWeatherUpdSec").toInteger() }
-def getLastForecastUpdSec() { return !atomicState?.timestampDtMap["lastForecastUpdDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastForecastUpdDt"], null, "getLastForecastUpdSec").toInteger() }
-def getLastAnalyticUpdSec() { return !atomicState?.timestampDtMap["lastAnalyticUpdDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastAnalyticUpdDt"], null, "getLastAnalyticUpdSec").toInteger() }
-def getLastUpdateMsgSec() { return !atomicState?.timestampDtMap["lastUpdateMsgDt"] ? 100000 : GetTimeDiffSeconds(atomicState?.timestampDtMap["lastUpdateMsgDt"], null, "getLastUpdateMsgSec").toInteger() }
+def getLastWebUpdSec() { return !getTimestampVal("lastWebUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastWebUpdDt"), null, "getLastWebUpdSec").toInteger() }
+def getLastWeatherUpdSec() { return !getTimestampVal("lastWeatherUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastWeatherUpdDt"), null, "getLastWeatherUpdSec").toInteger() }
+def getLastForecastUpdSec() { return !getTimestampVal("lastForecastUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastForecastUpdDt"), null, "getLastForecastUpdSec").toInteger() }
+def getLastAnalyticUpdSec() { return !getTimestampVal("lastAnalyticUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastAnalyticUpdDt"), null, "getLastAnalyticUpdSec").toInteger() }
+def getLastUpdateMsgSec() { return !getTimestampVal("lastUpdateMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastUpdateMsgDt"), null, "getLastUpdateMsgSec").toInteger() }
 
 def getStZipCode() { return location?.zipCode?.toString() }
 def getNestZipCode() {
@@ -6764,7 +6759,6 @@ def fail() {
 def connectionStatus(message, redirectUrl = null) {
 	def redirectHtml = ""
 	if(redirectUrl) { redirectHtml = """<meta http-equiv="refresh" content="3; url=${redirectUrl}" />""" }
-
 	def html = """
 		<!DOCTYPE html>
 		<html>
@@ -7128,7 +7122,7 @@ def stateCleanup() {
 	}
 	atomicState.authTokenExpires = atomicState?.tokenExpires ?: atomicState?.authTokenExpires
 	state.remove("tokenExpires")
-	updTimestampMap("authTokenCreatedDt", (atomicState?.tokenCreatedDt ?: atomicState?.timestampDtMap["authTokenCreatedDt"]))
+	updTimestampMap("authTokenCreatedDt", (atomicState?.tokenCreatedDt ?: getTimestampVal("authTokenCreatedDt")))
 	state.remove("tokenCreatedDt")
 
 	atomicState?.swVer = sData
@@ -8041,7 +8035,7 @@ def getStateData() {
 def lastCmdDesc() {
 	def cmdDesc = ""
 	def map = [:]
-	map["DateTime"] = atomicState?.timestampDtMap["lastCmdSentDt"] ?: "Nothing found"
+	map["DateTime"] = getTimestampVal("lastCmdSentDt") ?: "Nothing found"
 	map["Cmd Sent"] = atomicState?.lastCmdSent ?: "Nothing found"
 	map["Cmd Result"] = atomicState?.lastCmdSentStatus ? "(${atomicState?.lastCmdSentStatus})" : "(Nothing found)"
 	cmdDesc += getMapDescStr(map)
@@ -8058,6 +8052,10 @@ def renderDiagHome() {
 		def appDataUrl = getAppEndpointUrl("getAppData")
 		def instDataUrl = getAppEndpointUrl("getInstData")
 		def devTilesUrl = getAppEndpointUrl("deviceTiles")
+		def tstatTilesUrl = getAppEndpointUrl("tstatTiles")
+		def protTilesUrl = getAppEndpointUrl("protectTiles")
+		def camTilesUrl = getAppEndpointUrl("cameraTiles")
+		def weatherTilesUrl = getAppEndpointUrl("weatherTile")
 		def sPerc = getStateSizePerc() ?: 0
 		def instData = atomicState?.installData
 		def cmdDesc = lastCmdDesc().toString().replaceAll("\n", "<br>")
@@ -8069,9 +8067,7 @@ def renderDiagHome() {
 				<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 				<meta name="description" content="NST Diagnostics">
 				<meta name="author" content="Anthony S.">
-
-				<title>NST Diagnostics ${atomicState?.structName}</title>
-
+				<title>NST Diagnostics - (${atomicState?.structName}) Location</title>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 				<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
 				<script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
@@ -8120,7 +8116,7 @@ def renderDiagHome() {
 											<h1 class="panel-title panel-title-text">Install Details:</h1>
 										</div>
 									</div>
-							</div>
+								</div>
 
 								<!--First Panel Section Body -->
 								<div class="panel-body" style="overflow-y: auto;">
@@ -8202,8 +8198,22 @@ def renderDiagHome() {
 										<p><a class="btn btn-primary btn-md shortcutBtns" href="${instDataUrl}" role="button">Install Data</a></p>
 										<p><a class="btn btn-primary btn-md shortcutBtns" href="${appDataUrl}" role="button">AppData File</a></p>
 									</div>
+								</div>
+						   	</div>
+							<!--Third Panel Section -->
+					  		<div class="panel panel-success">
+					   			<div class="panel-heading">
+									<h1 class="panel-title">Device Tiles</h1>
+					   			</div>
+					   			<div class="panel-body">
 									<div class="col-xs-6 centerText">
-									 	<p><a class="btn btn-primary btn-md shortcutBtns" href="${devTilesUrl}" role="button">Device Tile</a></p>
+									 	<p><a class="btn btn-primary btn-md shortcutBtns" href="${devTilesUrl}" role="button">All Devices</a></p>
+										${atomicState?.thermostats ? """<p><a class="btn btn-primary btn-md shortcutBtns" href="${tstatTilesUrl}" role="button">Thermostat Devices</a></p>""" : ""}
+										${atomicState?.protects ? """<p><a class="btn btn-primary btn-md shortcutBtns" href="${protTilesUrl}" role="button">Protect Devices</a></p>""" : ""}
+									</div>
+									<div class="col-xs-6 centerText">
+										${atomicState?.cameras ? """<p><a class="btn btn-primary btn-md shortcutBtns" href="${camTilesUrl}" role="button">Camera Devices</a></p>""" : ""}
+										${atomicState?.weatherDevice ? """<p><a class="btn btn-primary btn-md shortcutBtns" href="${weatherTilesUrl}" role="button">Weather Device</a></p>""" : ""}
 									</div>
 								</div>
 						   	</div>
@@ -8222,138 +8232,6 @@ def renderDiagHome() {
 		"""
 		render contentType: "text/html", data: html
 	} catch (ex) { log.error "renderDiagUrl Exception:", ex }
-}
-
-def renderDeviceTiles() {
-	try {
-		def devHtml = ""
-		def navHtml = ""
-		def scrStr = ""
-		def devices = app.getChildDevices(true)
-		def devNum = 1
-		devices?.sort {it?.getLabel()}.each { dev ->
-			def navMap = [:]
-			def hasHtml = (dev?.hasHtml() == true)
-			navMap = ["key":dev?.getLabel(), "items":[]]
-			def navItems = navHtmlBuilder(navMap, devNum)
-			if(navItems?.html) { navHtml += navItems?.html }
-			if(navItems?.js) { scrStr += navItems?.js }
-			def devTileHtml = !hasHtml ? "" : """
-				<div>${dev?.getDeviceTile(devNum)}</div>
-			"""
-			devHtml += """
-			<div class="panel panel-primary">
-			 	<div id="key-item${devNum}" class="panel-heading">
-			  		<h1 class="panel-title panel-title-text">${dev?.getLabel()}:</h1>
-			 	</div>
-			 	<div class="panel-body">
-					<div style="max-width: 90%; margin: auto; position: relative;">
-						${devTileHtml}
-				  	</div>
-				</div>
-			</div>
-			"""
-			devNum = devNum+1
-		}
-		def html = """
-			<head>
-				<meta charset="utf-8">
-				<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-				<meta name="description" content="NST Diagnostics">
-				<meta name="author" content="Anthony S.">
-				<meta http-equiv="cleartype" content="on">
-				<meta name="MobileOptimized" content="320">
-				<meta name="HandheldFriendly" content="True">
-				<meta name="apple-mobile-web-app-capable" content="yes">
-
-				<title>NST Diagnostics (${atomicState?.structName}) - Device Data</title>
-
-				<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-				<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
-				<script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
-				<script src="https://fastcdn.org/FlowType.JS/1.1/flowtype.js"></script>
-				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
-				<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-				<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
-				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
-				<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-				<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/vendor/jspdf.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2canvas/develop/dist/html2canvas.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/src/html2pdf.js"></script>
-				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/js/vex.combined.min.js"></script>
-				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/css/swiper.min.css" />
-				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css" />
-				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css" />
-				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
-				<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/js/swiper.min.js"></script>
-				<script src="https://www.gstatic.com/charts/loader.js"></script>
-				<script>vex.defaultOptions.className = 'vex-theme-default'</script>
-
-				<style>
-				h1, h2, h3, h4, h5, h6 {
-					padding: 20px;
-				    margin: 4px;
-				}
-				</style>
-			</head>
-			<body>
-				<button onclick="topFunction()" id="scrollTopBtn" title="Go to top"><i class="fa fa-arrow-up centerText" aria-hidden="true"></i> Back to Top</button>
-				<nav id="menu-page" class="pushy pushy-left" data-focus="#nav-key-item1">
-					<div class="nav-home-btn centerText"><button id="goHomeBtn" class="btn-link" title="Go Back to Home Page"><i class="fa fa-home centerText" aria-hidden="true"></i> Go Home</button></div>
-					<!--Include your navigation here-->
-					${navHtml}
-				</nav>
-				<!-- Site Overlay -->
-				<div class="site-overlay"></div>
-
-				<!-- Your Content -->
-				<div id="container">
-					<div id="top-hdr" class="navbar navbar-default navbar-fixed-top">
-						<div class="centerText">
-							<div class="row">
-								<div class="col-xs-2">
-									<div class="left-head-col pull-left">
-										<div class="menu-btn-div">
-											<div class="hamburger-wrap">
-												<button id="menu-button" class="menu-btn hamburger hamburger--collapse hamburger--accessible" title="Menu" type="button">
-													<span class="hamburger-box">
-														<span class="hamburger-inner"></span>
-													</span>
-													<!--<span class="hamburger-label">Menu</span>-->
-												</button>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Device Data</img></h3>
-								</div>
-								<div class="col-xs-2 right-head-col pull-right">
-									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
-								</div>
-							</div>
-						</div>
-					</div>
-					<!-- Page Content -->
-				 	<div id="page-content-wrapper">
-				  		<div class="container">
-							<div id="main" class="panel-body">
-								${devHtml}
-							</div>
-						</div>
-	 			   </div>
-	 			</div>
-			  	<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
-			  	<script>
-					\$(document).ready(function() {
-						${scrStr}
-					});
-			  	</script>
-			</body>
-		"""
-		render contentType: "text/html", data: html
-	} catch (ex) { log.error "renderDeviceData Exception:", ex }
 }
 
 def dumpListDesc(data, level, List lastLevel, listLabel, html=false) {
@@ -8493,9 +8371,6 @@ def renderManagerData() {
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
 				<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/vendor/jspdf.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2canvas/develop/dist/html2canvas.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/src/html2pdf.js"></script>
 				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
 				<style>
 				.pushy {
@@ -8609,10 +8484,22 @@ def renderManagerData() {
 				   		</div>
 				  	</div>
 				</div>
+				<script>
+					\$("body").flowtype({
+						minFont: 7,
+						maxFont: 10,
+						fontRatio: 30
+					});
+				</script>
  			   	<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
  			   	<script>
 					\$(document).ready(function() {
 						${scrStr}
+					});
+					\$("#goHomeBtn").click(function() {
+					    closeNavMenu();
+					    toggleMenuBtn();
+					    window.history.href='${getAppEndpointUrl("diagHome")}';
 					});
  			   	</script>
 			</body>
@@ -8699,9 +8586,6 @@ def renderAutomationData() {
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
 				<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/vendor/jspdf.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2canvas/develop/dist/html2canvas.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/src/html2pdf.js"></script>
 				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
 				<style>
 
@@ -8754,10 +8638,22 @@ def renderAutomationData() {
 						</div>
 					</div>
 			  	</div>
+				<script>
+					\$("body").flowtype({
+						minFont: 7,
+						maxFont: 10,
+						fontRatio: 30
+					});
+				</script>
  		  		<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
  		  		<script>
 					\$(document).ready(function() {
 						${scrStr}
+					});
+					\$("#goHomeBtn").click(function() {
+					    closeNavMenu();
+					    toggleMenuBtn();
+					    window.history.href='${getAppEndpointUrl("diagHome")}';
 					});
 				</script>
 		</body>
@@ -8811,8 +8707,7 @@ def renderDeviceData() {
 		def devNum = 1
 		devices?.sort {it?.getLabel()}.each { dev ->
 			def navMap = [:]
-			def hasHtml = (dev?.hasHtml() == true)
-			navMap = ["key":dev?.getLabel(), "items":(hasHtml ? ["Tile", "Settings", "State", "Attributes", "Commands", "Capabilities"] : ["Settings", "State", "Attributes", "Commands", "Capabilities"])]
+			navMap = ["key":dev?.getLabel(), "items":["Settings", "State", "Attributes", "Commands", "Capabilities"]]
 			def navItems = navHtmlBuilder(navMap, devNum)
 			if(navItems?.html) { navHtml += navItems?.html }
 			if(navItems?.js) { scrStr += navItems?.js }
@@ -8831,16 +8726,6 @@ def renderDeviceData() {
 				commDesc += "${cnt>1 ? "\n\n" : "\n"} • ${cmd.name}(${!cmd?.arguments ? "" : cmd?.arguments.toString().toLowerCase().replaceAll("\\[|\\]", "")})"
 				cnt = cnt+1
 			}
-			def devTileHtml = !hasHtml ? "" : """
-				<div id="item${devNum}-tile" class="panel panel-default">
-					<div class="panel-heading">
-						<h1 class="panel-title subpanel-title-text">Device Tile:</h1>
-					</div>
-					<div class="panel-body">
-						<div>${dev?.getDeviceTile(devNum)}</div>
-					</div>
-				</div>
-			"""
 			def data = dev?.capabilities?.sort()?.collect {it as String}
 			def t0 = [ "capabilities":data ]
 			def capDesc = getMapDescStr(t0)
@@ -8851,7 +8736,6 @@ def renderDeviceData() {
 			 	</div>
 			 	<div class="panel-body">
 					<div>
-						${devTileHtml}
 					  	<div id="item${devNum}-settings" class="panel panel-default">
 					   		<div class="panel-heading">
 								<h1 class="panel-title subpanel-title-text">Setting Data:</h1>
@@ -8921,9 +8805,6 @@ def renderDeviceData() {
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
 				<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/vendor/jspdf.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2canvas/develop/dist/html2canvas.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/src/html2pdf.js"></script>
 				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/js/vex.combined.min.js"></script>
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/css/swiper.min.css" />
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css" />
@@ -8934,10 +8815,10 @@ def renderDeviceData() {
 				<script>vex.defaultOptions.className = 'vex-theme-default'</script>
 
 				<style>
-				h1, h2, h3, h4, h5, h6 {
-					padding: 20px;
-				    margin: 4px;
-				}
+					h1, h2, h3, h4, h5, h6 {
+						padding: 20px;
+						margin: 4px;
+					}
 				</style>
 			</head>
 			<body>
@@ -8987,15 +8868,184 @@ def renderDeviceData() {
 						</div>
 	 			   </div>
 	 			</div>
+				<script>
+					\$("body").flowtype({
+						minFont: 7,
+						maxFont: 10,
+						fontRatio: 30
+					});
+				</script>
 			  	<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
 			  	<script>
 					\$(document).ready(function() {
 						${scrStr}
 					});
+					\$("#goHomeBtn").click(function() {
+					    closeNavMenu();
+					    toggleMenuBtn();
+					    window.history.href='${getAppEndpointUrl("diagHome")}';
+					});
 			  	</script>
 			</body>
 		"""
 		log.debug apiServerUrl("/api/rooms")
+		render contentType: "text/html", data: html
+	} catch (ex) { log.error "renderDeviceData Exception:", ex }
+}
+
+def getTstatTiles() {
+	return renderDeviceTiles("Nest Thermostat")
+}
+
+def getProtectTiles() {
+	return renderDeviceTiles("Nest Protect")
+}
+
+def getCamTiles() {
+	return renderDeviceTiles("Nest Camera")
+}
+
+def getWeatherTile() {
+	return renderDeviceTiles("Nest Weather")
+}
+
+def renderDeviceTiles(type=null) {
+	try {
+		def devHtml = ""
+		def navHtml = ""
+		def scrStr = ""
+		def devices = app.getChildDevices(true)
+		def devNum = 1
+		devices?.sort {it?.getLabel()}.each { dev ->
+			def navMap = [:]
+			def hasHtml = (dev?.hasHtml() == true)
+			if((hasHtml && !type) || (hasHtml && type && dev?.name == type)) {
+				navMap = ["key":dev?.getLabel(), "items":[]]
+				def navItems = navHtmlBuilder(navMap, devNum)
+				if(navItems?.html) { navHtml += navItems?.html }
+				if(navItems?.js) { scrStr += navItems?.js }
+				devHtml += """
+				<div class="panel panel-primary" style="max-width: 600px; margin: 30 auto; position: relative;">
+				 	<div id="key-item${devNum}" class="panel-heading">
+				  		<h1 class="panel-title panel-title-text">${dev?.getLabel()}: (v${dev?.devVer()})</h1>
+				 	</div>
+				 	<div class="panel-body">
+						<div style="margin: auto; position: relative;">
+							<div>${dev?.getDeviceTile(devNum)}</div>
+					  	</div>
+					</div>
+				</div>
+				"""
+			}
+			devNum = devNum+1
+		}
+
+		def html = """
+			<head>
+				<meta charset="utf-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+				<meta name="description" content="NST Diagnostics">
+				<meta name="author" content="Anthony S.">
+				<meta http-equiv="cleartype" content="on">
+				<meta name="MobileOptimized" content="320">
+				<meta name="HandheldFriendly" content="True">
+				<meta name="apple-mobile-web-app-capable" content="yes">
+
+				<title>NST Diagnostics (${atomicState?.structName}) - ${type}</title>
+
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+				<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+				<script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
+				<script src="https://fastcdn.org/FlowType.JS/1.1/flowtype.js"></script>
+				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
+				<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+				<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
+				<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
+				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/js/vex.combined.min.js"></script>
+				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/css/swiper.min.css" />
+				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css" />
+				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css" />
+				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/js/swiper.min.js"></script>
+				<script src="https://www.gstatic.com/charts/loader.js"></script>
+				<script>vex.defaultOptions.className = 'vex-theme-default'</script>
+
+				<style>
+					h1, h2, h3, h4, h5, h6 {
+						padding: 20px;
+					    margin: 4px;
+					}
+				</style>
+			</head>
+			<body>
+				<button onclick="topFunction()" id="scrollTopBtn" title="Go to top"><i class="fa fa-arrow-up centerText" aria-hidden="true"></i> Back to Top</button>
+				<nav id="menu-page" class="pushy pushy-left" data-focus="#nav-key-item1">
+					<div class="nav-home-btn centerText"><button id="goHomeBtn" class="btn-link" title="Go Back to Home Page"><i class="fa fa-home centerText" aria-hidden="true"></i> Go Home</button></div>
+					<!--Include your navigation here-->
+					${navHtml}
+				</nav>
+				<!-- Site Overlay -->
+				<div class="site-overlay"></div>
+
+				<!-- Your Content -->
+				<div id="container">
+					<div id="top-hdr" class="navbar navbar-default navbar-fixed-top">
+						<div class="centerText">
+							<div class="row">
+								<div class="col-xs-2">
+									<div class="left-head-col pull-left">
+										<div class="menu-btn-div">
+											<div class="hamburger-wrap">
+												<button id="menu-button" class="menu-btn hamburger hamburger--collapse hamburger--accessible" title="Menu" type="button">
+													<span class="hamburger-box">
+														<span class="hamburger-inner"></span>
+													</span>
+													<!--<span class="hamburger-label">Menu</span>-->
+												</button>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-xs-8 centerText">
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> ${type ?: "All Device"}s</img></h3>
+								</div>
+								<div class="col-xs-2 right-head-col pull-right">
+									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- Page Content -->
+				 	<div id="page-content-wrapper">
+				  		<div class="container">
+							<div id="main" class="panel-body">
+								${devHtml}
+							</div>
+						</div>
+	 			   </div>
+	 			</div>
+				<script>
+					\$("body").flowtype({
+						minFont: 7,
+						maxFont: 10,
+						fontRatio: 30
+					});
+				</script>
+			  	<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
+			  	<script>
+					\$(document).ready(function() {
+						${scrStr}
+					});
+					\$("#goHomeBtn").click(function() {
+					    closeNavMenu();
+					    toggleMenuBtn();
+					    window.history.href='${getAppEndpointUrl("diagHome")}';
+					});
+			  	</script>
+			</body>
+		"""
 		render contentType: "text/html", data: html
 	} catch (ex) { log.error "renderDeviceData Exception:", ex }
 }
@@ -9034,9 +9084,6 @@ def renderHtmlMapDesc(title, heading, datamap) {
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
 				<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/vendor/jspdf.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2canvas/develop/dist/html2canvas.min.js"></script>
-				<script src="https://cdn.rawgit.com/eKoopmans/html2pdf/master/src/html2pdf.js"></script>
 				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
 				<style>
 				</style>
@@ -9125,7 +9172,7 @@ def sendInstallSlackNotif(inst=true) {
 	str += "\n • App Version: v${appVersion()}"
 	str += "\n • Mobile Client: ${cltType}"
 	str += atomicState?.authToken && atomicState?.authTokenNum ? "\n • TokenNum: ${atomicState?.authTokenNum}" : ""
-	str += atomicState?.authToken && atomicState?.timestampDtMap["authTokenCreatedDt"] ? "\n • TokenCreated: ${atomicState?.timestampDtMap["authTokenCreatedDt"]}" : ""
+	str += atomicState?.authToken && getTimestampVal("authTokenCreatedDt") ? "\n • TokenCreated: ${getTimestampVal("authTokenCreatedDt")}" : ""
 	def tf = new SimpleDateFormat("M/d/yyyy - h:mm a")
 	if(getTimeZone()) { tf.setTimeZone(getTimeZone()) }
 	str += atomicState?.authToken && atomicState?.authTokenExpires ? "\n • TokenExpires: ${tf?.format(atomicState?.authTokenExpires)}" : ""
