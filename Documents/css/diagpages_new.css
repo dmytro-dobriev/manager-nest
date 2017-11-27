@@ -88,11 +88,18 @@ html, body {
 
 .panel-title-text {
     /* padding-top: 0.5em; */
-    font-size: 24px;
+    font-size: 1.2em;
+}
+.subpanel-title-text {
+    /* padding-top: 0.5em; */
+    font-size: 1em;
 }
 
-.subpanel-title-text {
-    font-size: 18px;
+.panel-heading {
+    padding: 0px 10px;
+    border-bottom: 1px solid transparent;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
 }
 
 .panelHeadTxt {
