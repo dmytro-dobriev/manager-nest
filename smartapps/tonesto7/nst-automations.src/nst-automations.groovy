@@ -684,8 +684,8 @@ def getAutoTypeLabel() {
 	else if(type == "schMot")	{ typeLabel = "${newName} (${schMotTstat?.label})" }
 
 	if(appLbl != "Nest Manager" && appLbl != "${appLabel()}") {
-		if(appLbl.contains("\n(Disabled)")) {
-			newLbl = appLbl.replaceAll('\\\n\\(Disabled\\)', '')
+		if(appLbl?.contains("\n(Disabled)")) {
+			newLbl = appLbl?.replaceAll('\\\n\\(Disabled\\)', '')
 		} else {
 			newLbl = appLbl
 		}
@@ -1916,7 +1916,8 @@ def getRemSenTempsToList() {
 }
 
 def getDeviceTemp(dev) {
-	return dev ? dev?.currentValue("temperature")?.toString().replaceAll("\\[|\\]", "").toDouble() : 0
+	def temp = dev?.currentValue("temperature") ? dev?.currentValue("temperature").toString()?.replaceAll("\\[|\\]", "") : 0
+	return temp && "$temp"?.isNumber() ? temp?.toDouble() : 0
 }
 
 def getTstatSetpoint(tstat, type) {
@@ -1924,11 +1925,11 @@ def getTstatSetpoint(tstat, type) {
 		if(type == "cool") {
 			def coolSp = tstat?.currentCoolingSetpoint
 			//log.debug "getTstatSetpoint(cool): $coolSp"
-			return coolSp ? coolSp.toDouble() : 0
+			return coolSp ? coolSp?.toDouble() : 0
 		} else {
 			def heatSp = tstat?.currentHeatingSetpoint
 			//log.debug "getTstatSetpoint(heat): $heatSp"
-			return heatSp ? heatSp.toDouble() : 0
+			return heatSp ? heatSp?.toDouble() : 0
 		}
 	}
 	else { return 0 }
@@ -2871,7 +2872,7 @@ def getExtConditions( doEvent = false ) {
 
 				def dp = 0.0
 				if(weather) {  // Dewpoint is calculated in dth
-					dp = weather?.currentValue("dewpoint")?.toString().replaceAll("\\[|\\]", "").toDouble()
+					dp = weather?.currentValue("dewpoint") ? weather?.currentValue("dewpoint")?.toString()?.replaceAll("\\[|\\]", "").toDouble() : 0.0
 				}
 				def c_temp = 0.0
 				def f_temp = 0 as Integer
@@ -6854,7 +6855,7 @@ def getAlarmEvt2RuntimeDtSec() { return !atomicState?.alarmEvt2StartDt ? 100000 
 void sendTTS(txt, pName) {
 	LogAction("sendTTS(data: ${txt})", "trace", true)
 	try {
-		def msg = txt.toString().replaceAll("\\[|\\]|\\(|\\)|\\'|\\_", "")
+		def msg = txt?.toString()?.replaceAll("\\[|\\]|\\(|\\)|\\'|\\_", "")
 		def spks = settings?."${pName}SpeechDevices"
 		def meds = settings?."${pName}SpeechMediaPlayer"
 		def res = settings?."${pName}SpeechAllowResume"
