@@ -28,7 +28,7 @@ definition(
 }
 
 def appVersion() { "5.2.0" }
-def appVerDate() { "11-8-2017" }
+def appVerDate() { "12-8-2017" }
 
 preferences {
 	//startPage
@@ -752,8 +752,8 @@ def getAutoTypeLabel() {
 	else if(type == "schMot")	{ typeLabel = "${newName} (${schMotTstat?.label})" }
 
 	if(appLbl != "Nest Manager" && appLbl != "${appLabel()}") {
-		if(appLbl.contains("\n(Disabled)")) {
-			newLbl = appLbl.replaceAll('\\\n\\(Disabled\\)', '')
+		if(appLbl?.contains("\n(Disabled)")) {
+			newLbl = appLbl?.replaceAll('\\\n\\(Disabled\\)', '')
 		} else {
 			newLbl = appLbl
 		}
@@ -1984,7 +1984,8 @@ def getRemSenTempsToList() {
 }
 
 def getDeviceTemp(dev) {
-	return dev ? dev?.currentValue("temperature")?.toString().replaceAll("\\[|\\]", "").toDouble() : 0
+	def temp = dev?.currentValue("temperature") ? dev?.currentValue("temperature").toString()?.replaceAll("\\[|\\]", "") : 0
+  	return temp && "$temp"?.isNumber() ? temp?.toDouble() : 0
 }
 
 def getTstatSetpoint(tstat, type) {
@@ -1992,11 +1993,11 @@ def getTstatSetpoint(tstat, type) {
 		if(type == "cool") {
 			def coolSp = tstat?.currentCoolingSetpoint
 			//log.debug "getTstatSetpoint(cool): $coolSp"
-			return coolSp ? coolSp.toDouble() : 0
+			return coolSp ? coolSp?.toDouble() : 0
 		} else {
 			def heatSp = tstat?.currentHeatingSetpoint
 			//log.debug "getTstatSetpoint(heat): $heatSp"
-			return heatSp ? heatSp.toDouble() : 0
+			return heatSp ? heatSp?.toDouble() : 0
 		}
 	}
 	else { return 0 }
