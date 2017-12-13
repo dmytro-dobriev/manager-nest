@@ -151,18 +151,29 @@ def authPage() {
 
 	if(!atomicState?.accessToken || !nestDevAccountCheckOk() || (!atomicState?.isInstalled && (!atomicState?.devHandlersTested || !preReqOk)) || (stateSz > 80)) {
 		return dynamicPage(name: "authPage", title: "Status Page", nextPage: "", install: false, uninstall: false) {
-			section ("Status Page:") {
+			section () {
+				def title = ""
 				def desc = ""
 				def showWiki = false
+				def wikiDesc = "View Instruction Projects Wiki"
+				def wikiObj = ""
 				if(!atomicState?.accessToken) {
+					title = "OAuth Error"
 					desc = "OAuth is not Enabled for ${appName()} application.  Please click remove and review the installation directions again"
+					wikiObj = "#Enabling_OAuth"
+					wikiDesc = "Enabling Oauth (Wiki)"
 				}
 				else if(!nestDevAccountCheckOk()) {
-					desc = "You are missing the Client ID and Secret.\n\nWe can no longer provide you with a built-in Nest Client ID and Secret.  Please check the Wiki for Detailed instructions on creating your own Nest Dev ID and Secret."
+					title = "Nest Developer Data Missing"
+					desc = "Client ID and Secret\nAre both missing!\n\nThe built-in Client ID and Secret can no longer be provided.\n\nPlease visit the Wiki at the link below to resolve the issue."
 					showWiki = true
+					wikiObj = "#Nest_Developer_Account"
+					wikiDesc = "Configure Nest Dev Account (Wiki)"
 				}
 				else if(!atomicState?.devHandlersTested) {
 					desc = "Device Handlers are Missing or Not Published.  Please verify the installation instructions and device handlers are present before continuing."
+					wikiObj = "#Installation_Instructions"
+					wikiDesc = "Device Installation (Wiki)"
 				}
 				else if(!preReqOk) {
 					desc = "SmartThings Location is not returning (TimeZone: ${location?.timeZone}) or (ZipCode: ${location?.zipCode}) Please edit these settings under the ST IDE or Mobile App"
@@ -174,9 +185,9 @@ def authPage() {
 					desc += "${desc != "" ? "\n\n" : ""}Your Manager State Usage is Greater than 80% full.  This is not normal and you should notify the developer."
 				}
 				LogAction("Status Message: $desc", "warn", true)
-				paragraph "$desc", required: true, state: null
+				paragraph title: title, "$desc", required: true, state: null
 				if(showWiki) {
-					href url: getWikiPageUrl(), style:"embedded", required:false, title:"View the Projects Wiki", description:"Tap to open in browser", state: "complete", image: getAppImg("web_icon.png")
+					href url: getWikiPageUrl()+wikiObj, style:"embedded", required:false, title:wikiDesc, description:"Tap to open in browser", state: "complete", image: getAppImg("web_icon.png")
 				}
 			}
 			devPageFooter("authErrLoadCnt", execTime)
