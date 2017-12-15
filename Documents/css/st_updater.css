@@ -1,15 +1,15 @@
 @font-face {
-    font-family: 'Swiss 721 W01 Thin';
-    src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot');
-    src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot?#iefix') format('embedded-opentype'), url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.woff') format('woff'), url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.ttf') format('truetype'), url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.svg#swis721_th_btthin') format('svg');
+    font-family: "Swiss 721 W01 Thin";
+    src: url("https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot");
+    src: url("https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot?#iefix") format("embedded-opentype"), url("https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.woff") format("woff"), url("https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.ttf") format("truetype"), url("https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.svg#swis721_th_btthin") format("svg");
     font-weight: normal;
     font-style: normal;
 }
 
 @font-face {
-    font-family: 'Swiss 721 W01 Light';
-    src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot');
-    src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot?#iefix') format('embedded-opentype'), url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.woff') format('woff'), url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.ttf') format('truetype'), url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.svg#swis721_lt_btlight') format('svg');
+    font-family: "Swiss 721 W01 Light";
+    src: url("https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot");
+    src: url("https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot?#iefix") format("embedded-opentype"), url("https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.woff") format("woff"), url("https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.ttf") format("truetype"), url("https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.svg#swis721_lt_btlight") format("svg");
     font-weight: normal;
     font-style: normal;
 }
@@ -22,7 +22,7 @@ html {
 
 body {
     padding: 1em;
-    background: #2B3134;
+    background: #2b3134;
     color: #ffffff;
     text-align: center;
     font-family: "Gill sans", sans-serif;
@@ -33,79 +33,103 @@ body {
 
 h1 {
     margin: 1em 0;
-    border-bottom: 1px solid;
-    padding-bottom: 1em;
+    font-family: "Swiss 721 W01 Thin";
     font-weight: lighter;
 }
 
-#loader {
-    height: auto;
-    width: auto;
-    min-height: 100px;
-    min-width: 100px;
-    max-height: 240px;
-    max-width: 240px;
-    text-align: center;
-    padding: 1em;
-    margin: 0 auto 1em;
+ul {
+    text-align: left;
+    font-family: "Swiss 721 W01 Thin";
+    color: #c8c2c2;
+    list-style: none;
+    border: 2px solid gray;
+    border-radius: 25px;
+    padding: 10px 20px;
+    margin: 0;
     display: inline-block;
-    vertical-align: top;
-}
-
-.animate-bottom {
-    position: relative;
-    -webkit-animation-name: animatebottom;
-    -webkit-animation-duration: 1s;
-    animation-name: animatebottom;
-    animation-duration: 1s
-}
-
-@-webkit-keyframes animatebottom {
-    from {
-        bottom: -300px;
-        opacity: 0
-    }
-    to {
-        bottom: 0;
-        opacity: 1
-    }
-}
-
-@keyframes animatebottom {
-    from {
-        bottom: -300px;
-        opacity: 0
-    }
-    to {
-        bottom: 0;
-        opacity: 1
-    }
 }
 
 .center {
     text-align: center;
 }
 
+.logoIcn {
+    width: 15%;
+    height: auto;
+    min-width: 80px;
+    max-width: 150px;
+}
+
+.title-div {
+    vertical-align: middle;
+    display: inline-block;
+    text-align: center;
+}
+
+.title-text {
+    /* 	max-width: 800px; */
+    vertical-align: middle;
+    font-size: 5vw;
+    border-bottom: 2px solid;
+    padding: 0px 0px 20px 0px;
+}
+
+.loaderText {
+    font-size: 200%;
+    font-weight: normal;
+    -webkit-text-stroke: 0.5px blue;
+    color: white;
+}
+
+#loader {
+    max-width: 350px;
+    max-height: 350px;
+}
+
+#finishedImg {
+    font-size: 4em;
+    color: green;
+    text-align: center;
+    padding: 20px 0 0 0;
+}
+
 #results {
-    font-size: 2.2em;
-    font-family: 'Swiss 721 W01 Thin';
+    font-size: 1.5em;
+    font-family: "Swiss 721 W01 Thin";
     color: #c8c2c2;
     margin-bottom: 0;
+    padding: 0 20px 20px 20px;
+}
+
+#errResults {
+    font-size: 1.3em;
+    font-family: "Swiss 721 W01 Thin";
+    color: #dd8989;
+    margin-bottom: 0;
+    padding: 10px 0;
+}
+
+#resultsTitle {
+    padding-top: 10px;
+    display: inline-block;
+    font-family: "Swiss 721 W01 Thin";
+    margin: 0;
 }
 
 #resultList {
-    text-align: left;
-    font-size: 1.2em;
-    font-family: 'Swiss 721 W01 Thin';
-    color: #c8c2c2;
-    margin-bottom: 0;
-    /* padding: 0 10px; */
-    border-radius: 25px;
-    border: 2px solid gray;
+    margin: 0 auto;
+    min-width: 350px;
+    max-width: 500px;
+    /* 	font-size: 1.5em; */
+}
+
+#resultList:empty {
+    border: 0px solid gray;
 }
 
 .listDiv {
-    width: 375px;
+    width: 100%;
+    text-align: center;
 }
 
 .listDiv:empty {
@@ -118,8 +142,14 @@ ul:empty {
 
 .centered {
     margin: 0 auto;
-    text-align: left;
-    padding-right: 10px;
+}
+
+.red {
+    color: red
+}
+
+.green {
+    color: green;
 }
 
 .chkMark {
@@ -130,15 +160,7 @@ ul:empty {
     display: none;
 }
 
-.logoIcn {
-    /*width: 1.7em;*/
-    height: auto;
-    max-width: 64px;
-    max-height: 64px;
-    vertical-align: middle;
-}
-
-.title-text {
-    font-size: 2.0em;
-    vertical-align: middle;
+section {
+    margin: 0 auto;
+    padding: 0 20px;
 }
