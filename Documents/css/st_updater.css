@@ -85,20 +85,6 @@ ul {
     font-size: 0.4vw;
 }
 
-@media only screen and (max-width: 600px) {
-    #loader {
-        padding: 20px;
-        max-width: 350px;
-        max-height: 350px;
-    }
-    #loaderText1 {
-        font-size: 0.75vw;
-    }
-    #loaderText2 {
-        font-size: 0.7vw;
-    }
-}
-
 #loader {
     max-width: 350px;
     max-height: 350px;
@@ -185,8 +171,14 @@ section {
 
 @media only screen and (max-width: 600px) {
     #loader {
-        width: 60%;
+        padding: 20px;
         max-width: 350px;
         max-height: 350px;
+    }
+    #loaderText1 {
+        font-size: 0.75vw;
+    }
+    #loaderText2 {
+        font-size: 0.7vw;
     }
 }
