@@ -18,6 +18,9 @@ html {
     position: relative;
     min-height: 100%;
     min-width: 375px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizelegibility;
 }
 
 body {
@@ -74,11 +77,26 @@ ul {
     padding: 0px 0px 20px 0px;
 }
 
-.loaderText {
-    font-size: 200%;
-    font-weight: normal;
-    -webkit-text-stroke: 0.5px blue;
-    color: white;
+#loaderText1 {
+    font-size: 0.45vw;
+}
+
+#loaderText2 {
+    font-size: 0.4vw;
+}
+
+@media only screen and (max-width: 600px) {
+    #loader {
+        padding: 20px;
+        max-width: 350px;
+        max-height: 350px;
+    }
+    #loaderText1 {
+        font-size: 0.75vw;
+    }
+    #loaderText2 {
+        font-size: 0.7vw;
+    }
 }
 
 #loader {
@@ -163,4 +181,12 @@ ul:empty {
 section {
     margin: 0 auto;
     padding: 0 20px;
+}
+
+@media only screen and (max-width: 600px) {
+    #loader {
+        width: 60%;
+        max-width: 350px;
+        max-height: 350px;
+    }
 }
