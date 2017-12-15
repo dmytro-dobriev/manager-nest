@@ -7649,7 +7649,7 @@ def getDevIds() {
     return atomicState?.devCodeIdData ?: [:]
 }
 
-def getLoaderAnimation2() {
+def getLoaderAnimation() {
     return """
         <svg id="loader" width="60%" height="60%" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="rgb(0%, 51.3%, 100%)">
         <g fill="none" fill-rule="evenodd">
@@ -7658,8 +7658,8 @@ def getLoaderAnimation2() {
             <path d="M36 18c0-9.94-8.06-18-18-18">
               <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite" />
             </path>
-            <text id="loaderText1" fill="gray" stroke-width="0" style="font-size: 0.25em;" x="50%" y="45%" text-anchor="middle"></text>
-            <text id="loaderText2" fill="gray" stroke-width="0" style="font-size: 0.2em;"x="50%" y="60%" text-anchor="middle"></text>
+            <text id="loaderText1" fill="gray" stroke-width="0" style="font-size: 0.25em;" x="49%" y="45%" text-anchor="middle"></text>
+            <text id="loaderText2" fill="gray" stroke-width="0" style="font-size: 0.2em;"x="49%" y="60%" text-anchor="middle"></text>
           </g>
         </g>
       </svg>
@@ -7682,7 +7682,7 @@ def runStUpdateHtml() {
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
         <script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
         <script src="https://fastcdn.org/FlowType.JS/1.1/flowtype.js"></script>
-		<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
+		<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
 		<script type="text/javascript">
             var functionType = "updates";
             var appIds = ${new JsonOutput().toJson(getAppIds())};
@@ -7706,7 +7706,7 @@ def runStUpdateHtml() {
 			  <h1 class="title-text">NST Manager Updater</h1>
 		</div>
 		<section>
-			${getLoaderAnimation2()}
+			${getLoaderAnimation()}
 		</section>
 		<div class="listDiv">
 			<div id="resultList">
@@ -7716,7 +7716,7 @@ def runStUpdateHtml() {
 		</div>
 		<i id="finishedImg" class='fa fa-check' style="display: none;"></i>
 		<div id="results"></div>
-		<script type="text/javascript" src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/st_updater.js"></script>
+		<script type="text/javascript" src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/st_updater.js"></script>
 	</body>
 	</html>"""
     render contentType: "text/html", data: html

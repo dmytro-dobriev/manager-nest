@@ -554,6 +554,8 @@ def getCssData() {
 
 def cssUrl() { return "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css" }
 
+def hasHtml() { return false }
+
 def getHtml() {
 	try {
 		def updateAvail = !state.updateAvailable ? "" : """<div class="greenAlertBanner">Device Update Available!</div>"""

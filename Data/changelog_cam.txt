@@ -1,3 +1,11 @@
+<p style="font-size: 15px;"><strong>V5.3.0 (December 15th, 2017):</strong><p>
+<hr noshade>
+<ul style="font-size: 12px; padding: 0 10px 0 10px; Margin: 0;">
+    <li><strong>UPDATED:</strong> Lot's of HTML UI polishing.</li>
+    <li><strong>ADDED:</strong> You can now view the web tiles in browser (link is in the SmartApp > Manage Devices).</li>
+    <li><strong>FIXED:</strong> Some Bug Fixes / Tweaks.</li>
+</ul>
+<br>
 <p style="font-size: 15px;"><strong>V5.2.0 (November 8th, 2017):</strong><p>
 <hr noshade>
 <ul style="font-size: 12px; padding: 0 10px 0 10px; Margin: 0;">
@@ -6,10 +14,4 @@
     <li><strong>ADDED:</strong> Added New Attribute called 'motionPerson' for WebCoRE to Monitor for changes.</li>
     <li><strong>UPDATED:</strong> Some Minor Device Health Tweaks.</li>
     <li><strong>FIXED:</strong> Refresh Button now works again on HTML (iOS only).</li>
-</ul>
-<br>
-<p style="font-size: 15px;"><strong>V5.1.4 (July 21st, 2017):</strong><p>
-<hr noshade>
-<ul style="font-size: 12px; padding: 0 10px 0 10px; Margin: 0;">
-    <li><strong>FIXED:</strong> The bug discovered with Storing the Images to ST is not entirely fixed but is now handled correctly and reporting the error.</li>
 </ul>
