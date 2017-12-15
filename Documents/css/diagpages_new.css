@@ -29,7 +29,7 @@ html, body {
 }
 
 .right-head-col {
-    padding: 2.1em 40px 0 0;
+    padding: 2.2em 40px 0 0;
 }
 
 .links {
@@ -60,15 +60,6 @@ html, body {
 
 #rfrshBtn:after {
     content: ' Refresh';
-}
-
-@media screen and (max-width: 520px) {
-    #rfrshBtn:after {
-        content: '';
-    }
-    #rfrshBtn {
-        font-size: 1.1em;
-    }
 }
 
 .export-pdf-btn {
@@ -594,10 +585,6 @@ pre {
     font-size: 0.9em;
 }
 
-.centerText {
-    text-align: center;
-}
-
 .mapDataFmt {}
 
 
@@ -648,6 +635,12 @@ pre {
 
 .bottomBorder {
    border-bottom: 2px solid #808080;
+}
+
+.device {
+    max-width: 1200px;
+    width: 100%;
+    padding-top: 10px;
 }
 
 .device h1 {
@@ -887,6 +880,7 @@ pre {
     font-size: 1.8vw;
     padding: 20px;
     margin:1em auto;
+    text-decoration: underline;
 }
 
 .pageFooterBtn {
@@ -1022,143 +1016,68 @@ pre {
     font-size: 12px;
 }
 
-
-#thermostat {
-	width: 50vmin;
-	height: 50vmin;
-	margin: 0 auto;
-	-webkit-tap-highlight-color: rgba(0,0,0,0);
+@media only screen and (max-width: 600px) {
+    h1 {
+        padding: 20px 0 !important;
+    }
+    .hamburger-inner, .hamburger-inner:after, .hamburger-inner:before {
+        width: 25px;
+        height: 4px;
+    }
+    #rfrshBtn:after {
+        content: '';
+    }
+    #rfrshBtn {
+        font-size: 1.1em;
+    }
+    .logoIcn {
+        max-width: 32px !important;
+        max-height: 32px !important;
+    }
+    .title-text {
+        font-size: 6vw !important;
+        padding: 3.5vw 0 !important;
+    }
+    .container {
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+    }
+    .panel-body {
+        padding: 0 15px !important;
+    }
+    .sectionBgTile h3 {
+        font-size: 3.5vw !important;
+    }
+    .device td {
+        font-size: 3.0vw !important;
+    }
+    .devInfoTile th {
+        font-size: 3.0vw !important;
+    }
+    .left-head-col {
+        padding: 3.2vw 0 0 0 !important;
+    }
+    .right-head-col {
+        padding: 1.7em 20px 0 0 !important;
+    }
+    .slideFooterMsg {
+        font-size: 2.8vw !important;
+        text-decoration: underline;
+    }
+    .slideFooterMsgTile {
+        font-size: 2.8vw !important;
+        text-decoration: underline;
+    }
+    b.wStation {
+        font-size: 2.5vw;
+    }
 }
 
-.dial {
-	user-select: none;
-	&.away {
-		.dial {
-			&__ico__leaf {
-				visibility: hidden;
-			}
-			&__lbl--target {
-				visibility: hidden;
-				&--half {
-					visibility: hidden;
-				}
-			}
-			&__lbl--away {
-				opacity: 1;
-			}
-		}
-	}
-	.dial__shape {
-		transition: fill 0.5s;
-	}
-	&__ico__leaf {
-		fill : #13EB13;
-		opacity: 0;
-		transition: opacity 0.5s;
-		pointer-events: none;
-	}
-	&.has-leaf {
-		.dial__ico__leaf {
-			display: block;
-			opacity: 1;
-			pointer-events: initial;
-		}
-	}
-	&__editableIndicator {
-		fill: white;
-		fill-rule: evenodd;
-		opacity: 0;
-		transition: opacity 0.5s;
-	}
-	&--edit {
-		.dial__editableIndicator {
-			opacity: 1;
-		}
-	}
-	&--state {
-		&--off {
-			.dial__shape {
-				fill: #222;
-			}
-		}
-		&--heating {
-			.dial__shape {
-				fill: #E36304;
-			}
-		}
-		&--cooling {
-			.dial__shape {
-				fill: #007AF1;
-			}
-		}
-	}
-	&__ticks {
-		path {
-			fill: rgba(255,255,255,0.3);
-			&.active {
-				fill: rgba(255,255,255,0.8);
-			}
-		}
-	}
-	text {
-		fill: white;
-		text-anchor: middle;
-		font-family: Helvetica,sans-serif;
-		alignment-baseline: central;
-	}
-	&__lbl {
-		&--target {
-			font-size: 120px;
-			font-weight: bold;
-			&--half {
-				font-size: 40px;
-				font-weight: bold;
-				opacity: 0;
-				transition: opacity 0.1s;
-				&.shown {
-					opacity: 1;
-					transition: opacity 0s;
-				}
-			}
-		}
-		&--ambient {
-			font-size: 22px;
-			font-weight: bold;
-		}
-		&--away {
-			font-size: 72px;
-			font-weight: bold;
-			opacity: 0;
-			pointer-events: none;
-		}
-	}
+.row {
+    margin-right: 0;
+    margin-left: 0;
 }
 
-@import url(https://fonts.googleapis.com/css?family=Open+Sans:300);
-#controls {
-	font-family: Open Sans;
-	label {
-		text-align: left;
-		display: block;
-		span {
-			display: inline-block;
-			width: 200px;
-			text-align: right;
-			font-size: 0.8em;
-			text-transform: uppercase;
-		}
-	}
-	p {
-		margin: 0;
-		margin-bottom: 1em;
-		padding-bottom: 1em;
-		border-bottom: 2px solid #ccc;
-	}
-	background-color: rgba(255,255,255,0.25);
-	padding: 20px;
-	border-radius: 5px;
-	position: absolute;
-	left: 50%;
-	transform: translatex(-50%);
-	margin-top: 20px;
+@media only screen and (min-width: 601px) {
+
 }

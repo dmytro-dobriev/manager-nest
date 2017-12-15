@@ -1659,7 +1659,7 @@ def getWeatherHTML() {
 					${clientBl}
 					${updateAvail}
 					${getWeatherAlertHtml()}
-					<div class="container">
+					<div class="container" style="max-width: 100%; overflow: hidden;">
 						<h4>Current Weather Conditions</h4>
 						<h1 class="bottomBorder"> ${state?.curWeather?.current_observation?.display_location?.full} </h1>
 						<div class="row">
@@ -1702,8 +1702,8 @@ def getWeatherHTML() {
 
 						<div class="row topBorder">
 							<div class="centerText offset-by-three six columns">
-								<b>Station Id: ${state?.curWeather?.current_observation?.station_id}</b>
-								<b>${state?.curWeather?.current_observation?.observation_time}</b>
+								<b class="wStation">Station Id: ${state?.curWeather?.current_observation?.station_id}</b>
+								<b class="wStation">${state?.curWeather?.current_observation?.observation_time}</b>
 							</div>
 						</div>
 					</div>
@@ -1746,7 +1746,7 @@ def getDeviceTile(devNum="") {
 			${clientBl}
 			${updateAvail}
 			${getWeatherAlertHtml()}
-			<div class="device" style="max-width: 1000px;">
+			<div class="device">
 				<div class="container">
 					<h4>Current Weather Conditions</h4>
 					<h1 class="bottomBorder"> ${state?.curWeather?.current_observation?.display_location?.full} </h1>
@@ -1790,8 +1790,8 @@ def getDeviceTile(devNum="") {
 
 					<div class="row topBorder">
 						<div class="centerText offset-by-three six columns">
-							<b>Station Id: ${state?.curWeather?.current_observation?.station_id}</b>
-							<b>${state?.curWeather?.current_observation?.observation_time}</b>
+							<b class="wStation">Station Id: ${state?.curWeather?.current_observation?.station_id}</b><br/>
+							<b class="wStation">${state?.curWeather?.current_observation?.observation_time}</b>
 						</div>
 					</div>
 				</div>

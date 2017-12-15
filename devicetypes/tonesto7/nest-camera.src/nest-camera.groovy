@@ -116,14 +116,14 @@ metadata {
 		standardTile("refresh", "device.refresh", width:2, height:2, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/refresh_icon.png"
 		}
-		htmlTile(name:"devCamHtml", action: "getCamHtml", width: 6, height: 10, whitelist: ["raw.githubusercontent.com", "cdn.rawgit.com"])
+		//htmlTile(name:"devCamHtml", action: "getCamHtml", width: 6, height: 10, whitelist: ["raw.githubusercontent.com", "cdn.rawgit.com"])
 
 		standardTile("test", "device.testBtn", width:2, height:2, decoration: "flat") {
 			state "default", label: 'Test', action:"testBtn"
 		}
 		main "isStreamingStatus"
-		//details(["devCamHtml", "isStreaming", "take", "refresh", "motion", "cameraDetails", "sound"])
-		details(["videoPlayer", "isStreaming", "take", "refresh", "devCamHtml", "cameraDetails", "motion", "sound" ])
+		// details(["videoPlayer", "isStreaming", "take", "refresh", "devCamHtml", "cameraDetails", "motion", "sound" ])
+		details(["videoPlayer", "isStreaming", "take", "refresh", "cameraDetails", "motion", "sound" ])
 	}
 	preferences {
 		input "enableEvtSnapShot", "bool", title: "Take Snapshot on Motion Events?", description: "", defaultValue: true, displayDuringSetup: false
@@ -1260,7 +1260,6 @@ def getCamHtml() {
 				<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.1/css/swiper.min.css", "text", "css")}" />
 				<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css", "text", "css")}" />
 				<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css", "text", "css")}" />
-
 				<script src="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.1/js/swiper.min.js", "text", "javascript")}"></script>
 				<style>
 				</style>
@@ -1271,7 +1270,7 @@ def getCamHtml() {
 				${devBrdCastHtml}
 				${clientBl}
 				${updateAvail}
-				<div class="swiper-container">
+				<div class="swiper-container" style="max-width: 100%; overflow: hidden;">
 					<div class="swiper-wrapper">
 						${camHtml}
 						<div class="swiper-slide">
@@ -1424,7 +1423,7 @@ def getDeviceTile(devNum) {
 			${updateAvail}
 			${getCamIframHtml()}
 			<div class="device">
-				<div class="swiper-container-${devNum}">
+				<div class="swiper-container-${devNum}" style="max-width: 100%; overflow: hidden;">
 					<div class="swiper-wrapper">
 						${camHtml}
 						<div class="swiper-slide">
@@ -1524,7 +1523,7 @@ def getDeviceTile(devNum) {
 					loop: true,
 					slidesPerView: '1',
 					centeredSlides: true,
-					spaceBetween: 750,
+					spaceBetween: 100,
 					autoHeight: true,
 					iOSEdgeSwipeDetection: true,
 					parallax: true,
@@ -1578,7 +1577,7 @@ def showCamHtml(tile=false) {
 	def data = """
 		<div class="swiper-slide">
 			${androidDisclaimerMsg()}
-			<div style="padding: 5px;">
+			<div>
 				<section class="${tile ? "sectionBgTile" : "sectionBg"} centerText">
 					<h3>Last Camera Event</h3>
 					<table class="${tile ? "devInfoTile" : "devInfo"}">

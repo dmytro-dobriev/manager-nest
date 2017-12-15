@@ -1095,7 +1095,7 @@ def getDeviceTile(devNum) {
 		  ${testModeHTML}
 		  ${clientBl}
 		  ${updateAvail}
-		  <div class="device" style="padding: 10px; max-width: 1000px;">
+		  <div class="device">
 			  <section class="sectionBgTile">
 				  <h3>Alarm Status</h3>
 				  <table class="devInfoTile">

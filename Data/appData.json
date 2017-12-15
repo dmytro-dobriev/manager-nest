@@ -44,7 +44,8 @@
             "weather": {
                 "ver": "5.3.0"
             }
-        }
+        },
+        "allowInApp": true
     },
     "html": {
         "cssVer": 1,
