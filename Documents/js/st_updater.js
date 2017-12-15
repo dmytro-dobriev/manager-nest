@@ -157,7 +157,7 @@ function runStUpdates() {
                                                                     })
                                                                     .then(function(stResp4) {
                                                                         // console.log(stResp1);
-                                                                        let respData = JSON.parse(stResp1.response);
+                                                                        let respData = JSON.parse(stResp4.response);
                                                                         if (respData.hasDifference === true) {
                                                                             $('#loaderText2').text('Updating');
                                                                             $('#loaderText1').text(stResp4.typeDesc);
