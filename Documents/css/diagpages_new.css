@@ -82,8 +82,8 @@ html, body {
     .logoIcn {
         width: 1.7em;
         height: auto;
-        max-width: 48px;
-        max-height: 48px;
+        max-width: 32px;
+        max-height: 32px;
     }
     .title-text {
         font-size: 6vw;
@@ -117,10 +117,10 @@ html, body {
         text-align: center;
     }
     .left-head-col {
-        padding: 2.2vw 0 0 20px;
+        padding: 3.2vw 0 0 0;
     }
     .right-head-col {
-        padding: 1.3em 40px 0 0;
+        padding: 1.7em 20px 0 0;
     }
     .slideFooterMsg {
         font-size: 2.8vw;
