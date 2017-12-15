@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.0" }
-def appVerDate() { "11-27-2017" }
+def appVerDate() { "12-15-2017" }
 def minVersions() {
 	return [
 		"automation":["val":530, "desc":"5.3.0"],
@@ -263,7 +263,7 @@ def mainPage() {
 				paragraph "Home/Away Status: (${strCapitalize(getLocationPresence() ?: "Not Available Yet!")})", title: "Location: ${atomicState?.structName}", state: "complete",  image: getAppImg("thermostat_icon.png")
 				def t1 = getDevicesDesc(false)
 				def devDesc = t1 ? "${t1}\n\nTap to modify devices" : "Tap to configure"
-				href "deviceSelectPage", title: "Manage Devices", description: devDesc, state: "complete", image: "blank_icon.png"
+				href "deviceSelectPage", title: "Manage/View Devices", description: devDesc, state: "complete", image: "blank_icon.png"
 				def devSelected = (atomicState?.structures && (atomicState?.thermostats || atomicState?.protects || atomicState?.cameras || atomicState?.presDevice || atomicState?.weatherDevice))
 				if(devSelected) {
 					href "devPrefPage", title: "Device Customization", description: "Tap to configure", image: getAppImg("device_pref_icon.png")
@@ -301,7 +301,9 @@ def mainPage() {
 				if(descStr.size() != sz) { descStr += "\n\n"; sz = descStr.size() }
 				def prefDesc = (descStr != "") ? "" : "Tap to configure"
 				href "prefsPage", title: "Application\nPreferences", description: prefDesc, state: (descStr ? "complete" : ""), image: getAppImg("settings_icon.png")
-				href "codeUpdatesPage", title: "SmartApp and Device Code Updates", description: "Tap Here to Update", state: "complete", image: getAppImg("update_icon.png")
+				if(atomicState?.appData?.updater?.allowInApp == true || getDevOpt()) {
+					href "codeUpdatesPage", title: "SmartApp and Device Code Updates", description: "Tap Here to Update", state: "complete", image: getAppImg("update_icon.png")
+				}
 			}
 			section("Donate, Release and License Info") {
 				href "infoPage", title: "Info and More", description: "", image: getAppImg("info_bubble.png")
@@ -405,6 +407,7 @@ def devicesPage() {
 		}
 		if(isInstalled) {
 			section("Device Web Tiles:") {
+				href url: getAppEndpointUrl("deviceTiles"), style:"external", title:"All Device Tiles\n(Take Longer to Load)", description:"Tap to view", required: true,state: "complete", image: getAppImg("view_icon.png")
 				if(atomicState?.thermostats) { href url: getAppEndpointUrl("tstatTiles"), style:"external", title:"Thermostat Tiles", description:"Tap to view", required: true,state: "complete", image: getAppImg("thermostat_icon.png") }
 				if(atomicState?.protects) { href url: getAppEndpointUrl("protectTiles"), style:"external", title:"Protect Tiles", description:"Tap to view", required: true,state: "complete", image: getAppImg("protect_icon.png") }
 				if(atomicState?.cameras) { href url: getAppEndpointUrl("cameraTiles"), style:"external", title:"Camera Tiles", description:"Tap to view", required: true,state: "complete", image: getAppImg("camera_icon.png") }
@@ -453,7 +456,6 @@ def devPrefPage() {
 		}
 		if(atomicState?.thermostats) {
 			section("Thermostat Devices:") {
-
 				input ("tstatShowHistoryGraph", "bool", title: "Show Graph with Setpoint, Humidity, Temp History?", description: "This disables history collection", required: false, defaultValue: true, submitOnChange: true,
 						image: getAppImg("graph_icon2.png"))
 				input ("tempChgWaitVal", "enum", title: "Manual Temp Change Delay", required: false, defaultValue: 4, metadata: [values:waitValEnum()], submitOnChange: true, image: getAppImg("temp_icon.png"))
@@ -6811,7 +6813,7 @@ def toQueryString(Map m) {
 
 def clientId() {
 	if(appSettings?.clientId) {
-		return appSettings?.clientId
+		return appSettings?.clientId?.toString().trim()
 	} else {
 		LogAction("clientId is missing and is required to generate your Nest Auth token.  Please verify you are running the latest software version", "error", true)
 		return null
@@ -6820,7 +6822,7 @@ def clientId() {
 
 def clientSecret() {
 	if(appSettings?.clientSecret) {
-		return appSettings?.clientSecret
+		return appSettings?.clientSecret?.toString().trim()
 	} else {
 		LogAction("clientSecret is missing and is required to generate your Nest Auth token.  Please verify you are running the latest software version", "error", true)
 		return null
@@ -7647,224 +7649,76 @@ def getDevIds() {
     return atomicState?.devCodeIdData ?: [:]
 }
 
-def runStUpdateHtml() {
-    def html = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>NST Manager Updater</title>
-        <meta http-equiv="cache-control" content="max-age=0"/>
-    	<meta http-equiv="cache-control" content="no-cache"/>
-    	<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
-    	<meta http-equiv="pragma" content="no-cache"/>
-        <meta name="viewport" content="width=640">
-        <meta charset="utf-8">
-        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
-        <script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
-		<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
-		<style>
-		</style>
-    </head>
-
-    <body>
-	  <div style="padding: 30px;">
-		<img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png" style=""/>
-		<span class="title-text"> NST Manager Updater</span>
-	  </div>
-      <svg id="loader" width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="rgb(0%, 51.3%, 100%)">
+def getLoaderAnimation2() {
+    return """
+        <svg id="loader" width="60%" height="60%" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="rgb(0%, 51.3%, 100%)">
         <g fill="none" fill-rule="evenodd">
           <g transform="translate(1 1)" stroke-width="2">
             <circle stroke-opacity=".5" cx="18" cy="18" r="18" />
             <path d="M36 18c0-9.94-8.06-18-18-18">
               <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite" />
             </path>
-            <text x="50%" y="50%" text-anchor="middle" stroke="gray" style="font-size:0.3em; font-weight:normal;" fill="gray" stroke-width="0">Please Wait...</text>
+            <text id="loaderText1" fill="gray" stroke-width="0" style="font-size: 0.25em;" x="50%" y="45%" text-anchor="middle"></text>
+            <text id="loaderText2" fill="gray" stroke-width="0" style="font-size: 0.2em;"x="50%" y="60%" text-anchor="middle"></text>
           </g>
         </g>
       </svg>
-      <div id="results"></div>
-      </br>
-      <div class="listDiv centered">
-    	 <div id="resultList">
-            <ul style="list-style: none;"></ul>
-         </div>
-      </div>
-      <script type="text/javascript">
-	  var appIds = ${new groovy.json.JsonOutput().toJson(getAppIds())};
-	  // console.log(appIds);
-	  var devIds = ${new groovy.json.JsonOutput().toJson(getDevIds())};
-	  // console.log(devIds);
-	  var createXhrRequest = function (url, appId, appDesc, httpMethod, message, callback) {
-		var xhr = new XMLHttpRequest();
-		xhr.open(httpMethod, url + appId, true);
-		xhr.onload = function () {
-		  if (xhr.readyState === xhr.DONE) {
-			callback(null, xhr, appId, appDesc);
-		  }
-		};
-		xhr.onerror = function () {
-		  callback(xhr);
-		};
-		xhr.send(message);
-	  };
+    """
+}
 
-	  function runStUpdates() {
-		let lastApp = false;
-		let lastDev = false;
-		var request = new XMLHttpRequest();
-		request.open('GET', '${apiServerUrl("/hub")}', false);
-		request.send(null);
-		if (request.status === 200) {
-		  for (var i in appIds) {
-			  lastApp = (Object.keys(appIds).indexOf(i) + 1 === Object.keys(appIds).length);
-        	  // console.log("lastApp: " + lastApp);
-			  var appDesc = i.toString();
-			  if (appDesc !== undefined) {
-				if (appDesc.toString() === "main") { appType = "Manager App"; }
-				else if (appDesc.toString() === "auto") { appType = "Automation App"; }
-			  }
-			  \$('#loader text').text('Checking');
-			  createXhrRequest('${apiServerUrl("/github/appRepoStatus?appId=")}', appIds[i], appType, 'GET', null, function(err, resp, appId, appDesc) {
-				  if (err) {
-					installError(err);
-				  } else {
-					  // console.log("resp1(" + appId + "):", JSON.parse(resp.response));
-					  if (resp.status === 200) {
-						  let respData = JSON.parse(resp.response);
-						  if (respData.hasDifference === true) {
-							\$('#loader text').text('Updating');
-							createXhrRequest('${apiServerUrl("/ide/app/updateOneFromRepo/")}', appId, appDesc, 'GET', null, function(err, resp, appId, appDesc) {
-							  if (err) {
-								installError(err);
-							  } else {
-								  if (resp.status === 200) {
-									  if (!(JSON.parse(resp.response).errors.length)) {
-										  \$('#loader text').text('Compiling');
-										  // console.log("resp2(" + appId + "):", JSON.parse(resp.response));
-										  createXhrRequest('${apiServerUrl("/ide/app/publishAjax/")}', appId, appDesc,  'GET', null, function(err, resp, appId, appDesc) {
-											  if (err) {
-												installError(err);
-											  } else {
-												  if (resp.status === 200) {
-													  //console.log("resp3(" + appId + "):", JSON.parse(resp.response));
-													  \$("#resultList ul").append('<li><span style="color: #25c225;"><i class="fa fa-check"></i> </span>' + appDesc + ' is Up-to-Date</li>');
-												  }
-											  }
-										  });
-									  }
-								  }
-							  }
-							});
-						  } else {
-							\$("#resultList ul").append('<li><span style="color: #25c225;"><i class="fa fa-check"></i> </span>' + appDesc + ' is Up-to-Date</li>');
-						  }
-					  }
-				  }
-			  });
-		  }
-		  for (var i in devIds) {
-			  lastDev = (Object.keys(devIds).indexOf(i) + 1 === Object.keys(devIds).length);
-        	  // console.log("lastDev: " + lastDev);
-			  var devDesc = i.toString();
-			  if (devDesc !== undefined) {
-				if (devDesc.toString() === "tstat") { devType = "Thermostat Device"; }
-				else if (devDesc.toString() === "protect") { devType = "Protect Device"; }
-				else if (devDesc.toString() === "camera") { devType = "Camera Device"; }
-				else if (devDesc.toString() === "presence") { devType = "Presence Device"; }
-				else if (devDesc.toString() === "weather") { devType = "Weather Device"; }
-			  }
-			  \$('#loader text').text('Checking');
-			  createXhrRequest('${apiServerUrl("/github/deviceRepoStatus?deviceTypeId=")}', devIds[i], devType, 'GET', null, function(err, resp, devId, devDesc) {
-				  if (err) {
-					installError(err);
-				  } else {
-					  // console.log("resp1(" + appId + "):", JSON.parse(resp.response));
-					  if (resp.status === 200) {
-						  let respData = JSON.parse(resp.response);
-						  if (respData.hasDifference === true) {
-							\$('#loader text').text('Updating');
-							createXhrRequest('${apiServerUrl("/ide/device/updateOneFromRepo/")}', devId, devDesc, 'GET', null, function(err, resp, devId, devDesc) {
-							  if (err) {
-								installError(err);
-							  } else {
-								  if (resp.status === 200) {
-									  if (!(JSON.parse(resp.response).errors.length)) {
-										  \$('#loader text').text('Compiling');
-										  // console.log("resp2(" + appId + "):", JSON.parse(resp.response));
-										  createXhrRequest('${apiServerUrl("/ide/device/publishAjax/")}', devId, devDesc,  'GET', null, function(err, resp, devId, devDesc) {
-											  if (err) {
-												installError(err);
-											  } else {
-												  if (resp.status === 200) {
-													  //console.log("resp3(" + appId + "):", JSON.parse(resp.response));
-													  \$("#resultList ul").append('<li><span style="color: #25c225;"><i class="fa fa-check"></i> </span>' + devDesc + ' is Up-to-Date</li>');
-												  }
-											  }
-										  });
-									  }
-								  }
-							  }
-							});
-						  } else {
-							\$("#resultList ul").append('<li><span style="color: #25c225;"><i class="fa fa-check"></i> </span>' + devDesc + ' is Up-to-Date</li>');
-						  }
-					  }
-				  }
-			  });
-		  }
-		  installComplete(lastApp, lastDev);
-		} else {
-		  installError(request.response);
-		}
-	  }
-
-        function installError(err) {
-          console.log('installError:', err);
-          if (sessionStorage.refreshCount < 7) {
-            document.getElementById('results').innerHTML = 'Reloading Page in 3 seconds';
-            location.reload(true);
-          } else {
-            loader.style.display = 'none';
-            results.style.display = 'block';
-            document.getElementById('results').innerHTML = '<br><button onclick="location.reload();">Reload page</button>';
-          }
-        }
-
-        function installComplete(appsDone, devsDone) {
-			if(appsDone && devsDone) {
-			  loader.style.display = 'none';
-	          results.style.display = 'block';
-	          document.getElementById('results').innerHTML = 'Updates are Complete!<br />';
-		    } else {
-  	            document.getElementById('results').innerHTML = 'Updates in Progress<br />';
-			}
-        }
-
-        window.onload = function() {
-          if (sessionStorage.refreshAgain === "false") {
-            document.getElementById('results').innerHTML = 'Waiting for connection...';
-          } else {
-            document.getElementById('results').innerHTML = 'Getting Updates';
-            runStUpdates();
-          }
-        }
-      	</script>
-        </body>
-        <script>
-            var url = new URL(window.location);
-            if (sessionStorage.refreshAgain === undefined || sessionStorage.refreshAgain === "true") {
-              sessionStorage.refreshCount = 1;
-              sessionStorage.refreshAgain = "false";
-              document.write('<meta http-equiv="refresh" content="3;' + url + '"/>');
-            } else {
-              sessionStorage.refreshAgain = "true";
-              sessionStorage.refreshCount = Number(sessionStorage.refreshCount) + 1;
-            }
+def runStUpdateHtml() {
+    def html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>NST Manager Updater</title>
+		<meta http-equiv="cache-control" content="max-age=0"/>
+        <meta http-equiv="cache-control" content="no-cache"/>
+        <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
+        <meta http-equiv="pragma" content="no-cache"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta charset="utf-8">
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
+        <script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
+        <script src="https://fastcdn.org/FlowType.JS/1.1/flowtype.js"></script>
+		<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
+		<script type="text/javascript">
+            var functionType = "updates";
+            var appIds = ${new JsonOutput().toJson(getAppIds())};
+            // console.log( "appIds", appIds);
+			var devIds = ${new groovy.json.JsonOutput().toJson(getDevIds())};
+	  	  	// console.log(devIds);
+            var authUrl = '${apiServerUrl("/hub")}';
+            var appUpd1Url = '${apiServerUrl("/github/appRepoStatus?appId=")}';
+            var appUpd2Url = '${apiServerUrl("/ide/app/updateOneFromRepo/")}';
+            var appUpd3Url = '${apiServerUrl("/ide/app/publishAjax/")}';
+			var devUpd1Url = '${apiServerUrl("/github/deviceRepoStatus?deviceTypeId=")}';
+            var devUpd2Url = '${apiServerUrl("/ide/device/updateOneFromRepo/")}';
+            var devUpd3Url = '${apiServerUrl("/ide/device/publishAjax/")}';
         </script>
-        </html>
-        """
+		<style>
+		</style>
+    </head>
 
+    <body>
+		<div class="title-div">
+			  <h1 class="title-text">NST Manager Updater</h1>
+		</div>
+		<section>
+			${getLoaderAnimation2()}
+		</section>
+		<div class="listDiv">
+			<div id="resultList">
+				<h4 id="resultsTitle" style="display: none;">Update Results</h4>
+				<ul id="resultUl"></ul>
+			</div>
+		</div>
+		<i id="finishedImg" class='fa fa-check' style="display: none;"></i>
+		<div id="results"></div>
+		<script type="text/javascript" src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/st_updater.js"></script>
+	</body>
+	</html>"""
     render contentType: "text/html", data: html
 }
 
@@ -8059,7 +7913,7 @@ def renderDiagHome() {
 				<link rel="stylesheet" href="https://cdn.rawgit.com/toubou91/percircle/master/dist/css/percircle.css">
 				<script src="https://cdn.rawgit.com/toubou91/percircle/master/dist/js/percircle.js"></script>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
-				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diaghome.min.css">
+				<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/diaghome.min.css">
 				<style>
 				</style>
 			</head>
@@ -8206,7 +8060,7 @@ def renderDiagHome() {
 						</div>
 					</div>
 			  	</div>
-				<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diaghome.min.js"></script>
+				<script src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/diaghome.min.js"></script>
 			</body>
 		"""
 		render contentType: "text/html", data: html
@@ -8350,7 +8204,7 @@ def renderManagerData() {
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
 				<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
-				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
+				<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
 				<style>
 				.pushy {
 				    position: fixed;
@@ -8470,7 +8324,7 @@ def renderManagerData() {
 						fontRatio: 30
 					});
 				</script>
- 			   	<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
+ 			   	<script src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
  			   	<script>
 					\$(document).ready(function() {
 						${scrStr}
@@ -8565,7 +8419,7 @@ def renderAutomationData() {
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
 				<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
-				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
+				<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
 				<style>
 
 				</style>
@@ -8624,7 +8478,7 @@ def renderAutomationData() {
 						fontRatio: 30
 					});
 				</script>
- 		  		<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
+ 		  		<script src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
  		  		<script>
 					\$(document).ready(function() {
 						${scrStr}
@@ -8788,7 +8642,7 @@ def renderDeviceData() {
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/css/swiper.min.css" />
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css" />
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css" />
-				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
+				<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/js/swiper.min.js"></script>
 				<script src="https://www.gstatic.com/charts/loader.js"></script>
 				<script>vex.defaultOptions.className = 'vex-theme-default'</script>
@@ -8854,7 +8708,7 @@ def renderDeviceData() {
 						fontRatio: 30
 					});
 				</script>
-			  	<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
+			  	<script src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
 			  	<script>
 					\$(document).ready(function() {
 						${scrStr}
@@ -8946,7 +8800,7 @@ def renderDeviceTiles(type=null) {
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/css/swiper.min.css" />
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css" />
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css" />
-				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
+				<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/js/swiper.min.js"></script>
 				<script src="https://www.gstatic.com/charts/loader.js"></script>
 				<script>vex.defaultOptions.className = 'vex-theme-default'</script>
@@ -9012,7 +8866,7 @@ def renderDeviceTiles(type=null) {
 						fontRatio: 30
 					});
 				</script>
-			  	<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
+			  	<script src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
 			  	<script>
 					\$(document).ready(function() {
 						${scrStr}
@@ -9063,7 +8917,7 @@ def renderHtmlMapDesc(title, heading, datamap) {
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
 				<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
-				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
+				<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages.css">
 				<style>
 				</style>
 			</head>
@@ -9121,7 +8975,7 @@ def renderHtmlMapDesc(title, heading, datamap) {
 	 					</div>
 	 	 			</div>
 	 	 		</div>
-  			   	<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
+  			   	<script src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
 			</body>
 		"""
 	/* "" */
