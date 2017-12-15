@@ -914,7 +914,6 @@ pre {
     width: 95%;
     min-height: 300px;
     padding: 10px;
-    overflow: hidden;
 }
 
 .default-container {
@@ -961,7 +960,6 @@ pre {
 .sectionBgTile {
     box-shadow: 0 1px 1px rgba(0,0,0,0.16), 0 1px 1px rgba(0,0,0,0.23);
     background: white;
-    max-width: 100%;
 }
 
 .sectionBgTile h3 {
