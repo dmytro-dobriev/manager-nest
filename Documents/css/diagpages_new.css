@@ -29,7 +29,7 @@ html, body {
 }
 
 .right-head-col {
-    padding: 2.1em 40px 0 0;
+    padding: 2.2em 40px 0 0;
 }
 
 .links {
@@ -62,12 +62,84 @@ html, body {
     content: ' Refresh';
 }
 
-@media screen and (max-width: 520px) {
+@media only screen and (max-width: 600px) {
+    .hamburger-inner, .hamburger-inner:after, .hamburger-inner:before {
+        position: absolute;
+        width: 25px;
+        height: 4px;
+        transition-timing-function: ease;
+        transition-duration: .15s;
+        transition-property: transform;
+        border-radius: 4px;
+        background-color: #000;
+    }
     #rfrshBtn:after {
         content: '';
     }
     #rfrshBtn {
         font-size: 1.1em;
+    }
+    .logoIcn {
+        width: 1.7em;
+        height: auto;
+        max-width: 48px;
+        max-height: 48px;
+    }
+    .title-text {
+        font-size: 6vw;
+        padding: 3.5vw 0;
+    }
+    .container {
+        padding-right: 0;
+        padding-left: 0;
+    }
+    .panel-body {
+        padding: 0 15px;
+    }
+    .sectionBgTile h3 {
+        background-color: #00a1db;
+        font-size: 3.5vw;
+        padding: 2vw;
+        text-shadow: 1px 1px 1px black;
+    }
+    .device td {
+        color: grey;
+        text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+        text-align: center;
+        font-size: 3.0vw;
+    }
+    .devInfoTile th {
+        color: #00a1db;
+        background: transparent;
+        font-size: 3.0vw;
+        text-shadow: 0px 0px 1px lightgrey;
+        text-decoration: underline;
+        text-align: center;
+    }
+    .left-head-col {
+        padding: 2.2vw 0 0 20px;
+    }
+    .right-head-col {
+        padding: 1.3em 40px 0 0;
+    }
+    .slideFooterMsg {
+        font-size: 2.8vw;
+        padding: 20px;
+        margin: 1em auto;
+        text-decoration: underline;
+    }
+    .slideFooterMsgTile {
+        font-size: 2.8vw;
+        padding: 20px;
+        margin: 1em auto;
+        text-decoration: underline;
+    }
+    .row {
+        margin-right: 0;
+        margin-left: 0;
+    }
+    b.wStation {
+        font-size: 2.5vw;
     }
 }
 
@@ -594,10 +666,6 @@ pre {
     font-size: 0.9em;
 }
 
-.centerText {
-    text-align: center;
-}
-
 .mapDataFmt {}
 
 
@@ -648,6 +716,12 @@ pre {
 
 .bottomBorder {
    border-bottom: 2px solid #808080;
+}
+
+.device {
+    max-width: 1200px;
+    width: 100%;
+    padding-top: 10px;
 }
 
 .device h1 {
@@ -887,6 +961,7 @@ pre {
     font-size: 1.8vw;
     padding: 20px;
     margin:1em auto;
+    text-decoration: underline;
 }
 
 .pageFooterBtn {
