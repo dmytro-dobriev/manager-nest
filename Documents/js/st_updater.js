@@ -204,8 +204,8 @@ function runStUpdates() {
                                         }
                                     });
                             } else {
-                                addResult(stResp1.appDesc + ' is Up-to-Date', true);
-                                appsDone.push(stResp1.appDesc);
+                                addResult(stResp1.typeDesc + ' is Up-to-Date', true);
+                                appsDone.push(stResp1.typeDesc);
                                 sessionStorage.setItem('appsDone', appsDone);
                                 if (appsDone.length === Object.keys(appIds).length && devsDone.length === Object.keys(devIds).length) {
                                     installComplete('Updates are Complete!<br/>Everything is Good!');
