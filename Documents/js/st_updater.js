@@ -112,7 +112,7 @@ function runStUpdates() {
                             if (respData.hasDifference === true) {
                                 $('#loaderText2').text('Updating');
                                 $('#loaderText1').text(stResp1.typeDesc);
-                                makeRequest(appUpd2Url, 'GET', null, true, stResp1.appId, stResp1.typeDesc)
+                                makeRequest(appUpd2Url, 'GET', null, true, stResp1.typeId, stResp1.typeDesc)
                                     .catch(function(errResp2) {
                                         installError(errResp2, false);
                                         addResult(errResp2.typeDesc + ' Update Issue', false);
@@ -121,14 +121,14 @@ function runStUpdates() {
                                         if (!JSON.parse(stResp2.response).errors.length) {
                                             $('#loaderText2').text('Compiling');
                                             $('#loaderText1').text(stResp2.typeDesc);
-                                            // console.log("stResp2(" + stResp2.appId + "):", JSON.parse(stResp2.response));
-                                            makeRequest(appUpd3Url, 'GET', null, true, stResp2.appId, stResp2.typeDesc)
+                                            // console.log("stResp2(" + stResp2.typeId + "):", JSON.parse(stResp2.response));
+                                            makeRequest(appUpd3Url, 'GET', null, true, stResp2.typeId, stResp2.typeDesc)
                                                 .catch(function(errResp3) {
                                                     addResult(errResp3.typeDesc + ' Update Issue', false);
                                                     installError(errResp3, false);
                                                 })
                                                 .then(function(stResp3) {
-                                                    // console.log("stResp3(" + stResp3.appId + "):", JSON.parse(stResp3.response));
+                                                    // console.log("stResp3(" + stResp3.typeId + "):", JSON.parse(stResp3.response));
                                                     addResult(stResp3.typeDesc + ' is Up-to-Date', true);
                                                     appsDone.push(stResp3.typeDesc);
                                                     sessionStorage.setItem('appsDone', appsDone);
