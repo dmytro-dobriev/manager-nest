@@ -78,11 +78,11 @@ ul {
 }
 
 #loaderText1 {
-    font-size: 0.45vw;
+    font-size: 4px;
 }
 
 #loaderText2 {
-    font-size: 0.4vw;
+    font-size: 7px;
 }
 
 #loader {
@@ -176,9 +176,9 @@ section {
         max-height: 350px;
     }
     #loaderText1 {
-        font-size: 0.75vw;
+        font-size: 0.3em;
     }
     #loaderText2 {
-        font-size: 0.7vw;
+        font-size: 0.4em;
     }
 }
