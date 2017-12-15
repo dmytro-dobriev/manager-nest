@@ -13,7 +13,7 @@ if (functionType !== 'stackUtil') {
 function makeRequest(url, method, message, async = true, typeId = null, typeDesc = null) {
     return new Promise(function(resolve, reject) {
         var xhr = new XMLHttpRequest();
-        url += appId || '';
+        url += typeId || '';
         xhr.onreadystatechange = function() {
             if (xhr.readyState === XMLHttpRequest.DONE) {
                 if (xhr.status === 200) {
