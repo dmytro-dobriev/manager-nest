@@ -1018,7 +1018,7 @@ pre {
 
 @media only screen and (max-width: 600px) {
     h1 {
-        padding: 20px 0;
+        padding: 20px 0 !important;
     }
     .hamburger-inner, .hamburger-inner:after, .hamburger-inner:before {
         width: 25px;
@@ -1035,30 +1035,30 @@ pre {
         max-height: 32px !important;
     }
     .title-text {
-        font-size: 6vw;
-        padding: 3.5vw 0;
+        font-size: 6vw !important;
+        padding: 3.5vw 0 !important;
     }
     .container {
-        padding-right: 0;
-        padding-left: 0;
+        padding-right: 0 !important;
+        padding-left: 0 !important;
     }
     .panel-body {
-        padding: 0 15px;
+        padding: 0 15px !important;
     }
     .sectionBgTile h3 {
-        font-size: 3.5vw;
+        font-size: 3.5vw !important;
     }
     .device td {
-        font-size: 3.0vw;
+        font-size: 3.0vw !important;
     }
     .devInfoTile th {
-        font-size: 3.0vw;
+        font-size: 3.0vw !important;
     }
     .left-head-col {
-        padding: 3.2vw 0 0 0;
+        padding: 3.2vw 0 0 0 !important;
     }
     .right-head-col {
-        padding: 1.7em 20px 0 0;
+        padding: 1.7em 20px 0 0 !important;
     }
     .slideFooterMsg {
         font-size: 2.8vw !important;
@@ -1067,10 +1067,6 @@ pre {
     .slideFooterMsgTile {
         font-size: 2.8vw !important;
         text-decoration: underline;
-    }
-    .row {
-        margin-right: 0;
-        margin-left: 0;
     }
     b.wStation {
         font-size: 2.5vw;
