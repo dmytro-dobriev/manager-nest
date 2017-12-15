@@ -179,7 +179,7 @@ function runStUpdates() {
                                                                                             .then(function(stResp6) {
                                                                                                 // console.log("stResp6(" + stResp6.typeId + "):", JSON.parse(stResp6.response));
                                                                                                 addResult(stResp6.typeDesc + ' was Updated', true);
-                                                                                                //devsDone.push(stResp6.typeDesc);
+                                                                                                devsDone.push(stResp6.typeDesc);
                                                                                                 sessionStorage.setItem('devsDone', devsDone);
                                                                                                 if (devsDone.length === Object.keys(devIds).length) {
                                                                                                     installComplete('Updates are Complete!<br/>Everything is Good!');
