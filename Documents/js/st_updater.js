@@ -91,7 +91,7 @@ function runStUpdates() {
                     var appDesc = i.toString();
                     let appId = appIds[i];
                     let appType;
-                    // console.log('addDesc: '+appDesc)
+                    // console.log('appDesc: '+appDesc)
                     if (appDesc !== undefined) {
                         if (appDesc.toString() === 'main') {
                             appType = 'NST Manager';
@@ -140,7 +140,7 @@ function runStUpdates() {
                                                                 var devDesc = i.toString();
                                                                 let devId = devIds[i];
                                                                 let devType;
-                                                                // console.log('addDesc: '+appDesc)
+                                                                // console.log('devDesc: '+devDesc)
                                                                 if (devDesc !== undefined) {
                                                                     if (devDesc.toString() === "tstat") { devType = "Thermostat Device"; }
                                                                     else if (devDesc.toString() === "protect") { devType = "Protect Device"; }
@@ -156,7 +156,7 @@ function runStUpdates() {
                                                                         addResult(errResp4.typeDesc + ' Update Issue', false);
                                                                     })
                                                                     .then(function(stResp4) {
-                                                                        // console.log(stResp1);
+                                                                        // console.log(stResp4);
                                                                         let respData = JSON.parse(stResp4.response);
                                                                         if (respData.hasDifference === true) {
                                                                             $('#loaderText2').text('Updating');
@@ -170,16 +170,16 @@ function runStUpdates() {
                                                                                     if (!JSON.parse(stResp5.response).errors.length) {
                                                                                         $('#loaderText2').text('Compiling');
                                                                                         $('#loaderText1').text(stResp5.typeDesc);
-                                                                                        // console.log("stResp2(" + stResp2.appId + "):", JSON.parse(stResp2.response));
+                                                                                        // console.log("stResp5(" + stResp2.typeId + "):", JSON.parse(stResp5.response));
                                                                                         makeRequest(devUpd3Url, 'GET', null, true, stResp5.typeId, stResp5.typeDesc)
                                                                                             .catch(function(errResp6) {
                                                                                                 addResult(errResp6.typeDesc + ' Update Issue', false);
                                                                                                 installError(errResp6, false);
                                                                                             })
                                                                                             .then(function(stResp6) {
-                                                                                                // console.log("stResp3(" + stResp3.appId + "):", JSON.parse(stResp3.response));
+                                                                                                // console.log("stResp6(" + stResp6.typeId + "):", JSON.parse(stResp6.response));
                                                                                                 addResult(stResp6.typeDesc + ' was Updated', true);
-                                                                                                appsDone.push(stResp6.typeDesc);
+                                                                                                devsDone.push(stResp6.typeDesc);
                                                                                                 sessionStorage.setItem('devsDone', devsDone);
                                                                                                 if (devsDone.length === Object.keys(devIds).length) {
                                                                                                     installComplete('Updates are Complete!<br/>Everything is Good!');
@@ -189,7 +189,7 @@ function runStUpdates() {
                                                                                 });
                                                                         } else {
                                                                             addResult(stResp4.typeDesc + ' is Up-to-Date', true);
-                                                                            appsDone.push(stResp4.typeDesc);
+                                                                            devsDone.push(stResp4.typeDesc);
                                                                             sessionStorage.setItem('devsDone', devsDone);
                                                                             if (devsDone.length === Object.keys(devIds).length) {
                                                                                 installComplete('Updates are Complete!<br/>Everything is Good!');
