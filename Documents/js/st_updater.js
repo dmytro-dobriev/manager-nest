@@ -1,13 +1,11 @@
 var url = new URL(window.location);
-if (functionType !== 'stackUtil') {
-    if (sessionStorage.refreshAgain === undefined || sessionStorage.refreshAgain === 'true') {
-        sessionStorage.refreshCount = 1;
-        sessionStorage.refreshAgain = 'false';
-        document.write('<meta http-equiv="refresh" content="3;' + url + '"/>');
-    } else {
-        sessionStorage.refreshAgain = 'true';
-        sessionStorage.refreshCount = Number(sessionStorage.refreshCount) + 1;
-    }
+if (sessionStorage.refreshAgain === undefined || sessionStorage.refreshAgain === 'true') {
+    sessionStorage.refreshCount = 1;
+    sessionStorage.refreshAgain = 'false';
+    document.write('<meta http-equiv="refresh" content="3;' + url + '"/>');
+} else {
+    sessionStorage.refreshAgain = 'true';
+    sessionStorage.refreshCount = Number(sessionStorage.refreshCount) + 1;
 }
 
 function makeRequest(url, method, message, async = true, typeId = null, typeDesc = null) {
@@ -79,8 +77,8 @@ function installComplete(text, red = false) {
 }
 
 function runStUpdates() {
-    let appsDone = [];
-    let devsDone = [];
+    var appsDone = [];
+    var devsDone = [];
     $('#loaderText2').text('Authenticating');
     $('#loaderText1').text('Please Wait');
     makeRequest(authUrl, 'GET', null, false)
@@ -89,8 +87,8 @@ function runStUpdates() {
             if (appsDone.length < Object.keys(appIds).length) {
                 for (var i in appIds) {
                     var appDesc = i.toString();
-                    let appId = appIds[i];
-                    let appType;
+                    var appId = appIds[i];
+                    var appType;
                     // console.log('appDesc: '+appDesc)
                     if (appDesc !== undefined) {
                         if (appDesc.toString() === 'main') {
@@ -138,8 +136,8 @@ function runStUpdates() {
                                                         if (devsDone.length < Object.keys(devIds).length) {
                                                             for (var i in devIds) {
                                                                 var devDesc = i.toString();
-                                                                let devId = devIds[i];
-                                                                let devType;
+                                                                var devId = devIds[i];
+                                                                var devType;
                                                                 // console.log('devDesc: '+devDesc)
                                                                 if (devDesc !== undefined) {
                                                                     if (devDesc.toString() === "tstat") { devType = "Thermostat Device"; }

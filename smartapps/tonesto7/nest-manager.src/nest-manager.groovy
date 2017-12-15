@@ -7682,7 +7682,7 @@ def runStUpdateHtml() {
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
         <script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
         <script src="https://fastcdn.org/FlowType.JS/1.1/flowtype.js"></script>
-		<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
+		<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
 		<script type="text/javascript">
             var functionType = "updates";
             var appIds = ${new JsonOutput().toJson(getAppIds())};
@@ -7698,6 +7698,26 @@ def runStUpdateHtml() {
             var devUpd3Url = '${apiServerUrl("/ide/device/publishAjax/")}';
         </script>
 		<style>
+			#loaderText1 {
+				font-size: 4px;
+			}
+
+			#loaderText2 {
+				font-size: 7px;
+			}
+			@media only screen and (max-width: 600px) {
+			    #loader {
+			        padding: 20px;
+			        max-width: 350px;
+			        max-height: 350px;
+			    }
+			    #loaderText1 {
+			        font-size: 0.3em;
+			    }
+			    #loaderText2 {
+			        font-size: 0.4em;
+			    }
+			}
 		</style>
     </head>
 
@@ -7716,7 +7736,7 @@ def runStUpdateHtml() {
 		</div>
 		<i id="finishedImg" class='fa fa-check' style="display: none;"></i>
 		<div id="results"></div>
-		<script type="text/javascript" src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/st_updater.js"></script>
+		<script type="text/javascript" src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/st_updater.js"></script>
 	</body>
 	</html>"""
     render contentType: "text/html", data: html

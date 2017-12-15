@@ -172,8 +172,6 @@ section {
 @media only screen and (max-width: 600px) {
     #loader {
         padding: 20px;
-        max-width: 350px;
-        max-height: 350px;
     }
     #loaderText1 {
         font-size: 0.3em;
