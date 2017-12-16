@@ -105,7 +105,7 @@ function runStUpdates() {
                             addResult(errResp1.typeDesc + ' Update Issue', false);
                         })
                         .then(function(stResp1) {
-                            // console.log(stResp1);
+                            console.log(stResp1);
                             let respData = JSON.parse(stResp1.response);
                             if (respData.hasDifference === true) {
                                 $('#loaderText2').text('Updating');
@@ -119,14 +119,14 @@ function runStUpdates() {
                                         if (!JSON.parse(stResp2.response).errors.length) {
                                             $('#loaderText2').text('Compiling');
                                             $('#loaderText1').text(stResp2.typeDesc);
-                                            // console.log("stResp2(" + stResp2.typeId + "):", JSON.parse(stResp2.response));
+                                            console.log("stResp2(" + stResp2.typeId + "):", JSON.parse(stResp2.response));
                                             makeRequest(appUpd3Url, 'GET', null, true, stResp2.typeId, stResp2.typeDesc)
                                                 .catch(function(errResp3) {
                                                     addResult(errResp3.typeDesc + ' Update Issue', false);
                                                     installError(errResp3, false);
                                                 })
                                                 .then(function(stResp3) {
-                                                    // console.log("stResp3(" + stResp3.typeId + "):", JSON.parse(stResp3.response));
+                                                    console.log("stResp3(" + stResp3.typeId + "):", JSON.parse(stResp3.response));
                                                     addResult(stResp3.typeDesc + ' is Up-to-Date', true);
                                                     appsDone.push(stResp3.typeDesc);
                                                     sessionStorage.setItem('appsDone', appsDone);
@@ -138,7 +138,7 @@ function runStUpdates() {
                                                                 var devDesc = i.toString();
                                                                 var devId = devIds[i];
                                                                 var devType;
-                                                                // console.log('devDesc: '+devDesc)
+                                                                console.log('devDesc: '+devDesc)
                                                                 if (devDesc !== undefined) {
                                                                     if (devDesc.toString() === "tstat") { devType = "Thermostat Device"; }
                                                                     else if (devDesc.toString() === "protect") { devType = "Protect Device"; }
@@ -168,14 +168,14 @@ function runStUpdates() {
                                                                                     if (!JSON.parse(stResp5.response).errors.length) {
                                                                                         $('#loaderText2').text('Compiling');
                                                                                         $('#loaderText1').text(stResp5.typeDesc);
-                                                                                        // console.log("stResp5(" + stResp2.typeId + "):", JSON.parse(stResp5.response));
+                                                                                        console.log("stResp5(" + stResp5.typeId + "):", JSON.parse(stResp5.response));
                                                                                         makeRequest(devUpd3Url, 'GET', null, true, stResp5.typeId, stResp5.typeDesc)
                                                                                             .catch(function(errResp6) {
                                                                                                 addResult(errResp6.typeDesc + ' Update Issue', false);
                                                                                                 installError(errResp6, false);
                                                                                             })
                                                                                             .then(function(stResp6) {
-                                                                                                // console.log("stResp6(" + stResp6.typeId + "):", JSON.parse(stResp6.response));
+                                                                                                console.log("stResp6(" + stResp6.typeId + "):", JSON.parse(stResp6.response));
                                                                                                 addResult(stResp6.typeDesc + ' was Updated', true);
                                                                                                 devsDone.push(stResp6.typeDesc);
                                                                                                 sessionStorage.setItem('devsDone', devsDone);
