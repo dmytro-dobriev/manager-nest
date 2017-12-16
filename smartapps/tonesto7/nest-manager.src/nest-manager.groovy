@@ -260,7 +260,7 @@ def mainPage() {
 		if(isInstalled) {
 			if(settings?.structures && !atomicState?.structures) { atomicState.structures = settings?.structures }
 			section("Devices & Location:") {
-				paragraph "Home/Away Status: (${strCapitalize(getLocationPresence() ?: "Not Available Yet!")})", title: "Location: ${atomicState?.structName}", state: "complete",  image: getAppImg("thermostat_icon.png")
+				paragraph "Home/Away Status: (${strCapitalize(getLocationPresence() ?: "Not Available Yet!")})", title: "Location: ${atomicState?.structName}", state: "complete",  image: getAppImg("home_icon.png")
 				def t1 = getDevicesDesc(false)
 				def devDesc = t1 ? "${t1}\n\nTap to modify devices" : "Tap to configure"
 				href "deviceSelectPage", title: "Manage/View Devices", description: devDesc, state: "complete", image: "blank_icon.png"
