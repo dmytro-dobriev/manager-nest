@@ -623,8 +623,9 @@ def reviewSetupPage() {
 
 		showVoiceRprtPrefs()
 		section("App Mode: (Full or Lite)") {
-			paragraph "Lite Mode will remove alot of the advanced features and allow for a very basic install.  This will basically integrate Nest into ST without the bells and whistles."
-			input ("liteAppMode", "bool", title: "Install the App in Lite Mode?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("app_analytics_icon.png"))
+			def lmDesc = "Lite Mode will remove alot of the advanced features and allow for a very basic install.  This will basically integrate Nest into ST without the bells and whistles."
+			input ("liteAppMode", "bool", title: "Lite App Mode?", description: lmDesc, required: false, defaultValue: false, submitOnChange: true,
+					image: getAppImg("app_analytics_icon.png"))
 		}
 		section("Notifications:") {
 			def t1 = getAppNotifConfDesc()
@@ -649,7 +650,7 @@ def reviewSetupPage() {
 }
 
 def isAppLiteMode() {
-	return (settings?.liteAppMode != true)
+	return (settings?.liteAppMode == true)
 }
 
 def showDevSharePrefs() {
@@ -738,6 +739,8 @@ def prefsPage() {
 		section ("Misc. Options:") {
 			input ("useMilitaryTime", "bool", title: "Use Military Time (HH:mm)?", defaultValue: false, submitOnChange: true, required: false, image: getAppImg("military_time_icon.png"))
 			input ("disAppIcons", "bool", title: "Disable App Icons?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("no_icon.png"))
+			input ("liteAppMode", "bool", title: "Lite App Mode?", description: "Removes Automations", required: false, defaultValue: false, submitOnChange: true,
+					image: getAppImg("app_analytics_icon.png"))
 			atomicState.needChildUpd = true
 		}
 		section("Customize Application Label:") {
@@ -1838,11 +1841,11 @@ def devPageFooter(var, eTime) {
 	def data = atomicState?.usageMetricsStore ?: [:]
 	data[var] = (data[var] == null) ? 1 : data[var].toInteger()+1
 	atomicState?.usageMetricsStore = data
-	if(getDevOpt()) {
-		res += 	section() {
-			paragraph "    Page Loads: (${atomicState?.usageMetricsStore["${var}"] ?: 0}) | LoadTime: (${eTime ? (now()-eTime) : 0}ms)"
-		}
-	}
+	// if(getDevOpt()) {
+	// 	res += 	section() {
+	// 		paragraph "    Page Loads: (${atomicState?.usageMetricsStore["${var}"] ?: 0}) | LoadTime: (${eTime ? (now()-eTime) : 0}ms)"
+	// 	}
+	// }
 	return res?.size() ? res : ""
 }
 
