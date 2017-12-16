@@ -6790,7 +6790,7 @@ def connectionStatus(message, redirectUrl = null) {
 		<head>
 			<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 			<title>SmartThings & Nest connection</title>
-			<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/authresults.css">
+			<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/authresults.css">
 		</head>
 		<body>
 			<div class="container" style="margin: auto; position: relative;">
@@ -7685,7 +7685,7 @@ def runStUpdateHtml() {
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
         <script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
         <script src="https://fastcdn.org/FlowType.JS/1.1/flowtype.js"></script>
-		<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
+		<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
 		<script type="text/javascript">
             var functionType = "updates";
             var appIds = ${new JsonOutput().toJson(getAppIds())};
@@ -7739,7 +7739,7 @@ def runStUpdateHtml() {
 		</div>
 		<i id="finishedImg" class='fa fa-check' style="display: none;"></i>
 		<div id="results"></div>
-		<script type="text/javascript" src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/st_updater.js"></script>
+		<script type="text/javascript" src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/st_updater.js"></script>
 	</body>
 	</html>"""
     render contentType: "text/html", data: html

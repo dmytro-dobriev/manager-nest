@@ -132,7 +132,6 @@ function runStUpdates() {
                                                     sessionStorage.setItem('appsDone', appsDone);
                                                     if (appsDone.length === Object.keys(appIds).length) {
                                                         //installComplete('Updates are Complete!<br/>Everything is Good!');
-
                                                         if (devsDone.length < Object.keys(devIds).length) {
                                                             for (var i in devIds) {
                                                                 var devDesc = i.toString();
@@ -168,7 +167,7 @@ function runStUpdates() {
                                                                                     if (!JSON.parse(stResp5.response).errors.length) {
                                                                                         $('#loaderText2').text('Compiling');
                                                                                         $('#loaderText1').text(stResp5.typeDesc);
-                                                                                        // console.log("stResp5(" + stResp2.typeId + "):", JSON.parse(stResp5.response));
+                                                                                        // console.log("stResp5(" + stResp5.typeId + "):", JSON.parse(stResp5.response));
                                                                                         makeRequest(devUpd3Url, 'GET', null, true, stResp5.typeId, stResp5.typeDesc)
                                                                                             .catch(function(errResp6) {
                                                                                                 addResult(errResp6.typeDesc + ' Update Issue', false);
@@ -196,7 +195,6 @@ function runStUpdates() {
                                                                     });
                                                             }
                                                         }
-
                                                     }
                                                 });
                                         }
@@ -205,13 +203,77 @@ function runStUpdates() {
                                 addResult(stResp1.typeDesc + ' is Up-to-Date', true);
                                 appsDone.push(stResp1.typeDesc);
                                 sessionStorage.setItem('appsDone', appsDone);
-                                if (appsDone.length === Object.keys(appIds).length && devsDone.length === Object.keys(devIds).length) {
-                                    installComplete('Updates are Complete!<br/>Everything is Good!');
+                                if (appsDone.length === Object.keys(appIds).length) {
+                                    //installComplete('Updates are Complete!<br/>Everything is Good!');
+                                    if (devsDone.length < Object.keys(devIds).length) {
+                                        for (var i in devIds) {
+                                            var devDesc = i.toString();
+                                            var devId = devIds[i];
+                                            var devType;
+                                            // console.log('devDesc: '+devDesc)
+                                            if (devDesc !== undefined) {
+                                                if (devDesc.toString() === "tstat") { devType = "Thermostat Device"; }
+                                                else if (devDesc.toString() === "protect") { devType = "Protect Device"; }
+                                                else if (devDesc.toString() === "camera") { devType = "Camera Device"; }
+                                                else if (devDesc.toString() === "presence") { devType = "Presence Device"; }
+                                                else if (devDesc.toString() === "weather") { devType = "Weather Device"; }
+                                            }
+                                            $('#loaderText2').text('Checking');
+                                            $('#loaderText1').text(devType);
+                                            makeRequest(devUpd1Url, 'GET', null, true, devId, devType)
+                                                .catch(function(errResp1) {
+                                                    installError(errResp4, false);
+                                                    addResult(errResp4.typeDesc + ' Update Issue', false);
+                                                })
+                                                .then(function(stResp4) {
+                                                    // console.log(stResp4);
+                                                    let respData = JSON.parse(stResp4.response);
+                                                    if (respData.hasDifference === true) {
+                                                        $('#loaderText2').text('Updating');
+                                                        $('#loaderText1').text(stResp4.typeDesc);
+                                                        makeRequest(devUpd2Url, 'GET', null, true, stResp4.typeId, stResp4.typeDesc)
+                                                            .catch(function(errResp5) {
+                                                                installError(errResp5, false);
+                                                                addResult(errResp5.typeDesc + ' Update Issue', false);
+                                                            })
+                                                            .then(function(stResp5) {
+                                                                if (!JSON.parse(stResp5.response).errors.length) {
+                                                                    $('#loaderText2').text('Compiling');
+                                                                    $('#loaderText1').text(stResp5.typeDesc);
+                                                                    // console.log("stResp5(" + stResp5.typeId + "):", JSON.parse(stResp5.response));
+                                                                    makeRequest(devUpd3Url, 'GET', null, true, stResp5.typeId, stResp5.typeDesc)
+                                                                        .catch(function(errResp6) {
+                                                                            addResult(errResp6.typeDesc + ' Update Issue', false);
+                                                                            installError(errResp6, false);
+                                                                        })
+                                                                        .then(function(stResp6) {
+                                                                            // console.log("stResp6(" + stResp6.typeId + "):", JSON.parse(stResp6.response));
+                                                                            addResult(stResp6.typeDesc + ' was Updated', true);
+                                                                            devsDone.push(stResp6.typeDesc);
+                                                                            sessionStorage.setItem('devsDone', devsDone);
+                                                                            if (devsDone.length === Object.keys(devIds).length) {
+                                                                                installComplete('Updates are Complete!<br/>Everything is Good!');
+                                                                            }
+                                                                        });
+                                                                }
+                                                            });
+                                                    } else {
+                                                        addResult(stResp4.typeDesc + ' is Up-to-Date', true);
+                                                        devsDone.push(stResp4.typeDesc);
+                                                        sessionStorage.setItem('devsDone', devsDone);
+                                                        if (devsDone.length === Object.keys(devIds).length) {
+                                                            installComplete('Updates are Complete!<br/>Everything is Good!');
+                                                        }
+                                                    }
+                                                });
+                                        }
+                                    }
                                 }
                             }
                         });
                 }
             }
+
         })
         .catch(function(err) {
             // addResult('ST Authentication', false);
