@@ -2720,15 +2720,20 @@ def getMaxHumidity(curExtTemp) {
 		if(curExtTemp >= adj_temp(40)) {
 			maxhum = 45
 		} else if(curExtTemp >= adj_temp(32)) {
-			maxhum = 40
+			maxhum = 45 - ( (adj_temp(40) - curExtTemp)/(adj_temp(40)-adj_temp(32)) ) * 5
+			//maxhum = 40
 		} else if(curExtTemp >= adj_temp(20)) {
-			maxhum = 35
+			maxhum = 40 - ( (adj_temp(32) - curExtTemp)/(adj_temp(32)-adj_temp(20)) ) * 5
+			//maxhum = 35
 		} else if(curExtTemp >= adj_temp(10)) {
-			maxhum = 30
+			maxhum = 35 - ( (adj_temp(20) - curExtTemp)/(adj_temp(20)-adj_temp(10)) ) * 5
+			//maxhum = 30
 		} else if(curExtTemp >= adj_temp(0)) {
-			maxhum = 25
+			maxhum = 30 - ( (adj_temp(10) - curExtTemp)/(adj_temp(10)-adj_temp(0)) ) * 5
+			//maxhum = 25
 		} else if(curExtTemp >= adj_temp(-10)) {
-			maxhum = 20
+			maxhum = 25 - Math.abs( (adj_temp(0) - curExtTemp) / (adj_temp(0)-adj_temp(-10)) ) * 5
+			//maxhum = 20
 		} else if(curExtTemp >= adj_temp(-20)) {
 			maxhum = 15
 		}
@@ -2755,7 +2760,7 @@ def humCtrlCheck() {
 		def maxHum = getMaxHumidity(curExtTemp)
 		def schedOk = humCtrlScheduleOk()
 
-		LogAction("humCtrlCheck: ( Humidity: (${curHum}) | External Temp: (${curExtTemp}) | Max Humidity: (${maxHum}) | HvacMode: (${hvacMode}) | OperatingState: (${curTstatOperState}) )", "info", false)
+		LogAction("humCtrlCheck: ( Humidity: (${curHum}) | External Temp: (${curExtTemp}) | Max Humidity: (${maxHum}) | HvacMode: (${hvacMode}) | OperatingState: (${curTstatOperState}) )", "info", true)
 
 		if(atomicState?.haveRunHumidifier == null) { atomicState.haveRunHumidifier = false }
 		def savedHaveRun = atomicState?.haveRunHumidifier
