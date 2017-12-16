@@ -127,7 +127,7 @@ function runStUpdates() {
                                                 })
                                                 .then(function(stResp3) {
                                                     // console.log("stResp3(" + stResp3.typeId + "):", JSON.parse(stResp3.response));
-                                                    addResult(stResp3.typeDesc + ' is Up-to-Date', true);
+                                                    addResult(stResp3.typeDesc + ' was Updated', true);
                                                     appsDone.push(stResp3.typeDesc);
                                                     sessionStorage.setItem('appsDone', appsDone);
                                                     if (appsDone.length === Object.keys(appIds).length) {

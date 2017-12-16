@@ -23,9 +23,9 @@ definition(
 	author: "${appAuthor()}",
 	description: "${textDesc()}",
 	category: "Convenience",
-	iconUrl: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_icon.png",
-	iconX2Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_icon%402x.png",
-	iconX3Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_icon%403x.png",
+	iconUrl: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_5.png",
+	iconX2Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_5%402x.png",
+	iconX3Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_5%403x.png",
 	singleInstance: true,
 	oauth: true )
 
@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.0" }
-def appVerDate() { "12-15-2017" }
+def appVerDate() { "12-16-2017" }
 def minVersions() {
 	return [
 		"automation":["val":530, "desc":"5.3.0"],
@@ -218,7 +218,7 @@ def authPage() {
 		LogAction("AuthToken not found: Directing to Login Page", "info", true)
 		return dynamicPage(name: "authPage", title: "Login Page", nextPage: "mainPage", install: false, uninstall: false) {
 			section("") {
-				paragraph appInfoDesc(), image: getAppImg("nst_manager_icon%402x.png", true)
+				paragraph appInfoDesc(), image: getAppImg("nst_manager_5%402x.png", true)
 			}
 			section(""){
 				paragraph "Tap 'Login to Nest' below to authorize SmartThings to your Nest Account.\n\nAfter login you will be taken to the 'Works with Nest' page. Read the info and if you 'Agree' press the 'Accept' button."
@@ -240,7 +240,7 @@ def mainPage() {
 	def setupComplete = (!atomicState?.newSetupComplete || !isInstalled) ? false : true
 	return dynamicPage(name: "mainPage", title: "", nextPage: (!setupComplete ? "reviewSetupPage" : null), install: setupComplete, uninstall: false) {
 		section("") {
-			href "changeLogPage", title: "", description: "${appInfoDesc()}", image: getAppImg("nst_manager_icon%402x.png", true)
+			href "changeLogPage", title: "", description: "${appInfoDesc()}", image: getAppImg("nst_manager_5%402x.png", true)
 			if(settings?.restStreaming) {
 				def rStrEn = (atomicState?.appData?.eventStreaming?.enabled || getDevOpt() || betaMarker())
 				href "pollPrefPage", title: "", state: ((atomicState?.restStreamingOn && rStrEn) ? "complete" : null), image: getAppImg("two_way_icon.png"),
@@ -689,7 +689,7 @@ def infoPage () {
 	def execTime = now()
 	dynamicPage(name: "infoPage", title: "Info and Instructions", install: false) {
 		section("About this App:") {
-			paragraph appInfoDesc(), image: getAppImg("nst_manager_icon%402x.png", true)
+			paragraph appInfoDesc(), image: getAppImg("nst_manager_5%402x.png", true)
 		}
 		section("Donations:") {
 			href url: textDonateLink(), style:"external", required: false, title:"Donations",
@@ -1306,7 +1306,7 @@ def notifPrefPage() {
 				def t1 = getAppNotifDesc()
 				def appDesc = t1 ? "${t1}\n\n" : ""
 				href "notifConfigPage", title: "App Notifications", description: "${appDesc}Tap to configure", params: [pType:"app"], state: (appDesc != "" ? "complete" : null),
-						image: getAppImg("nst_manager_icon.png")
+						image: getAppImg("nst_manager_5.png")
 				t1 = getDevNotifDesc()
 				def devDesc = t1 ? "${t1}\n\n" : ""
 				href "notifConfigPage", title: "Device Notifications", description: "${devDesc}Tap to configure", params: [pType:"dev"], state: (devDesc != "" ? "complete" : null),
@@ -6796,7 +6796,7 @@ def connectionStatus(message, redirectUrl = null) {
 			<div class="container" style="margin: auto; position: relative;">
 				<img class="stlogo" src="https://github.com/tonesto7/nest-manager/raw/master/Images/App/st-standalone-logo.png" alt="SmartThings logo" /></br></br>
 				<img class="linklogo" src="https://s3.amazonaws.com/smartapp-icons/Partner/support/connected-device-icn%402x.png" alt="connected device icon" /></br></br>
-				<img class="nestlogo" src="https://github.com/tonesto7/nest-manager/raw/master/Images/App/nst_manager_icon.png" alt="nest icon" />
+				<img class="nestlogo" src="https://github.com/tonesto7/nest-manager/raw/master/Images/App/nst_manager_5.png" alt="nest icon" />
 				${message}
 			</div>
 		</body>
@@ -7950,7 +7950,7 @@ def renderDiagHome() {
 							<div class="row">
 								<div class="col-xs-2"></div>
 								<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Diagnostics Home</img></h3>
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5.png"> Diagnostics Home</img></h3>
 								</div>
 								<div class="col-xs-2 right-head-col pull-right">
 									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
@@ -8279,7 +8279,7 @@ def renderManagerData() {
 									</div>
 						 		</div>
 						 		<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Manager Data</img></h3>
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5.png"> Manager Data</img></h3>
 						 		</div>
 						 		<div class="col-xs-2 right-head-col pull-right">
 									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
@@ -8477,7 +8477,7 @@ def renderAutomationData() {
 									</div>
 								</div>
 								<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Automation Data</img></h3>
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5.png"> Automation Data</img></h3>
 								</div>
 								<div class="col-xs-2 right-head-col pull-right">
 									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
@@ -8707,7 +8707,7 @@ def renderDeviceData() {
 									</div>
 								</div>
 								<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> Device Data</img></h3>
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5.png"> Device Data</img></h3>
 								</div>
 								<div class="col-xs-2 right-head-col pull-right">
 									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
@@ -8865,7 +8865,7 @@ def renderDeviceTiles(type=null) {
 									</div>
 								</div>
 								<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> ${type ?: "All Device"}s</img></h3>
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5.png"> ${type ?: "All Device"}s</img></h3>
 								</div>
 								<div class="col-xs-2 right-head-col pull-right">
 									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
@@ -8974,7 +8974,7 @@ def renderHtmlMapDesc(title, heading, datamap) {
 									</div>
 								</div>
 								<div class="col-xs-8 centerText">
-									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_icon.png"> ${heading}</img></h3>
+									<h3 class="title-text"><img class="logoIcn" src="https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5.png"> ${heading}</img></h3>
 								</div>
 								<div class="col-xs-2 right-head-col pull-right">
 									<button id="rfrshBtn" type="button" class="btn refresh-btn pull-right" title="Refresh Page Content"><i id="rfrshBtnIcn" class="fa fa-refresh" aria-hidden="true"></i></button>
