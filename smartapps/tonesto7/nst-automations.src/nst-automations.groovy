@@ -18,9 +18,9 @@ definition(
 	parent: "${appNamespace()}:${appParentName()}",
 	description: "${appDesc()}",
 	category: "Convenience",
-	iconUrl: "https://raw.githubusercontent.com/${gitPath()}/Images/App/automation_icon.png",
-	iconX2Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/automation_icon.png",
-	iconX3Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/automation_icon.png"
+	iconUrl: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_automations_5.png",
+	iconX2Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_automations_5.png",
+	iconX3Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_automations_5.png"
 )
 
 {

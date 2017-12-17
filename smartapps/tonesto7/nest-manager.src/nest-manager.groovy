@@ -278,7 +278,7 @@ def mainPage() {
 			def t1 = getInstAutoTypesDesc()
 			def autoDesc = t1 ? "${t1}\n\nTap to modify" : null
 			section("Manage Automations:") {
-				href "automationsPage", title: "Automations", description: (autoDesc ? autoDesc : "Tap to configure"), state: (autoDesc ? "complete" : null), image: getAppImg("automation_icon.png")
+				href "automationsPage", title: "Automations", description: (autoDesc ? autoDesc : "Tap to configure"), state: (autoDesc ? "complete" : null), image: getAppImg("nst_automations_5.png")
 			}
 		}
 		if(isInstalled) {
@@ -756,7 +756,7 @@ def voiceRprtPrefPage() {
 		section("Report Customization:") {
 			paragraph "These options allow you to configure how much info is included in the Thermostat voice reporting."
 			if(!atomicState?.appData?.reportPrefs?.disVoiceZoneRprt) {
-				input ("vRprtIncSchedInfo", "bool", title: "Include Automation Source Schedule Info?", required: false, defaultValue: true, submitOnChange: false, image: getAppImg("automation_icon.png"))
+				input ("vRprtIncSchedInfo", "bool", title: "Include Automation Source Schedule Info?", required: false, defaultValue: true, submitOnChange: false, image: getAppImg("nst_automations_5.png"))
 				input ("vRprtIncZoneInfo", "bool", title: "Include Current Zone Info?", required: false, defaultValue: true, submitOnChange: false, image: getAppImg("thermostat_icon.png"))
 				input ("vRprtIncExtWeatInfo", "bool", title: "Include External Info?", required: false, defaultValue: true, submitOnChange: false, image: getAppImg("weather_icon.png"))
 			}
@@ -988,7 +988,7 @@ def automationsPage() {
 			}
 		}
 		section("") {
-			app(name: "autoApp", appName: autoAppName(), namespace: "tonesto7", multiple: true, title: "Create New Automation (NST)", image: getAppImg("automation_icon.png"))
+			app(name: "autoApp", appName: autoAppName(), namespace: "tonesto7", multiple: true, title: "Create New Automation (NST)", image: getAppImg("nst_automations_5.png"))
 		}
 		if(autoAppInst) {
 			section("Automation Details:") {
@@ -1314,7 +1314,7 @@ def notifPrefPage() {
 				t1 = getAutoNotifDesc()
 				def autoDesc = t1 ? "${t1}\n\n" : ""
 				href "notifConfigPage", title: "Automation Notifications", description: "${autoDesc}Tap to configure", params: [pType:"auto"], state: (autoDesc != "" ? "complete" : null),
-						image: getAppImg("automation_icon.png")
+						image: getAppImg("nst_automations_5.png")
 				if(atomicState?.appData?.aaPrefs?.enAaMsgQueue == true) {
 					t1 = getAskAlexaDesc()
 					def aaDesc = t1 ? "${t1}\n\n" : ""
