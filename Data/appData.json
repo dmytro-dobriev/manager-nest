@@ -45,7 +45,7 @@
                 "ver": "5.3.0"
             }
         },
-        "allowInApp": true
+        "allowInApp": false
     },
     "html": {
         "cssVer": 1,
