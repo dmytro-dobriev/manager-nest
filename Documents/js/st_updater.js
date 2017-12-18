@@ -179,7 +179,7 @@ function runStUpdates() {
                                                                                                 devsDone.push(stResp6.typeDesc);
                                                                                                 sessionStorage.setItem('devsDone', devsDone);
                                                                                                 if (devsDone.length === Object.keys(devIds).length) {
-                                                                                                    installComplete('Updates are Complete!<br/>Everything is Good!');
+                                                                                                    installComplete('Updates are Complete!<br/>Everything is Good!<br/>Press Back/Done to Go Back');
                                                                                                 }
                                                                                             });
                                                                                     }
@@ -189,7 +189,7 @@ function runStUpdates() {
                                                                             devsDone.push(stResp4.typeDesc);
                                                                             sessionStorage.setItem('devsDone', devsDone);
                                                                             if (devsDone.length === Object.keys(devIds).length) {
-                                                                                installComplete('Updates are Complete!<br/>Everything is Good!');
+                                                                                installComplete('Updates are Complete!<br/>Everything is Good!<br/>Press Back/Done to Go Back');
                                                                             }
                                                                         }
                                                                     });
@@ -252,7 +252,7 @@ function runStUpdates() {
                                                                             devsDone.push(stResp6.typeDesc);
                                                                             sessionStorage.setItem('devsDone', devsDone);
                                                                             if (devsDone.length === Object.keys(devIds).length) {
-                                                                                installComplete('Updates are Complete!<br/>Everything is Good!');
+                                                                                installComplete('Updates are Complete!<br/>Everything is Good!<br/>Press Back/Done to Go Back');
                                                                             }
                                                                         });
                                                                 }
@@ -262,7 +262,7 @@ function runStUpdates() {
                                                         devsDone.push(stResp4.typeDesc);
                                                         sessionStorage.setItem('devsDone', devsDone);
                                                         if (devsDone.length === Object.keys(devIds).length) {
-                                                            installComplete('Updates are Complete!<br/>Everything is Good!');
+                                                            installComplete('Updates are Complete!<br/>Everything is Good!<br/>Press Back/Done to Go Back');
                                                         }
                                                     }
                                                 });
