@@ -77,19 +77,6 @@ ul {
     padding: 0px 0px 20px 0px;
 }
 
-#loaderText1 {
-    font-size: 4px;
-}
-
-#loaderText2 {
-    font-size: 7px;
-}
-
-#loader {
-    max-width: 350px;
-    max-height: 350px;
-}
-
 #finishedImg {
     font-size: 4em;
     color: green;
@@ -166,17 +153,36 @@ ul:empty {
 
 section {
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 64px;
+}
+
+#loader {
+    max-width: 350px;
+    max-height: 350px;
+}
+
+#loaderText1 {
+    font-size: 4.5px;
+}
+
+#loaderText2 {
+    font-size: 5px;
 }
 
 @media only screen and (max-width: 600px) {
+    section {
+        margin: 0 auto;
+        padding: 0 20px;
+    }
     #loader {
         padding: 20px;
+        max-width: 350px;
+        max-height: 350px;
     }
     #loaderText1 {
         font-size: 0.3em;
     }
     #loaderText2 {
-        font-size: 0.4em;
+        font-size: 0.3em;
     }
 }

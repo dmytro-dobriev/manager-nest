@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.0" }
-def appVerDate() { "12-16-2017" }
+def appVerDate() { "12-18-2017" }
 def minVersions() {
 	return [
 		"automation":["val":530, "desc":"5.3.0"],
@@ -101,14 +101,18 @@ mappings {
 		path("/oauth/initialize") 	{action: [GET: "oauthInitUrl"]}
 		path("/oauth/callback") 	{action: [GET: "callback"]}
 
+		path("/deviceTiles")	{action: [GET: "renderDeviceTiles"]}
+		path("/tstatTiles")		{action: [GET: "getTstatTiles"]}
+		path("/protectTiles")	{action: [GET: "getProtectTiles"]}
+		path("/cameraTiles")	{action: [GET: "getCamTiles"]}
+		path("/weatherTile")	{action: [GET: "getWeatherTile"]}
+		path("/stupdate") 			{action: [GET: "runStUpdateHtml"]}
+		path("/renderInstallData")	{action: [GET: "renderInstallData"]}
+		path("/receiveEventData") 	{action: [POST: "receiveEventData"]}
+		path("/streamStatus")		{action: [POST: "receiveStreamStatus"]}
 		//Web Diagnostics Pages
 		if(settings?.enDiagWebPage == true || getDevOpt()) {
 			path("/diagHome")		{action: [GET: "renderDiagHome"]}
-			path("/deviceTiles")	{action: [GET: "renderDeviceTiles"]}
-			path("/tstatTiles")		{action: [GET: "getTstatTiles"]}
-			path("/protectTiles")	{action: [GET: "getProtectTiles"]}
-			path("/cameraTiles")	{action: [GET: "getCamTiles"]}
-			path("/weatherTile")	{action: [GET: "getWeatherTile"]}
 			path("/getLogData")		{action: [GET: "renderLogData"]}
 			//path("/getLogMap")	{action: [GET: "getLogMap"]}
 			path("/getManagerData")	{action: [GET: "renderManagerData"]}
@@ -117,10 +121,6 @@ mappings {
 			path("/getInstData")	{action: [GET: "renderInstData"]}
 			path("/getAppData")		{action: [GET: "renderAppData"]}
 		}
-		path("/stupdate") 			{action: [GET: "runStUpdateHtml"]}
-		path("/renderInstallData")	{action: [GET: "renderInstallData"]}
-		path("/receiveEventData") 	{action: [POST: "receiveEventData"]}
-		path("/streamStatus")		{action: [POST: "receiveStreamStatus"]}
 	}
 }
 
@@ -302,7 +302,7 @@ def mainPage() {
 				def prefDesc = (descStr != "") ? "" : "Tap to configure"
 				href "prefsPage", title: "Application\nPreferences", description: prefDesc, state: (descStr ? "complete" : ""), image: getAppImg("settings_icon.png")
 				if(atomicState?.appData?.updater?.allowInApp == true || getDevOpt()) {
-					href "codeUpdatesPage", title: "SmartApp and Device Code Updates", description: "Tap Here to Update", state: "complete", image: getAppImg("update_icon.png")
+					href "codeUpdatesPage", title: "Software Updates", description: "Tap Here to Update", state: "complete", image: getAppImg("update_icon.png")
 				}
 			}
 			section("Donate, Release and License Info") {
@@ -578,23 +578,20 @@ def codeUpdatesPage(){
     dynamicPage(name: "codeUpdatesPage", uninstall: false, install: false) {
         def theURL = "https://consigliere-regional.api.smartthings.com/?redirect=" + URLEncoder.encode(getAppEndpointUrl("stupdate"))
         section() {
-            def saDes = ""
-            saDes += atomicState?.swVer?.mgrVer != null ? "${saDes != "" ? "\n":""}Manager Version: (${atomicState?.swVer?.mgrVer})" : ""
-            saDes += atomicState?.swVer?.autoSaVer != null ? "${saDes != "" ? "\n":""}Automations Version: (${atomicState?.swVer?.autoSaVer})" : ""
-            paragraph title: "SmartApp Info:", saDes
-        }
-		section() {
-            def devDes = ""
-            devDes += atomicState?.swVer?.tDevVer != null ? "${devDes != "" ? "\n":""}Thermostat Version: (${atomicState?.swVer?.tDevVer})" : ""
-            devDes += atomicState?.swVer?.pDevVer != null ? "${devDes != "" ? "\n":""}Protect Version: (${atomicState?.swVer?.pDevVer})" : ""
-            devDes += atomicState?.swVer?.camDevVer != null ? "${devDes != "" ? "\n":""}Camera Version: (${atomicState?.swVer?.camDevVer})" : ""
-            devDes += atomicState?.swVer?.presDevVer != null ? "${devDes != "" ? "\n":""}Presence Version: (${atomicState?.swVer?.presDevVer})" : ""
-			devDes += atomicState?.swVer?.weatDevVer != null ? "${devDes != "" ? "\n":""}Weather Version: (${atomicState?.swVer?.weatDevVer})" : ""
-            paragraph title: "Device Info:", devDes
+            def desc = "\bSmartApps:"
+            desc += atomicState?.swVer?.mgrVer != null ? "${desc != "" ? "\n":""}Manager Version: (${atomicState?.swVer?.mgrVer})" : ""
+            desc += atomicState?.swVer?.autoSaVer != null ? "${desc != "" ? "\n":""}Automations Version: (${atomicState?.swVer?.autoSaVer})" : ""
+            desc += "\n\n\bDevices:"
+            desc += atomicState?.swVer?.tDevVer != null ? "${desc != "" ? "\n":""} • Thermostat Version: (${atomicState?.swVer?.tDevVer})" : ""
+            desc += atomicState?.swVer?.pDevVer != null ? "${desc != "" ? "\n":""} • Protect Version: (${atomicState?.swVer?.pDevVer})" : ""
+            desc += atomicState?.swVer?.camDevVer != null ? "${desc != "" ? "\n":""} • Camera Version: (${atomicState?.swVer?.camDevVer})" : ""
+            desc += atomicState?.swVer?.presDevVer != null ? "${desc != "" ? "\n":""} • Presence Version: (${atomicState?.swVer?.presDevVer})" : ""
+			desc += atomicState?.swVer?.weatDevVer != null ? "${desc != "" ? "\n":""} • Weather Version: (${atomicState?.swVer?.weatDevVer})" : ""
+            paragraph desc, state: "complete"
         }
         section() {
-            paragraph title: "What will this do?", "This process will make sure all SmartApp and Device Handler code is updated to the latest versions available.  All you will need to do is sign in to the IDE and watch it go..."
-            href url: theURL, title: "SmartApp | Device Code Updater\nTap to Update", description: null, image: getAppImg("update_icon.png")
+			paragraph title: "What will this do?", "This process makes sure the following are up-to-date:\n • All SmartApps\n • All Devices\n\nAll you will need to do is sign in to the IDE and watch it go..."
+            href url: theURL, title: "Tap to Update", description: null, image: getAppImg("update_icon.png")
         }
     }
 }
@@ -1130,7 +1127,6 @@ def automationStatisticsPage() {
 				paragraph "There is No Statistic Data to Display"
 			}
 		}
-
 		devPageFooter("viewAutoStatLoadCnt", execTime)
 	}
 }
@@ -9646,7 +9642,7 @@ def gitRepo()		{ return "tonesto7/nest-manager"}
 def gitBranch()		{ return betaMarker() ? "beta" : "master" }
 def gitPath()		{ return "${gitRepo()}/${gitBranch()}"}
 def developerVer()	{ return false }
-def betaMarker()	{ return false }
+def betaMarker()	{ return true }
 def appDevType()	{ return false }
 def appDevName()	{ return appDevType() ? " (Dev)" : "" }
 def appInfoDesc()	{
