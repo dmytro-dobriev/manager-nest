@@ -1,3 +1,5 @@
+'use esversion: 6';
+
 var url = new URL(window.location);
 if (sessionStorage.refreshAgain === undefined || sessionStorage.refreshAgain === 'true') {
     sessionStorage.refreshCount = 1;
@@ -42,36 +44,34 @@ function makeRequest(url, method, message, async = true, typeId = null, typeDesc
 }
 
 function addResult(str, good) {
-    resultList.style.display = 'block';
-    resultsTitle.style.display = 'block';
-    let s = "<li><span style='color: " + (good !== false ? '#25c225' : '#FF0000') + ";'>";
+    $('#resultList').css({ display: 'block' });
+    $('#resultsTitle').css({ display: 'block' });
+    var s = "<li><span style='color: " + (good !== false ? '#25c225' : '#FF0000') + ";'>";
     s += "<i class='fa fa-" + (good !== false ? 'check' : 'exclamation') + "'></i>";
     s += '</span> ' + str + '</li>';
     $('#resultList ul').append(s);
 }
 
 function installError(err, reload = true) {
-    console.log('installError:', err);
+    // console.log('installError:', err);
     if (reload) {
         if (sessionStorage.refreshCount < 7) {
             $('#results').text('Reloading Page in 3 seconds');
             location.reload(true);
         } else {
-            loader.style.display = 'none';
-            results.style.display = 'block';
-            document.getElementById('results').innerHTML = '<br><button onclick="location.reload();">Reload page</button>';
+            $('#loader').css({ display: 'none' });
+            $('#results').css({ display: 'block' }).html('<br/><button onclick="location.reload();">Reload page</button>');
         }
     }
 }
 
 function installComplete(text, red = false) {
-    loader.style.display = 'none';
-    finishedImg.style.display = 'block';
+    $('#loader').css({ display: 'none' });
+    $('#finishedImg').css({ display: 'block' });
     if (red) {
-        finishedImg.style.color = 'red';
+        $('#finishedImg').css({ color: 'red' });
     }
-    results.style.display = 'block';
-    document.getElementById('results').innerHTML = text;
+    $('#results').css({ display: 'block' }).html(text);
     sessionStorage.removeItem('appsDone');
     sessionStorage.removeItem('devsDone');
 }
@@ -106,7 +106,7 @@ function runStUpdates() {
                         })
                         .then(function(stResp1) {
                             // console.log(stResp1);
-                            let respData = JSON.parse(stResp1.response);
+                            var respData = JSON.parse(stResp1.response);
                             if (respData.hasDifference === true) {
                                 $('#loaderText2').text('Updating');
                                 $('#loaderText1').text(stResp1.typeDesc);
@@ -154,7 +154,7 @@ function runStUpdates() {
                                                                     })
                                                                     .then(function(stResp4) {
                                                                         // console.log(stResp4);
-                                                                        let respData = JSON.parse(stResp4.response);
+                                                                        var respData = JSON.parse(stResp4.response);
                                                                         if (respData.hasDifference === true) {
                                                                             $('#loaderText2').text('Updating');
                                                                             $('#loaderText1').text(stResp4.typeDesc);
@@ -227,7 +227,7 @@ function runStUpdates() {
                                                 })
                                                 .then(function(stResp4) {
                                                     // console.log(stResp4);
-                                                    let respData = JSON.parse(stResp4.response);
+                                                    var respData = JSON.parse(stResp4.response);
                                                     if (respData.hasDifference === true) {
                                                         $('#loaderText2').text('Updating');
                                                         $('#loaderText1').text(stResp4.typeDesc);
@@ -276,14 +276,13 @@ function runStUpdates() {
 
         })
         .catch(function(err) {
-            // addResult('ST Authentication', false);
             installError(err);
         });
 }
 
 window.onload = function() {
     if (sessionStorage.refreshAgain === 'false') {
-        document.getElementById('results').innerHTML = 'Waiting for connection...';
+        $('#results').text('Waiting for connection...');
     } else {
         runStUpdates();
     }
