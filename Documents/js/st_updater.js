@@ -67,11 +67,11 @@ function installError(err, reload = true) {
 
 function installComplete(text, red = false) {
     $('#loader').css({ display: 'none' });
-    $('#finishedImg').css({ display: 'block' });
+    $('#finishedImg').removeClass('fa-exclamation-circle').addClass('fa-check').css({ display: 'block' });
     if (red) {
-        $('#finishedImg').css({ color: 'red' });
+        $('#finishedImg').removeClass('fa-check').addClass('fa-exclamation-circle').css({ color: 'red' });
     }
-    $('#results').css({ display: 'block' }).html(text);
+    $('#results').css({ display: 'block' }).html(text + '<br/><br/>Press Back/Done Now');
     sessionStorage.removeItem('appsDone');
     sessionStorage.removeItem('devsDone');
 }
