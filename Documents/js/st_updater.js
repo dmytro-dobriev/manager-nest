@@ -107,7 +107,7 @@ function stUpdates() {
                     var appDesc = i.toString();
                     var appId = appIds[i];
                     var appType;
-                    console.log('appDesc: ' + appDesc);
+                    // console.log('appDesc: ' + appDesc);
                     if (appDesc !== undefined) {
                         if (appDesc.toString() === 'main') {
                             appType = 'NST Manager';
@@ -123,7 +123,7 @@ function stUpdates() {
                             addResult(errResp1.appDesc + ' Update Issue', false);
                         })
                         .then(function(stResp1) {
-                            console.log(stResp1);
+                            // console.log(stResp1);
                             var respData = JSON.parse(stResp1.response);
                             if (respData.hasDifference === true) {
                                 $('#loaderText1').text('Updating');
