@@ -91,7 +91,7 @@ function installComplete(text, red = false ) {
   sessionStorage.removeItem('refreshCount');
 }
 
-function runStUpdates() {
+function stUpdates() {
     var appsDone = [];
     var devsDone = [];
     $('#loaderText1').text('Authenticating');
