@@ -1672,7 +1672,7 @@ private remSenCheck() {
 		} else {
 			//log.info "remSenCheck: Evaluating Event"
 
-			def hvacMode = remSenTstat ? remSenTstat?.currentnestThermostatMode.toString() : null
+			def hvacMode = remSenTstat ? remSenTstat?.currentnestThermostatMode?.toString() : null
 			if(hvacMode in [ "off", "eco"] ) {
 				LogAction("Remote Sensor: Skipping Evaluation; The Current Thermostat Mode is '${strCapitalize(hvacMode)}'", "info", true)
 				disableOverrideTemps()
@@ -2877,7 +2877,7 @@ def getExtConditions( doEvent = false ) {
 
 				def dp = 0.0
 				if(weather) {  // Dewpoint is calculated in dth
-					dp = weather?.currentValue("dewpoint") ? weather?.currentValue("dewpoint")?.toString()?.replaceAll("\\[|\\]", "").toDouble() : 0.0
+					dp = weather?.currentValue("dewpoint") ? weather?.currentValue("dewpoint")?.toString()?.replaceAll("\\[|\\]", "")?.toDouble() : 0.0
 				}
 				def c_temp = 0.0
 				def f_temp = 0 as Integer

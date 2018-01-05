@@ -575,7 +575,7 @@ def lastEventDataEvent(data) {
 	}
 	motionSoundEvtHandler()
 	if(tryPic) {
-		if(state?.videoHistoryEnabled == "Enabled") {
+		if(state?.videoHistoryEnabled == "Enabled" && state?.animation_url) {
 			takePicture(state?.animation_url)
 		} else {
 			takePicture(state?.snapshot_url)
@@ -870,7 +870,7 @@ private getImageWidth() {
 
 private takePicture(String url) {
 	try {
-		if(state?.isOnline) {
+		if(state?.isOnline && state?.isStreaming) {
 			if(url?.startsWith("https://")) {
 				ByteArrayInputStream imageBytes
 				def params = [
@@ -885,9 +885,10 @@ private takePicture(String url) {
 					}
 				}
 			} else {
-				exceptionDataHandler("takePicture Error: non-standard url received ($url)")
-				return
+				Logger("takePicture: non-standard url received ($url), public share enabled: (${state?.publicShareEnabled})", "error")
 			}
+		} else {
+      		Logger("takePicture: Camera is not online (${!state?.isOnline}) or not streaming (${!state?.isStreaming})", "error")
 		}
 	} catch (ex) {
 		log.error "takePicture Exception: $ex"

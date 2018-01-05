@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.0" }
-def appVerDate() { "12-18-2017" }
+def appVerDate() { "01-05-2017" }
 def minVersions() {
 	return [
 		"automation":["val":530, "desc":"5.3.0"],
@@ -2097,7 +2097,9 @@ def initialize() {
 		if(fixState()) { return }	// runIn of fixState will call initAutoApp() or initManagerApp()
 		settingUpdate("resetAllData", "false", "bool")
 	}
-	reInitBuiltins()	// These are to have these apps release subscriptions to devices (in case of delete)
+	if(!isAppLiteMode()) {
+		runIn(5, "reInitBuiltins", [overwrite: true])  // These are to have these apps release subscriptions to devices (in case of delete)
+	}
 	runIn(21, "initManagerApp", [overwrite: true])	// need to give time for watchdog updates before we try to delete devices.
 	//runIn(34, "reInitBuiltins", [overwrite: true])	// need to have watchdog/nestmode check if we created devices
 }
@@ -2105,79 +2107,66 @@ def initialize() {
 def reInitBuiltins() {
 	if(!isAppLiteMode()) {
 		initWatchdogApp()
-		initNestModeApp()
+  		initNestModeApp()
 	}
+	diagLogProcChange((settings?.enDiagWebPage && settings?.enRemDiagLogging))
 	if(atomicState?.tsMigration) { diagLogProcChange((settings?.enDiagWebPage && settings?.enRemDiagLogging)) }
 }
 
-def initNestModeApp() {
-	LogTrace("initNestModeApp")
-	if(automationNestModeEnabled()) {
-		def nestModeApp = getChildApps()?.findAll { it?.getAutomationType() == "nMode" }
-		if(nestModeApp?.size() >= 1) {
+def initBuiltin(btype) {
+	LogTrace("initBuiltin(${btype})")
+	def keepApp = false
+	def autoStr = ""
+	switch (btype) {
+		case "initNestModeApp":
+			if(automationNestModeEnabled()) {
+				keepApp = true
+				autoStr = "nMode"
+			}
+			break
+		case "initWatchdogApp":
+			if(atomicState?.isInstalled) {
+				keepApp = true
+			}
+			autoStr = "watchDog"
+			break
+		case "initRemDiagApp":
+			if(atomicState?.enRemDiagLogging) {
+				keepApp = true
+			}
+			autoStr = "remDiag"
+			break
+		default:
+ 			LogAction("initBuiltin BAD btype ${btype}", "warn", true)
+			break
+	}
+	if(autoStr) {
+		def mynestApp = getChildApps()?.findAll { it?.getAutomationType() == autoStr }
+		if(keepApp && mynestApp?.size() < 1 && btype != "initNestModeApp") {
+			LogAction("Installing ${autoStr}", "info", true)
+			try {
+				if(btype == "initRemDiagApp") {
+					addChildApp(appNamespace(), autoAppName(), getRemDiagAppChildName(), [settings:[remDiagFlag:["type":"bool", "value":true]]])
+				}
+				if(btype == "initWatchdogApp") {
+					addChildApp(appNamespace(), autoAppName(), getWatDogAppChildName(), [settings:[watchDogFlag:["type":"bool", "value":true]]])
+				}
+			} catch (ex) {
+				appUpdateNotify(true)
+			}
+		} else if(mynestApp?.size() >= 1) {
 			def cnt = 1
-			nestModeApp?.each { chld ->
-				if(cnt == 1) {
-					//LogAction("Running Update Command on Nest Mode", "warn", true)
+			mynestApp?.each { chld ->
+				if(keepApp && cnt == 1) {
+					LogTrace("initBuiltin: Running Update Command on ${autoStr}")
 					chld.update()
-				} else if(cnt > 1) {
-					LogAction("Deleting Extra nMode (${chld?.id})", "warn", true)
+				} else if(!keepApp || cnt > 1) {
+					def slbl = keepApp ? "warn" : "info"
+					LogAction("initBuiltin: Deleting ${keepApp ? "Extra " : ""}${autoStr} (${chld?.id})", slbl, true)
 					deleteChildApp(chld)
 				}
 				cnt = cnt+1
 			}
-		}
-	}
-}
-
-def initWatchdogApp() {
-	LogTrace("initWatchdogApp")
-	def watDogApp = getChildApps()?.findAll { it?.getAutomationType() == "watchDog" }
-	if(watDogApp?.size() < 1) {
-		LogAction("Installing Watchdog App", "info", true)
-		try {
-			addChildApp(appNamespace(), autoAppName(), getWatDogAppChildName(), [settings:[watchDogFlag:["type":"bool", "value":true]]])
-		} catch (ex) {
-			appUpdateNotify(true)
-		}
-	} else if(watDogApp?.size() >= 1) {
-		def cnt = 1
-		watDogApp?.each { chld ->
-			if(cnt == 1) {
-				LogTrace("initWatchdogApp: Running Update Command on Watchdog")
-				chld.update()
-			} else if(cnt > 1) {
-				LogAction("initWatchdogApp: Deleting Extra Watchdog (${chld?.id})", "warn", true)
-				deleteChildApp(chld)
-			}
-			cnt = cnt+1
-		}
-	}
-}
-
-def initRemDiagApp() {
-	LogTrace("initRemDiagApp")
-	def keepApp = atomicState?.enRemDiagLogging == true ? true : false
-	def remDiagApp = getChildApps()?.findAll { it?.getAutomationType() == "remDiag" }
-	if(keepApp && remDiagApp?.size() < 1) {
-		LogAction("Installing Remote Diag App", "info", true)
-		try {
-			addChildApp(appNamespace(), autoAppName(), getRemDiagAppChildName(), [settings:[remDiagFlag:["type":"bool", "value":true]]])
-		} catch (ex) {
-			appUpdateNotify(true)
-		}
-	} else if(remDiagApp?.size() >= 1) {
-		def cnt = 1
-		remDiagApp?.each { chld ->
-			if(keepApp && cnt == 1) {
-				LogTrace("initRemDiagApp: Running Update Command on Remote Diag")
-				chld.update()
-			} else if(!keepApp || cnt > 1) {
-				def slbl = keepApp ? "warn" : "info"
-				LogAction("initRemDiagApp: Deleting ${keepApp ? "Extra " : ""}Remote Diag Child (${chld?.id})", slbl, true)
-				deleteChildApp(chld)
-			}
-			cnt = cnt+1
 		}
 	}
 }
@@ -2219,7 +2208,7 @@ def initManagerApp() {
 def finishInitManagerApp() {
 	LogTrace("finishInitManagerApp")
 	if(atomicState?.isInstalled && atomicState?.installData?.usingNewAutoFile) {
-		// createSavedNest()
+		createSavedNest()
 		if(app.label == "Nest Manager") { app.updateLabel("NST Manager") }
 		def autoId = null
 		getChildApps()?.sort()?.each { chld ->
@@ -2238,445 +2227,446 @@ def finishInitManagerApp() {
 					appUpdateNotify(true)
 				}
 			}
+			runIn(5, "reInitBuiltins", [overwrite: true])  // need to have watchdog/nestmode check if we created devices
 		}
 	}
 }
 
-// def createSavedNest() {
-// 	def str = "createSavedNest"
-// 	LogTrace("${str}")
-// 	if(atomicState?.isInstalled) {
-// 		def bbb = [:]
-// 		def bad = false
-// 		if(settings?.structures && atomicState?.structures) {
-// 			def structs = getNestStructures()
-// 			def newStrucName = structs && structs?."${atomicState?.structures}" ?  "${structs[atomicState?.structures]}" : null
-// 			if(newStrucName) {
-// 				bbb.a_structures_setting = settings.structures
-// 				bbb.a_structures_as = atomicState.structures
-// 				bbb.a_structure_name_as = atomicState?.structName
-//
-// 				def dData = atomicState?.deviceData
-// 				def t0 = [:]
-//
-// 				t0 = dData?.thermostats?.findAll { it?.key?.toString() in settings?.thermostats }
-// 				LogAction("${str} | Thermostats(${t0?.size()}): ${settings?.thermostats}", "info", false)
-// 				def t1 = [:]
-// 				t0?.each { devItem ->
-// 					LogAction("${str}: Found (${devItem?.value?.name})", "info", false)
-// 					if(devItem?.key && devItem?.value?.name) {
-// 						t1?."${devItem.key.toString()}" = devItem?.value?.name
-// 					}
-// 				}
-// 				def t3 = settings?.thermostats?.size() ?: 0
-// 				if(t1?.size() != t3) { LogAction("Thermostat Counts Wrong! | Current: (${t1?.size()}) | Expected: (${t3})", "error", true); bad = true }
-// 				bbb?.b_thermostats_as = settings?.thermostats && dData && atomicState?.thermostats ? t1 : [:]
-// 				bbb?.b_thermostats_setting = settings?.thermostats ?: []
-//
-// 				dData = atomicState?.deviceData
-// 				t0 = [:]
-// 				t0 = dData?.smoke_co_alarms?.findAll { it?.key?.toString() in settings?.protects }
-// 				LogAction("${str} | Protects(${t0?.size()}): ${settings?.protects}", "info", true)
-// 				t1 = [:]
-// 				t0?.each { devItem ->
-// 					LogAction("${str}: Found (${devItem?.value?.name})", "info", false)
-// 					if(devItem?.key && devItem?.value?.name) {
-// 						t1."${devItem.key}" = devItem?.value?.name
-// 					}
-// 				}
-// 				t3 = settings?.protects?.size() ?: 0
-// 				if(t1?.size() != t3) { LogAction("Protect Counts Wrong! | Current: (${t1?.size()}) | Expected: (${t3})", "error", true); bad = true }
-// 				bbb.c_protects_as = settings?.protects && dData && atomicState?.protects ? t1 : [:]
-// 				bbb.c_protects_settings = settings?.protects ?: []
-//
-// 				dData = atomicState?.deviceData
-// 				t0 = [:]
-// 				t0 = dData?.cameras?.findAll { it?.key?.toString() in settings?.cameras }
-// 				LogAction("${str} | Cameras(${t0?.size()}): ${settings?.cameras}", "info", true)
-// 				t1 = [:]
-// 				t0?.each { devItem ->
-// 					LogAction("${str}: Found (${devItem?.value?.name})", "info", false)
-// 					if(devItem?.key && devItem?.value?.name) {
-// 						t1."${devItem?.key}" = devItem?.value?.name
-// 					}
-// 				}
-// 				t3 = settings?.cameras?.size() ?: 0
-// 				if(t1?.size() != t3) { LogAction("Camera Counts Wrong! | Current: (${t1?.size()}) | Expected: (${t3})", "error", true); bad = true }
-// 				bbb.d_cameras_as = settings?.cameras && dData && atomicState?.cameras ? t1 : [:]
-// 				bbb.d_cameras_setting = settings?.cameras ?: []
-// 			} else { LogAction("${str}: No Structures Found!!!", "warn", true) }
-//
-// 			def t0 = atomicState?.savedNestSettings ?: null
-// 			def t1 = t0 ? new groovy.json.JsonOutput().toJson(t0) : null
-// 			def t2 = bbb != [:] ? new groovy.json.JsonOutput().toJson(bbb) : null
-// 			atomicState.savedNestSettingslastbuild = bbb
-// 			if(!bad && t2 && (!t0 || t1 != t2)) {
-// 				atomicState.savedNestSettingsprev = atomicState?.savedNestSettings
-// 				atomicState.savedNestSettings = bbb
-// 				return true
-// 			}
-// 		} else { LogAction("${str}: No Structure Settings", "warn", true) }
-// 	} else { LogAction("${str}: NOT Installed!!!", "warn", true) }
-// 	return false
-// }
-// //ERSERS
-// def mySettingUpdate(name, value, type=null) {
-// 	if(getDevOpt()) {
-// 		LogAction("Setting $name set to type:($type) $value", "warn", true)
-// 		if(!atomicState?.ReallyChanged) { return }
-// 	}
-// 	if(atomicState?.ReallyChanged) {
-// 		settingUpdate(name, value, type)
-// 	}
-// }
-//
-// def checkRemapping() {
-// 	def str = "checkRemapping"
-// 	LogTrace(str)
-// 	def astr = ""
-// 	atomicState.ReallyChanged = false
-// 	def myRC = atomicState.ReallyChanged
-// 	if(atomicState?.isInstalled && settings?.structures) {
-// 		def aastr = getApiData("str")
-// 		def aadev = getApiData("dev")
-// 		//def aameta = getApiData("meta")
-// 		def sData = atomicState?.structData
-// 		def dData = atomicState?.deviceData
-// 		//def mData = atomicState?.metaData
-// 		def savedNest = atomicState?.savedNestSettings
-// 		if(sData && dData /* && mData */ && savedNest) {
-// 			def structs = getNestStructures()
-// 			if(structs && !getDevOpt() ) {
-// 				LogAction("${str}: nothing to do ${structs}", "info", true)
-// 				return
-// 			} else {
-// 				astr += "${str}: found the mess..cleaning up ${structs}"
-// 				atomicState?.pollBlocked = true
-// 				atomicState?.pollBlockedReason = "Remapping"
-//
-// 				def newStructures_settings = ""
-// 				def newThermostats_settings = []
-// 				def newvThermostats = [:]
-// 				def newProtects_settings = []
-// 				def newCameras_settings = []
-// 				def oldPresId = getNestPresId()
-// 				def oldWeatId = getNestWeatherId()
-//
-// 				sData?.each { strucId ->
-// 					def t0 = strucId.key
-// 					def t1 = strucId.value
-// 					if(t1?.name && t1?.name == savedNest?.a_structure_name_as) {
-// 						newStructures_settings = [t1?.structure_id]?.join('.')
-// 					}
-// 				}
-//
-// 				if(settings?.structures && newStructures_settings) {
-// 					if(settings.structures != newStructures_settings) {
-// 						atomicState.ReallyChanged = true
-// 						myRC = atomicState?.ReallyChanged
-// 						astr += ", STRUCTURE CHANGED"
-// 					} else {
-// 						astr += ", NOTHING REALLY CHANGED (DEVELOPER MODE)"
-// 					}
-// 				} else { astr += ", no new structure found" }
-// 				LogAction(astr, "warn", true)
-// 				astr = ""
-// 				if(myRC || (newStructures_setting && getDevOpt())) {
-// 					mySettingUpdate("structures", newStructures_settings)
-// 					if(myRC) { atomicState?.structures = newStructures_settings }
-// 					def newStrucName = newStructures_settings ? atomicState?.structData[newStructures_settings]?.name : null
-// 					astr = "${str}: newStructures ${newStructures_settings} | name: ${newStrucName} | to settings & as structures: ${settings?.structures}"
-//
-// 					astr += ", as.thermostats: ${atomicState?.thermostats}  |  saveNest: ${savedNest?.b_thermostats_as}"
-// 					LogAction(astr, "info", true)
-// 					savedNest?.b_thermostats_as.each { dni ->
-// 						def t0 = dni?.key
-// 						def dev = getChildDevice(t0)
-// 						if(dev) {
-// 							//LogAction("${str}: found dev oldId: ${t0}", "info", true)
-// 							def gotIt = false
-// 							dData?.thermostats?.each { devItem ->
-// 								def t21 = devItem.key
-// 								def t22 = devItem.value
-// 								def newDevStructId = [t22?.structure_id].join('.')
-// 								if(!gotIt && t22 && newDevStructId && newDevStructId == newStructures_settings && dni.value == t22?.name) {
-// 									def t6 = [t22?.device_id].join('.')
-// 									def t7 = [ "${t6}":dni.value ]
-// 									def newDevId
-// 									t7.collect { ba ->
-// 										newDevId = getNestTstatDni(ba)
-// 									}
-// 									newThermostats_settings << newDevId
-// 									gotIt = true
-//
-// 									def rstr = "found newDevId ${newDevId} to replace oldId: ${t0} ${t22?.name} |"
-//
-// 									if(settings?."${t0}_safety_temp_min") {
-// 										mySettingUpdate("${newDevId}_safety_temp_min", settings?."${t0}_safety_temp_min", "decimal")
-// 										mySettingUpdate("${t0}_safety_temp_min", "")
-// 										rstr += ", safety min"
-// 									}
-// 									if(settings?."${t0}_safety_temp_max") {
-// 										mySettingUpdate("${newDevId}_safety_temp_max", settings?."${t0}_safety_temp_max", "decimal")
-// 										mySettingUpdate("${t0}_safety_temp_max", "")
-// 										rstr += ", safety max"
-// 									}
-// 									if(settings?."${t0}_comfort_dewpoint_max") {
-// 										mySettingUpdate("${newDevId}_comfort_dewpoint_max", settings?."${t0}_comfort_dewpoint_max", "decimal")
-// 										mySettingUpdate("${t0}_comfort_dewpoint_max", "")
-// 										rstr += ", comfort dew"
-// 									}
-// 									if(settings?."${t0}_comfort_humidity_max") {
-// 										mySettingUpdate("${newDevId}_comfort_humidity_max", settings?."${t0}_comfort_humidity_max", "number")
-// 										mySettingUpdate("${t0}_comfort_humidity_max", "")
-// 										rstr += ", comfort hum"
-// 									}
-// 									if(settings?."tstat_${t0}_lbl") {
-// 										if(atomicState?.devNameOverride && atomicState?.custLabelUsed) {
-// 											mySettingUpdate("tstat_${newDevId}_lbl", settings?."tstat_${t0}_lbl", "text")
-// 										}
-// 										mySettingUpdate("tstat_${t0}_lbl", "")
-// 										rstr += ", custom Label"
-// 									}
-// 									if(atomicState?.vThermostats && atomicState?."vThermostatv${t0}") {
-// 										def physDevId = atomicState?."vThermostatMirrorIdv${t0}"
-// 										def t1 = atomicState?.vThermostats
-// 										def t5 = "v${newDevId}" as String
-//
-// 										if(t0 && t0 == physDevId && t1?."v${physDevId}") {
-// 											def vdev = getChildDevice("v${t0}")
-// 											if(vdev) {
-// 												rstr += ", there are virtual devices that match"
-//
-// 												if(settings?."vtstat_v${t0}_lbl") {
-// 													if(atomicState?.devNameOverride && atomicState?.custLabelUsed) {
-// 														mySettingUpdate("vtstat_${t5}_lbl", settings?."tstat_v${t0}_lbl", "text")
-// 													}
-// 													mySettingUpdate("vtstat_v${t0}_lbl", "")
-// 													rstr += ", custom vstat Label"
-// 												}
-// 												newvThermostats."${t5}" = t1."v${t0}"
-// 												if(myRC) {
-// 													atomicState."vThermostat${t5}" = atomicState?."vThermostatv${t0}"
-// 													atomicState?."vThermostatMirrorId${t5}" = newDevId
-// 													atomicState?."vThermostatChildAppId${t5}" = atomicState?."vThermostatChildAppIdv${t0}"
-// 												}
-//
-// 												def automationChildApp = getChildApps().find{ it.id == atomicState?."vThermostatChildAppIdv${t0}" }
-// 												if(automationChildApp != null) {
-// 													if(myRC) { automationChildApp.setRemoteSenTstat(newDevId) }
-// 													rstr += ", fixed atomicState.remSenTstat"
-// 												} else { rstr += ", DID NOT FIND AUTOMATION APP" }
-//
-// 												// fix locks
-// 												def t3 = ""
-// 												if(atomicState?."remSenLock${t0}") {
-// 													rstr += ", fixed locks"
-// 													if(myRC) {
-// 														atomicState."remSenLock${newDevId}" = atomicState."remSenLock${t0}"
-// 														t3 = "remSenLock${t0}";		state.remove(t3.toString())
-// 													}
-// 												} else { rstr += ", DID NOT FIND LOCK" }
-// 												// find the virtual device and reset its dni
-// 												rstr += ", reset vDNI"
-// 												if(myRC) {
-// 													vdev.deviceNetworkId = t5
-//
-// 													t3 = "vThermostatv${t0}";		state.remove(t3.toString())
-// 													t3 = "vThermostatMirrorIdv${t0}";	state.remove(t3.toString())
-// 													t3 = "vThermostatChildAppIdv${t0}";	state.remove(t3.toString())
-// 												}
-//
-// 											} else { rstr += ", DID NOT FIND VIRTUAL DEVICE" }
-// 											def t11 = "oldvStatDatav${t0}"
-// 											state.remove(t11.toString())
-// 										} else { rstr += ", vstat formality check failed" }
-// 									} else { rstr += ", no vstat" }
-//
-// 									if(myRC) { dev.deviceNetworkId = newDevId }
-// 									if(rstr != "") { LogAction("${str}: resultStr: ${rstr}", "info", true) }
-// 								}
-// 							}
-// 							if(!gotIt) { LogAction("${str}: NOT matched dev oldId: ${t0}", "warn", true) }
-// 						} else { LogAction("${str}: NOT found dev oldId: ${t0}", "error", true) }
-// 						def t10 = "oldTstatData${t0}"
-// 						state.remove(t10.toString())
-// 					}
-// 					astr = ""
-// 					if(settings?.thermostats) {
-// 						def t0 = settings?.thermostats?.size()
-// 						def t1 = savedNest?.b_thermostats_as?.size()
-// 						def t2 = newThermostats_settings?.size()
-// 						if(t0 == t1 && t1 == t2) {
-// 							mySettingUpdate("thermostats", newThermostats_settings, "enum")
-// 							astr += "${str}: newThermostats_settings: ${newThermostats_settings} settings.thermostats: ${settings?.thermostats}"
-//
-// 							//LogAction("as.thermostats: ${atomicState?.thermostats}", "warn", true)
-// 							atomicState.thermostats = null
-// 							def t4 = newvThermostats ? newvThermostats?.size() : 0
-// 							def t5 = atomicState?.vThermostats ?  atomicState?.vThermostats.size() : 0
-// 							if(t4 || t5) {
-// 								if(t4 == t5) {
-// 									astr += ", AS vThermostats ${newvThermostats}"
-// 									if(myRC) { atomicState.vThermostats = newvThermostats }
-// 								} else { LogAction("vthermostat sizes don't match ${t4} ${t5}", "warn", true) }
-// 							}
-// 							LogAction(astr, "info", true)
-// 						} else { LogAction("thermostat sizes don't match ${t0} ${t1} ${t2}", "warn", true) }
-// 					}
-//
-// 					astr = ""
-// 					savedNest?.c_protects_as.each { dni ->
-// 						def t0 = dni.key
-// 						def dev = getChildDevice(t0)
-// 						if(dev) {
-// 							def gotIt = false
-// 							dData?.smoke_co_alarms?.each { devItem ->
-// 								def t21 = devItem.key
-// 								def t22 = devItem.value
-// 								def newDevStructId = [t22?.structure_id].join('.')
-// 								if(!gotIt && t22 && newDevStructId && newDevStructId == newStructures_settings && dni.value == t22?.name) {
-// 									//def newDevId = [t22?.device_id].join('.')
-// 									def t6 = [t22?.device_id].join('.')
-// 									def t7 = [ "${t6}":dni.value ]
-// 									def newDevId
-// 									t7.collect { ba ->
-// 										newDevId = getNestProtDni(ba)
-// 									}
-// 									newProtects_settings << newDevId
-// 									gotIt = true
-// 									astr += ", ${str}: found newDevId ${newDevId} to replace oldId: ${t0} ${t22?.name} "
-// 									if(settings?."prot_${t0}_lbl") {
-// 										if(atomicState?.devNameOverride && atomicState?.custLabelUsed) {
-// 											mySettingUpdate("prot_${newDevId}_lbl", settings?."prot_${t0}_lbl", "text")
-// 										}
-// 										mySettingUpdate("prot_${t0}_lbl", "")
-// 									}
-//
-// 									if(myRC) { dev.deviceNetworkId = newDevId }
-// 								}
-// 							}
-// 							if(!gotIt) { LogAction("${str}: NOT matched dev oldId: ${t0}", "warn", true) }
-// 						} else { LogAction("${str}: NOT found dev oldId: ${t0}", "error", true) }
-// 						def t10 = "oldProtData${t0}"
-// 						state.remove(t10.toString())
-// 					}
-// 					if(settings?.protects) {
-// 						def t0 = settings?.protects?.size()
-// 						def t1 = savedNest?.c_protects_as?.size()
-// 						def t2 = newProtects_settings?.size()
-// 						if(t0 == t1 && t1 == t2) {
-// 							mySettingUpdate("protects", newProtects_settings, "enum")
-// 							astr += "newProtects: ${newProtects_settings} settings.protects: ${settings?.protects} "
-// 							//LogAction("as.protects: ${atomicState?.protects}", "warn", true)
-// 							atomicState.protects = null
-// 						} else { LogAction("protect sizes don't match ${t0} ${t1} ${t2}", "warn", true) }
-// 						LogAction(astr, "info", true)
-// 					}
-//
-// 					astr = ""
-// 					savedNest?.d_cameras_as.each { dni ->
-// 						def t0 = dni.key
-// 						def dev = getChildDevice(t0)
-// 						if(dev) {
-// 							def gotIt = false
-// 							dData?.cameras?.each { devItem ->
-// 								def t21 = devItem.key
-// 								def t22 = devItem.value
-// 								def newDevStructId = [t22?.structure_id].join('.')
-// 								if(!gotIt && t22 && newDevStructId && newDevStructId == newStructures_settings && dni.value == t22?.name) {
-// 									//def newDevId = [t22?.device_id].join('.')
-// 									def t6 = [t22?.device_id].join('.')
-// 									def t7 = [ "${t6}":dni.value ]
-// 									def newDevId
-// 									t7.collect { ba ->
-// 										newDevId = getNestCamDni(ba)
-// 									}
-// 									newCameras_settings << newDevId
-// 									gotIt = true
-// 									astr += "${str}: found newDevId ${newDevId} to replace oldId: ${t0} ${t22?.name} "
-// 									if(settings?."cam_${t0}_lbl") {
-// 										if(atomicState?.devNameOverride && atomicState?.custLabelUsed) {
-// 											mySettingUpdate("cam_${newDevId}_lbl", settings?."cam_${t0}_lbl", "text")
-// 										}
-// 										mySettingUpdate("cam_${t0}_lbl", "")
-// 									}
-//
-// 									if(myRC) { dev.deviceNetworkId = newDevId }
-// 								}
-// 							}
-// 							if(!gotIt) { LogAction("${str}: NOT matched dev oldId: ${t0}", "warn", true) }
-// 						} else { LogAction("${str}: NOT found dev oldId: ${t0}", "error", true) }
-// 						def t10 = "oldCamData${t0}"
-// 						state.remove(t10.toString())
-// 					}
-// 					if(settings?.cameras) {
-// 						def t0 = settings?.cameras?.size()
-// 						def t1 = savedNest?.d_cameras_as?.size()
-// 						def t2 = newCameras_settings?.size()
-// 						if(t0 == t1 && t1 == t2) {
-// 							mySettingUpdate("cameras", newCameras_settings, "enum")
-// 							astr += "${str}: newCameras_settings: ${newCameras_settings} settings.cameras: ${settings?.cameras}"
-// 							//LogAction("as.cameras: ${atomicState?.cameras}", "warn", true)
-// 							atomicState.cameras = null
-// 						} else { LogAction("camera sizes don't match ${t0} ${t1} ${t2}", "warn", true) }
-// 						LogAction(astr, "info", true)
-// 					}
-//
-// /*
-// 	The Settings changes made above "do not take effect until a state re-load happens
-// 					if(myRC) {
-// 						fixDevAS()
-// 					}
-// */
-// 					astr = "oldPresId $oldPresId "
-// 					// fix presence
-// 					if(settings?.presDevice) {
-// 						if(oldPresId) {
-// 							def dev = getChildDevice(oldPresId)
-// 							def newId = getNestPresId()
-// 							def ndev = getChildDevice(newId)
-// 							astr += "| DEV ${dev?.deviceNetworkId} | NEWID $newId |  NDEV: ${ndev?.deviceNetworkId} "
-// 							def t10 = "oldPresData${dev?.deviceNetworkId}"
-// 							state.remove(t10.toString())
-// 							if(dev && newId && ndev) { astr += " all good presence" }
-// 							else if(!dev) { astr += "where is the pres device?" }
-// 							else if(dev && newId && !ndev) {
-// 								astr += "will fix presence "
-// 								if(myRC) { dev.deviceNetworkId = newId }
-// 							} else { LogAction("${dev?.label} $newId ${ndev?.label}", "error", true) }
-// 						} else { LogAction("no oldPresId", "error", true) }
-// 						LogAction(astr, "info", true)
-// 					}
-// 					// fix weather
-// 					astr += "oldWeatId $oldWeatId "
-// 					if(settings?.weatherDevice) {
-// 						if(oldWeatId) {
-// 							def dev = getChildDevice(oldWeatId)
-// 							def newId = getNestWeatherId()
-// 							def ndev = getChildDevice(newId)
-// 							astr += "| DEV ${dev?.deviceNetworkId} | NEWID $newId |  NDEV: ${ndev?.deviceNetworkId} "
-// 							def t10 = "oldWeatherData${dev?.deviceNetworkId}"
-// 							state.remove(t10.toString())
-// 							if(dev && newId && ndev) { astr += " all good weather " }
-// 							else if(!dev) { LogAction("where is the weather device?", "warn", true) }
-// 							else if(dev && newId && !ndev) {
-// 								astr += "will fix weather"
-// 								if(myRC) { dev.deviceNetworkId = newId }
-// 							} else { LogAction("${dev?.label} $newId ${ndev?.label}", "error", true) }
-// 						} else { LogAction("no oldWeatId", "error", true) }
-// 					}
-// 					LogAction(astr, "info", true)
-//
-// 				} else { LogAction("no changes or no data a:${settings?.structures} b: ${newStructures_settings}", "info", true) }
-//
-// 				atomicState?.pollBlocked = false
-// 				atomicState?.pollBlockedReason = ""
-// 				return
-// 			}
-// 		} else { LogAction("don't have our data", "warn", true) }
-// 	} else { LogAction("not installed, no structure", "warn", true) }
-// }
+def createSavedNest() {
+	def str = "createSavedNest"
+	LogTrace("${str}")
+	if(atomicState?.isInstalled) {
+		def bbb = [:]
+		def bad = false
+		if(settings?.structures && atomicState?.structures) {
+			def structs = getNestStructures()
+			def newStrucName = structs && structs?."${atomicState?.structures}" ?  "${structs[atomicState?.structures]}" : null
+			if(newStrucName) {
+				bbb.a_structures_setting = settings.structures
+				bbb.a_structures_as = atomicState.structures
+				bbb.a_structure_name_as = atomicState?.structName
+
+				def dData = atomicState?.deviceData
+				def t0 = [:]
+
+				t0 = dData?.thermostats?.findAll { it?.key?.toString() in settings?.thermostats }
+				LogAction("${str} | Thermostats(${t0?.size()}): ${settings?.thermostats}", "info", false)
+				def t1 = [:]
+				t0?.each { devItem ->
+					LogAction("${str}: Found (${devItem?.value?.name})", "info", false)
+					if(devItem?.key && devItem?.value?.name) {
+						t1?."${devItem.key.toString()}" = devItem?.value?.name
+					}
+				}
+				def t3 = settings?.thermostats?.size() ?: 0
+				if(t1?.size() != t3) { LogAction("Thermostat Counts Wrong! | Current: (${t1?.size()}) | Expected: (${t3})", "error", true); bad = true }
+				bbb?.b_thermostats_as = settings?.thermostats && dData && atomicState?.thermostats ? t1 : [:]
+				bbb?.b_thermostats_setting = settings?.thermostats ?: []
+
+				dData = atomicState?.deviceData
+				t0 = [:]
+				t0 = dData?.smoke_co_alarms?.findAll { it?.key?.toString() in settings?.protects }
+				LogAction("${str} | Protects(${t0?.size()}): ${settings?.protects}", "info", true)
+				t1 = [:]
+				t0?.each { devItem ->
+					LogAction("${str}: Found (${devItem?.value?.name})", "info", false)
+					if(devItem?.key && devItem?.value?.name) {
+						t1."${devItem.key}" = devItem?.value?.name
+					}
+				}
+				t3 = settings?.protects?.size() ?: 0
+				if(t1?.size() != t3) { LogAction("Protect Counts Wrong! | Current: (${t1?.size()}) | Expected: (${t3})", "error", true); bad = true }
+				bbb.c_protects_as = settings?.protects && dData && atomicState?.protects ? t1 : [:]
+				bbb.c_protects_settings = settings?.protects ?: []
+
+				dData = atomicState?.deviceData
+				t0 = [:]
+				t0 = dData?.cameras?.findAll { it?.key?.toString() in settings?.cameras }
+				LogAction("${str} | Cameras(${t0?.size()}): ${settings?.cameras}", "info", true)
+				t1 = [:]
+				t0?.each { devItem ->
+					LogAction("${str}: Found (${devItem?.value?.name})", "info", false)
+					if(devItem?.key && devItem?.value?.name) {
+						t1."${devItem?.key}" = devItem?.value?.name
+					}
+				}
+				t3 = settings?.cameras?.size() ?: 0
+				if(t1?.size() != t3) { LogAction("Camera Counts Wrong! | Current: (${t1?.size()}) | Expected: (${t3})", "error", true); bad = true }
+				bbb.d_cameras_as = settings?.cameras && dData && atomicState?.cameras ? t1 : [:]
+				bbb.d_cameras_setting = settings?.cameras ?: []
+			} else { LogAction("${str}: No Structures Found!!!", "warn", true) }
+
+			def t0 = atomicState?.savedNestSettings ?: null
+			def t1 = t0 ? new groovy.json.JsonOutput().toJson(t0) : null
+			def t2 = bbb != [:] ? new groovy.json.JsonOutput().toJson(bbb) : null
+			atomicState.savedNestSettingslastbuild = bbb
+			if(!bad && t2 && (!t0 || t1 != t2)) {
+				atomicState.savedNestSettingsprev = atomicState?.savedNestSettings
+				atomicState.savedNestSettings = bbb
+				return true
+			}
+		} else { LogAction("${str}: No Structure Settings", "warn", true) }
+	} else { LogAction("${str}: NOT Installed!!!", "warn", true) }
+	return false
+}
+//ERSERS
+def mySettingUpdate(name, value, type=null) {
+	if(getDevOpt()) {
+		LogAction("Setting $name set to type:($type) $value", "warn", true)
+		if(!atomicState?.ReallyChanged) { return }
+	}
+	if(atomicState?.ReallyChanged) {
+		settingUpdate(name, value, type)
+	}
+}
+
+def checkRemapping() {
+	def str = "checkRemapping"
+	LogTrace(str)
+	def astr = ""
+	atomicState.ReallyChanged = false
+	def myRC = atomicState.ReallyChanged
+	if(atomicState?.isInstalled && settings?.structures) {
+		def aastr = getApiData("str")
+		def aadev = getApiData("dev")
+		//def aameta = getApiData("meta")
+		def sData = atomicState?.structData
+		def dData = atomicState?.deviceData
+		//def mData = atomicState?.metaData
+		def savedNest = atomicState?.savedNestSettings
+		if(sData && dData /* && mData */ && savedNest) {
+			def structs = getNestStructures()
+			if(structs && !getDevOpt() ) {
+				LogAction("${str}: nothing to do ${structs}", "info", true)
+				return
+			} else {
+				astr += "${str}: found the mess..cleaning up ${structs}"
+				atomicState?.pollBlocked = true
+				atomicState?.pollBlockedReason = "Remapping"
+
+				def newStructures_settings = ""
+				def newThermostats_settings = []
+				def newvThermostats = [:]
+				def newProtects_settings = []
+				def newCameras_settings = []
+				def oldPresId = getNestPresId()
+				def oldWeatId = getNestWeatherId()
+
+				sData?.each { strucId ->
+					def t0 = strucId.key
+					def t1 = strucId.value
+					if(t1?.name && t1?.name == savedNest?.a_structure_name_as) {
+						newStructures_settings = [t1?.structure_id]?.join('.')
+					}
+				}
+
+				if(settings?.structures && newStructures_settings) {
+					if(settings.structures != newStructures_settings) {
+						atomicState.ReallyChanged = true
+						myRC = atomicState?.ReallyChanged
+						astr += ", STRUCTURE CHANGED"
+					} else {
+						astr += ", NOTHING REALLY CHANGED (DEVELOPER MODE)"
+					}
+				} else { astr += ", no new structure found" }
+				LogAction(astr, "warn", true)
+				astr = ""
+				if(myRC || (newStructures_setting && getDevOpt())) {
+					mySettingUpdate("structures", newStructures_settings)
+					if(myRC) { atomicState?.structures = newStructures_settings }
+					def newStrucName = newStructures_settings ? atomicState?.structData[newStructures_settings]?.name : null
+					astr = "${str}: newStructures ${newStructures_settings} | name: ${newStrucName} | to settings & as structures: ${settings?.structures}"
+
+					astr += ", as.thermostats: ${atomicState?.thermostats}  |  saveNest: ${savedNest?.b_thermostats_as}"
+					LogAction(astr, "info", true)
+					savedNest?.b_thermostats_as.each { dni ->
+						def t0 = dni?.key
+						def dev = getChildDevice(t0)
+						if(dev) {
+							//LogAction("${str}: found dev oldId: ${t0}", "info", true)
+							def gotIt = false
+							dData?.thermostats?.each { devItem ->
+								def t21 = devItem.key
+								def t22 = devItem.value
+								def newDevStructId = [t22?.structure_id].join('.')
+								if(!gotIt && t22 && newDevStructId && newDevStructId == newStructures_settings && dni.value == t22?.name) {
+									def t6 = [t22?.device_id].join('.')
+									def t7 = [ "${t6}":dni.value ]
+									def newDevId
+									t7.collect { ba ->
+										newDevId = getNestTstatDni(ba)
+									}
+									newThermostats_settings << newDevId
+									gotIt = true
+
+									def rstr = "found newDevId ${newDevId} to replace oldId: ${t0} ${t22?.name} |"
+
+									if(settings?."${t0}_safety_temp_min") {
+										mySettingUpdate("${newDevId}_safety_temp_min", settings?."${t0}_safety_temp_min", "decimal")
+										mySettingUpdate("${t0}_safety_temp_min", "")
+										rstr += ", safety min"
+									}
+									if(settings?."${t0}_safety_temp_max") {
+										mySettingUpdate("${newDevId}_safety_temp_max", settings?."${t0}_safety_temp_max", "decimal")
+										mySettingUpdate("${t0}_safety_temp_max", "")
+										rstr += ", safety max"
+									}
+									if(settings?."${t0}_comfort_dewpoint_max") {
+										mySettingUpdate("${newDevId}_comfort_dewpoint_max", settings?."${t0}_comfort_dewpoint_max", "decimal")
+										mySettingUpdate("${t0}_comfort_dewpoint_max", "")
+										rstr += ", comfort dew"
+									}
+									if(settings?."${t0}_comfort_humidity_max") {
+										mySettingUpdate("${newDevId}_comfort_humidity_max", settings?."${t0}_comfort_humidity_max", "number")
+										mySettingUpdate("${t0}_comfort_humidity_max", "")
+										rstr += ", comfort hum"
+									}
+									if(settings?."tstat_${t0}_lbl") {
+										if(atomicState?.devNameOverride && atomicState?.custLabelUsed) {
+											mySettingUpdate("tstat_${newDevId}_lbl", settings?."tstat_${t0}_lbl", "text")
+										}
+										mySettingUpdate("tstat_${t0}_lbl", "")
+										rstr += ", custom Label"
+									}
+									if(atomicState?.vThermostats && atomicState?."vThermostatv${t0}") {
+										def physDevId = atomicState?."vThermostatMirrorIdv${t0}"
+										def t1 = atomicState?.vThermostats
+										def t5 = "v${newDevId}" as String
+
+										if(t0 && t0 == physDevId && t1?."v${physDevId}") {
+											def vdev = getChildDevice("v${t0}")
+											if(vdev) {
+												rstr += ", there are virtual devices that match"
+
+												if(settings?."vtstat_v${t0}_lbl") {
+													if(atomicState?.devNameOverride && atomicState?.custLabelUsed) {
+														mySettingUpdate("vtstat_${t5}_lbl", settings?."tstat_v${t0}_lbl", "text")
+													}
+													mySettingUpdate("vtstat_v${t0}_lbl", "")
+													rstr += ", custom vstat Label"
+												}
+												newvThermostats."${t5}" = t1."v${t0}"
+												if(myRC) {
+													atomicState."vThermostat${t5}" = atomicState?."vThermostatv${t0}"
+													atomicState?."vThermostatMirrorId${t5}" = newDevId
+													atomicState?."vThermostatChildAppId${t5}" = atomicState?."vThermostatChildAppIdv${t0}"
+												}
+
+												def automationChildApp = getChildApps().find{ it.id == atomicState?."vThermostatChildAppIdv${t0}" }
+												if(automationChildApp != null) {
+													if(myRC) { automationChildApp.setRemoteSenTstat(newDevId) }
+													rstr += ", fixed atomicState.remSenTstat"
+												} else { rstr += ", DID NOT FIND AUTOMATION APP" }
+
+												// fix locks
+												def t3 = ""
+												if(atomicState?."remSenLock${t0}") {
+													rstr += ", fixed locks"
+													if(myRC) {
+														atomicState."remSenLock${newDevId}" = atomicState."remSenLock${t0}"
+														t3 = "remSenLock${t0}";		state.remove(t3.toString())
+													}
+												} else { rstr += ", DID NOT FIND LOCK" }
+												// find the virtual device and reset its dni
+												rstr += ", reset vDNI"
+												if(myRC) {
+													vdev.deviceNetworkId = t5
+
+													t3 = "vThermostatv${t0}";		state.remove(t3.toString())
+													t3 = "vThermostatMirrorIdv${t0}";	state.remove(t3.toString())
+													t3 = "vThermostatChildAppIdv${t0}";	state.remove(t3.toString())
+												}
+
+											} else { rstr += ", DID NOT FIND VIRTUAL DEVICE" }
+											def t11 = "oldvStatDatav${t0}"
+											state.remove(t11.toString())
+										} else { rstr += ", vstat formality check failed" }
+									} else { rstr += ", no vstat" }
+
+									if(myRC) { dev.deviceNetworkId = newDevId }
+									if(rstr != "") { LogAction("${str}: resultStr: ${rstr}", "info", true) }
+								}
+							}
+							if(!gotIt) { LogAction("${str}: NOT matched dev oldId: ${t0}", "warn", true) }
+						} else { LogAction("${str}: NOT found dev oldId: ${t0}", "error", true) }
+						def t10 = "oldTstatData${t0}"
+						state.remove(t10.toString())
+					}
+					astr = ""
+					if(settings?.thermostats) {
+						def t0 = settings?.thermostats?.size()
+						def t1 = savedNest?.b_thermostats_as?.size()
+						def t2 = newThermostats_settings?.size()
+						if(t0 == t1 && t1 == t2) {
+							mySettingUpdate("thermostats", newThermostats_settings, "enum")
+							astr += "${str}: newThermostats_settings: ${newThermostats_settings} settings.thermostats: ${settings?.thermostats}"
+
+							//LogAction("as.thermostats: ${atomicState?.thermostats}", "warn", true)
+							atomicState.thermostats = null
+							def t4 = newvThermostats ? newvThermostats?.size() : 0
+							def t5 = atomicState?.vThermostats ?  atomicState?.vThermostats.size() : 0
+							if(t4 || t5) {
+								if(t4 == t5) {
+									astr += ", AS vThermostats ${newvThermostats}"
+									if(myRC) { atomicState.vThermostats = newvThermostats }
+								} else { LogAction("vthermostat sizes don't match ${t4} ${t5}", "warn", true) }
+							}
+							LogAction(astr, "info", true)
+						} else { LogAction("thermostat sizes don't match ${t0} ${t1} ${t2}", "warn", true) }
+					}
+
+					astr = ""
+					savedNest?.c_protects_as.each { dni ->
+						def t0 = dni.key
+						def dev = getChildDevice(t0)
+						if(dev) {
+							def gotIt = false
+							dData?.smoke_co_alarms?.each { devItem ->
+								def t21 = devItem.key
+								def t22 = devItem.value
+								def newDevStructId = [t22?.structure_id].join('.')
+								if(!gotIt && t22 && newDevStructId && newDevStructId == newStructures_settings && dni.value == t22?.name) {
+									//def newDevId = [t22?.device_id].join('.')
+									def t6 = [t22?.device_id].join('.')
+									def t7 = [ "${t6}":dni.value ]
+									def newDevId
+									t7.collect { ba ->
+										newDevId = getNestProtDni(ba)
+									}
+									newProtects_settings << newDevId
+									gotIt = true
+									astr += ", ${str}: found newDevId ${newDevId} to replace oldId: ${t0} ${t22?.name} "
+									if(settings?."prot_${t0}_lbl") {
+										if(atomicState?.devNameOverride && atomicState?.custLabelUsed) {
+											mySettingUpdate("prot_${newDevId}_lbl", settings?."prot_${t0}_lbl", "text")
+										}
+										mySettingUpdate("prot_${t0}_lbl", "")
+									}
+
+									if(myRC) { dev.deviceNetworkId = newDevId }
+								}
+							}
+							if(!gotIt) { LogAction("${str}: NOT matched dev oldId: ${t0}", "warn", true) }
+						} else { LogAction("${str}: NOT found dev oldId: ${t0}", "error", true) }
+						def t10 = "oldProtData${t0}"
+						state.remove(t10.toString())
+					}
+					if(settings?.protects) {
+						def t0 = settings?.protects?.size()
+						def t1 = savedNest?.c_protects_as?.size()
+						def t2 = newProtects_settings?.size()
+						if(t0 == t1 && t1 == t2) {
+							mySettingUpdate("protects", newProtects_settings, "enum")
+							astr += "newProtects: ${newProtects_settings} settings.protects: ${settings?.protects} "
+							//LogAction("as.protects: ${atomicState?.protects}", "warn", true)
+							atomicState.protects = null
+						} else { LogAction("protect sizes don't match ${t0} ${t1} ${t2}", "warn", true) }
+						LogAction(astr, "info", true)
+					}
+
+					astr = ""
+					savedNest?.d_cameras_as.each { dni ->
+						def t0 = dni.key
+						def dev = getChildDevice(t0)
+						if(dev) {
+							def gotIt = false
+							dData?.cameras?.each { devItem ->
+								def t21 = devItem.key
+								def t22 = devItem.value
+								def newDevStructId = [t22?.structure_id].join('.')
+								if(!gotIt && t22 && newDevStructId && newDevStructId == newStructures_settings && dni.value == t22?.name) {
+									//def newDevId = [t22?.device_id].join('.')
+									def t6 = [t22?.device_id].join('.')
+									def t7 = [ "${t6}":dni.value ]
+									def newDevId
+									t7.collect { ba ->
+										newDevId = getNestCamDni(ba)
+									}
+									newCameras_settings << newDevId
+									gotIt = true
+									astr += "${str}: found newDevId ${newDevId} to replace oldId: ${t0} ${t22?.name} "
+									if(settings?."cam_${t0}_lbl") {
+										if(atomicState?.devNameOverride && atomicState?.custLabelUsed) {
+											mySettingUpdate("cam_${newDevId}_lbl", settings?."cam_${t0}_lbl", "text")
+										}
+										mySettingUpdate("cam_${t0}_lbl", "")
+									}
+
+									if(myRC) { dev.deviceNetworkId = newDevId }
+								}
+							}
+							if(!gotIt) { LogAction("${str}: NOT matched dev oldId: ${t0}", "warn", true) }
+						} else { LogAction("${str}: NOT found dev oldId: ${t0}", "error", true) }
+						def t10 = "oldCamData${t0}"
+						state.remove(t10.toString())
+					}
+					if(settings?.cameras) {
+						def t0 = settings?.cameras?.size()
+						def t1 = savedNest?.d_cameras_as?.size()
+						def t2 = newCameras_settings?.size()
+						if(t0 == t1 && t1 == t2) {
+							mySettingUpdate("cameras", newCameras_settings, "enum")
+							astr += "${str}: newCameras_settings: ${newCameras_settings} settings.cameras: ${settings?.cameras}"
+							//LogAction("as.cameras: ${atomicState?.cameras}", "warn", true)
+							atomicState.cameras = null
+						} else { LogAction("camera sizes don't match ${t0} ${t1} ${t2}", "warn", true) }
+						LogAction(astr, "info", true)
+					}
+
+/*
+	The Settings changes made above "do not take effect until a state re-load happens
+					if(myRC) {
+						fixDevAS()
+					}
+*/
+					astr = "oldPresId $oldPresId "
+					// fix presence
+					if(settings?.presDevice) {
+						if(oldPresId) {
+							def dev = getChildDevice(oldPresId)
+							def newId = getNestPresId()
+							def ndev = getChildDevice(newId)
+							astr += "| DEV ${dev?.deviceNetworkId} | NEWID $newId |  NDEV: ${ndev?.deviceNetworkId} "
+							def t10 = "oldPresData${dev?.deviceNetworkId}"
+							state.remove(t10.toString())
+							if(dev && newId && ndev) { astr += " all good presence" }
+							else if(!dev) { astr += "where is the pres device?" }
+							else if(dev && newId && !ndev) {
+								astr += "will fix presence "
+								if(myRC) { dev.deviceNetworkId = newId }
+							} else { LogAction("${dev?.label} $newId ${ndev?.label}", "error", true) }
+						} else { LogAction("no oldPresId", "error", true) }
+						LogAction(astr, "info", true)
+					}
+					// fix weather
+					astr += "oldWeatId $oldWeatId "
+					if(settings?.weatherDevice) {
+						if(oldWeatId) {
+							def dev = getChildDevice(oldWeatId)
+							def newId = getNestWeatherId()
+							def ndev = getChildDevice(newId)
+							astr += "| DEV ${dev?.deviceNetworkId} | NEWID $newId |  NDEV: ${ndev?.deviceNetworkId} "
+							def t10 = "oldWeatherData${dev?.deviceNetworkId}"
+							state.remove(t10.toString())
+							if(dev && newId && ndev) { astr += " all good weather " }
+							else if(!dev) { LogAction("where is the weather device?", "warn", true) }
+							else if(dev && newId && !ndev) {
+								astr += "will fix weather"
+								if(myRC) { dev.deviceNetworkId = newId }
+							} else { LogAction("${dev?.label} $newId ${ndev?.label}", "error", true) }
+						} else { LogAction("no oldWeatId", "error", true) }
+					}
+					LogAction(astr, "info", true)
+
+				} else { LogAction("no changes or no data a:${settings?.structures} b: ${newStructures_settings}", "info", true) }
+
+				atomicState?.pollBlocked = false
+				atomicState?.pollBlockedReason = ""
+				return
+			}
+		} else { LogAction("don't have our data", "warn", true) }
+	} else { LogAction("not installed, no structure", "warn", true) }
+}
 
 def askAlexaMQHandler(evt) {
 	if (!evt) { return }
@@ -2899,7 +2889,7 @@ def getInstAutoTypesDesc() {
 			type = "old"
 		}
 		if(ver) {
-			def updVer = sData.autoSaVer ?: ver
+			def updVer = sData?.autoSaVer ?: ver
 			if(versionStr2Int(ver) < versionStr2Int(updVer)) {
 				updVer = ver
 			}
@@ -3409,7 +3399,6 @@ def procNestResponse(resp, data) {
 	def meta = false
 	def type = data?.type
 	try {
-
 		if(!type) { return }
 
 		if(resp?.status == 307) {
@@ -3578,9 +3567,9 @@ def didChange(old, newer, type, src) {
 		if(type == "str") {
 			updTimestampMap("lastStrucDataUpd", getDtNow())
 			atomicState.needStrPoll = false
-			if(atomicState?.structures) {
-				LogAction("NestAPI AWAY Debug | Current: (${newer[atomicState?.structures]?.away})${(newer[atomicState?.structures]?.away != old[atomicState?.structures]?.away) ? " | Previous: (${old[atomicState?.structures]?.away})" : ""}", "trace", false)
-			}
+			// if(atomicState?.structures) {
+			// 	LogAction("NestAPI AWAY Debug | Current: (${newer[atomicState?.structures]?.away})${(newer[atomicState?.structures]?.away != old[atomicState?.structures]?.away) ? " | Previous: (${old[atomicState?.structures]?.away})" : ""}", "trace", false)
+			// }
 		}
 		if(type == "dev") {
 			updTimestampMap("lastDevDataUpd", getDtNow())
@@ -3592,19 +3581,24 @@ def didChange(old, newer, type, src) {
 		}
 		if(old != newer) {
 			if(type == "str") {
-				def t0 = atomicState?.structData?.size() && atomicState?.structures ? atomicState?.structData[atomicState?.structures] : null
-				def t1 = newer && atomicState?.structures ? newer[atomicState?.structures] : null
+				// def t0 = atomicState?.structData?.size() && atomicState?.structures ? atomicState?.structData[atomicState?.structures] : null
+				// def t1 = newer && atomicState?.structures ? newer[atomicState?.structures] : null
+				def tt0 = atomicState?.structData?.size() ? atomicState?.structData : null
+				// Null safe does not work on array references that miss
+		        def t0 = tt0 && atomicState?.structures && tt0?."${atomicsState?.structures}" ?  tt0[atomicState?.structures] : null
+		        def t1 = newer && atomicState?.structures && newer?."${atomicState?.structures}" ? newer[atomicState?.structures] : null
+
 				if(t1 && t0 != t1) {
 					result = true
 					atomicState?.forceChildUpd = true
 					LogTrace("structure old newer not the same ${atomicState?.structures}")
 					// whatChanged(t0, t1, "/structures", "structure")
-					if(atomicState?.enRemDiagLogging == true && settings?.showDataChgdLogs != true) {
-						LogAction("API Structure Data HAS Changed ($srcStr)", "info", true)
-					} else {
-						def chgs = getChanges(t0, t1, "/structures", "structure")
-						if(chgs) { LogAction("STRUCTURE Changed ($srcStr): ${chgs}", "info", true) }
-					}
+					if(settings?.showDataChgdLogs == true && atomicState?.enRemDiagLogging != true) {
+			            def chgs = getChanges(t0, t1, "/structures", "structure")
+			            if(chgs) { LogAction("STRUCTURE Changed ($srcStr): ${chgs}", "info", true) }
+			        } else {
+			            LogAction("API Structure Data HAS Changed ($srcStr)", "info", true)
+			        }
 				}
 				atomicState?.structData = newer
 			}
@@ -5705,7 +5699,7 @@ def ver2IntArray(val) {
 	return [maj:"${ver[0]?.toInteger()}",min:"${ver[1]?.toInteger()}",rev:"${ver[2]?.toInteger()}"]
 }
 
-def versionStr2Int(str) { return str ? str.toString().replaceAll("\\.", "").toInteger() : null }
+def versionStr2Int(str) { return str ? str.toString()?.replaceAll("\\.", "")?.toInteger() : null }
 
 def getChildWaitVal() { return settings?.tempChgWaitVal ? settings?.tempChgWaitVal.toInteger() : 4 }
 
@@ -5834,11 +5828,11 @@ def reqSchedInfoRprt(child, report=true) {
 				return ["scdNum":actSchedNum, "schedName":schedData?.lbl, "reqSenHeatSetPoint":reqSenHeatSetPoint, "reqSenCoolSetPoint":reqSenCoolSetPoint, "curZoneTemp":curZoneTemp, "tempSrc":tempSrc, "tempSrcDesc":tempSrcStr]
 			} else {
 				def tempScaleStr = " degrees"
-				def canHeat = tstat?.currentCanHeat.toString() == "true" ? true : false
-				def canCool = tstat?.currentCanCool.toString() == "true" ? true : false
-				def curMode = tstat?.currentnestThermostatMode.toString()
-				def curOper = tstat?.currentThermostatOperatingState.toString()
-				def curHum = tstat?.currentHumidity.toString()
+				def canHeat = tstat?.currentCanHeat?.toString() == "true" ? true : false
+		        def canCool = tstat?.currentCanCool?.toString() == "true" ? true : false
+		        def curMode = tstat?.currentnestThermostatMode?.toString()
+		        def curOper = tstat?.currentThermostatOperatingState?.toString()
+		        def curHum = tstat?.currentHumidity?.toString()
 				def schedDesc = schedVoiceDesc(actSchedNum, schedData, schedMotionActive)
 				str += schedDesc ?: " There are No Schedules currently Active. "
 
@@ -6236,7 +6230,7 @@ def getNestWeatherLabel() {
 
 def getChildDeviceLabel(dni) {
 	if(!dni) { return null }
-	return getChildDevice(dni.toString()).getLabel() ?: null
+	return getChildDevice(dni.toString())?.getLabel() ?: null
 }
 
 def getTstats() {
@@ -7648,43 +7642,64 @@ def getDevIds() {
     return atomicState?.devCodeIdData ?: [:]
 }
 
+def updWebHeadHtml(title) {
+    return """
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="${title}">
+        <meta name="author" content="Anthony S.">
+        <meta http-equiv="cleartype" content="on">
+        <meta name="MobileOptimized" content="320">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <title>${title}</title>
+        <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+        <script src="https://use.fontawesome.com/a81eef09c0.js" defer></script>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js" defer></script>
+		<link href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/nst_master.css" rel="stylesheet">
+        <link href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css" rel="stylesheet">
+    """
+}
+
+def updWebFooterHtml() {
+    return """
+        <footer class="page-footer center-on-small-only fixed-bottom">
+            <div class="footer-copyright">
+                <div class="containter-fluid">
+                    © 2018 Copyright<a href="https://www.nst-manager.com"> nst-manager.com</a>
+                </div>
+            </div>
+        </footer>
+        <script type="text/javascript" src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/popper.min.js" defer></script>
+        <script type="text/javascript" src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/bootstrap.min.js" defer></script>
+        <script type="text/javascript" src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/mdb.min.js" defer></script>
+    """
+}
+
 def getLoaderAnimation() {
     return """
-        <svg id="loader" width="60%" height="60%" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="rgb(0%, 51.3%, 100%)">
-        <g fill="none" fill-rule="evenodd">
-          <g transform="translate(1 1)" stroke-width="2">
-            <circle stroke-opacity=".5" cx="18" cy="18" r="18" />
-            <path d="M36 18c0-9.94-8.06-18-18-18">
-              <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite" />
-            </path>
-            <text id="loaderText1" fill="gray" stroke-width="0" style="font-size: 0.25em;" x="49%" y="45%" text-anchor="middle"></text>
-            <text id="loaderText2" fill="gray" stroke-width="0" style="font-size: 0.2em;"x="49%" y="60%" text-anchor="middle"></text>
-          </g>
-        </g>
-      </svg>
+        <svg id="loader" height="100%" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" class="lds-double-ring">
+            <circle cx="50" cy="50" ng-attr-r="{{config.radius}}" ng-attr-stroke-width="{{config.width}}" ng-attr-stroke="{{config.c1}}" ng-attr-stroke-dasharray="{{config.dasharray}}" fill="none" stroke-linecap="round" r="40" stroke-width="7" stroke="#18B9FF" stroke-dasharray="62.83185307179586 62.83185307179586" transform="rotate(139.357 50 50)">
+            <animateTransform attributeName="transform" type="rotate" calcMode="linear" values="0 50 50;360 50 50" keyTimes="0;1" dur="1.8s" begin="0s" repeatCount="indefinite"></animateTransform>
+            </circle>
+            <circle cx="50" cy="50" ng-attr-r="{{config.radius2}}" ng-attr-stroke-width="{{config.width}}" ng-attr-stroke="{{config.c2}}" ng-attr-stroke-dasharray="{{config.dasharray2}}" ng-attr-stroke-dashoffset="{{config.dashoffset2}}" fill="none" stroke-linecap="round" r="32" stroke-width="7" stroke="#FF7F27" stroke-dasharray="50.26548245743669 50.26548245743669" stroke-dashoffset="50.26548245743669" transform="rotate(-139.357 50 50)">
+            <animateTransform attributeName="transform" type="rotate" calcMode="linear" values="0 50 50;-360 50 50" keyTimes="0;1" dur="1.8s" begin="0s" repeatCount="indefinite"></animateTransform>
+            </circle>
+            <text id="loaderText1" fill="gray" stroke-width="0" x="50%" y="50%" text-anchor="middle" class="loaderText">Please</text>
+            <text id="loaderText2" fill="gray" stroke-width="0" x="50%" y="60%" text-anchor="middle" class="loaderText">Wait</text>
+        </svg>
     """
 }
 
 def runStUpdateHtml() {
     def html = """
-    <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
-        <title>NST Manager Updater</title>
-		<meta http-equiv="cache-control" content="max-age=0"/>
-        <meta http-equiv="cache-control" content="no-cache"/>
-        <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
-        <meta http-equiv="pragma" content="no-cache"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <meta charset="utf-8">
-        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
-        <script src="https://use.fontawesome.com/fbe6a4efc7.js"></script>
-        <script src="https://fastcdn.org/FlowType.JS/1.1/flowtype.js"></script>
-		<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css">
-		<script type="text/javascript">
+        ${updWebHeadHtml("NST Manager Updater")}
+        <script type="text/javascript">
             var functionType = "updates";
-            var appIds = ${new JsonOutput().toJson(getAppIds())};
+			var appIds = ${new JsonOutput().toJson(getAppIds())};
             // console.log( "appIds", appIds);
 			var devIds = ${new groovy.json.JsonOutput().toJson(getDevIds())};
 	  	  	// console.log(devIds);
@@ -7696,48 +7711,44 @@ def runStUpdateHtml() {
             var devUpd2Url = '${apiServerUrl("/ide/device/updateOneFromRepo/")}';
             var devUpd3Url = '${apiServerUrl("/ide/device/publishAjax/")}';
         </script>
-		<style>
-			#loaderText1 {
-				font-size: 4px;
-			}
-
-			#loaderText2 {
-				font-size: 7px;
-			}
-			@media only screen and (max-width: 600px) {
-			    #loader {
-			        padding: 20px;
-			        max-width: 350px;
-			        max-height: 350px;
-			    }
-			    #loaderText1 {
-			        font-size: 0.3em;
-			    }
-			    #loaderText2 {
-			        font-size: 0.4em;
-			    }
-			}
-		</style>
+        <script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/st_updater.js" async></script>
     </head>
-
     <body>
-		<div class="title-div">
-			  <h1 class="title-text">NST Manager Updater</h1>
-		</div>
-		<section>
-			${getLoaderAnimation()}
-		</section>
-		<div class="listDiv">
-			<div id="resultList">
-				<h4 id="resultsTitle" style="display: none;">Update Results</h4>
-				<ul id="resultUl"></ul>
-			</div>
-		</div>
-		<i id="finishedImg" class='fa fa-check' style="display: none;"></i>
-		<div id="results"></div>
-		<script type="text/javascript" src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/st_updater.js"></script>
-	</body>
-	</html>"""
+        <header>
+            <nav class="navbar navbar-dark sticky-top navbar-expand-lg">
+                <a class="navbar-brand" href="#"><img src="${getAppImg("nst_manager_5%402x.png", true)}" height="30" class="d-inline-block align-top" alt=""> NST Manager</a>
+            </nav>
+        </header>
+        <main>
+            <div class="container">
+                <section id="stContent">
+                    <div style="width: 100%; height: 200px; text-align: center;">
+                        <h2 class="h2-responsive mb-2" style="font-weight: 400;">Software Updater</h2>
+                        <hr class="white">
+                        <div id="loaderDiv" class="row fadeIn fadeOut">
+                            <div class="col-lg-12 mb-r">
+                                ${getLoaderAnimation()}
+                            </div>
+                        </div>
+                        <div class="row fadeIn fadeOut">
+                            <div class="col-lg-12 mb-r">
+                                <div class="listDiv">
+                                    <div id="resultList">
+                                        <h3 id="resultsTitle" style="display: none;">Update Results</h3>
+                                        <ul id="resultUl"></ul>
+                                    </div>
+                                </div>
+                                <i id="finishedImg" class='fa fa-check' style="display: none;"></i>
+                                <div id="results"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        ${updWebFooterHtml()}
+    </body>
+    </html>"""
     render contentType: "text/html", data: html
 }
 
