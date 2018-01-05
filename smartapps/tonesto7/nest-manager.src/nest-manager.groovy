@@ -2171,6 +2171,18 @@ def initBuiltin(btype) {
 	}
 }
 
+def initNestModeApp() {
+	initBuiltin("initNestModeApp");
+}
+
+def initWatchdogApp() {
+	initBuiltin("initWatchdogApp");
+}
+
+def initRemDiagApp() {
+	initBuiltin("initRemDiagApp");
+}
+
 def initManagerApp() {
 	LogTrace("initManagerApp")
 	setStateVar()
