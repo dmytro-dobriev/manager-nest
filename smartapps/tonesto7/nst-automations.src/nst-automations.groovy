@@ -27,8 +27,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.2.3" }
-def appVerDate() { "01-05-2018" }
+def appVersion() { "5.2.4" }
+def appVerDate() { "01-08-2018" }
 
 preferences {
 	//startPage
@@ -4036,7 +4036,7 @@ def nModePresenceDesc() {
 		str += "Presence Status:"
 		settings?.nModePresSensor?.sort { it?.displayName }?.each { dev ->
 			cnt = cnt+1
-			t0 = strCapitalize(dev?.currentPresence)
+			def t0 = strCapitalize(dev?.currentPresence)
 			def presState = t0 ?: "No State"
 			str += "${(cnt >= 1) ? "${(cnt == cCnt) ? "\n└" : "\n├"}" : "\n└"} ${dev?.label}: ${(dev?.label?.toString()?.length() > 10) ? "\n${(cCnt == 1 || cnt == cCnt) ? "    " : "│"}└ " : ""}(${presState})"
 		}
