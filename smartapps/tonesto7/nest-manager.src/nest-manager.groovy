@@ -35,8 +35,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.0" }
-def appVerDate() { "01-05-2017" }
+def appVersion() { "5.3.1" }
+def appVerDate() { "01-08-2017" }
 def minVersions() {
 	return [
 		"automation":["val":530, "desc":"5.3.0"],
@@ -575,25 +575,25 @@ def getWeatherQueryResults(query) {
 }
 
 def codeUpdatesPage(){
-    dynamicPage(name: "codeUpdatesPage", uninstall: false, install: false) {
-        def theURL = "https://consigliere-regional.api.smartthings.com/?redirect=" + URLEncoder.encode(getAppEndpointUrl("stupdate"))
-        section() {
-            def desc = "\bSmartApps:"
-            desc += atomicState?.swVer?.mgrVer != null ? "${desc != "" ? "\n":""}Manager Version: (${atomicState?.swVer?.mgrVer})" : ""
-            desc += atomicState?.swVer?.autoSaVer != null ? "${desc != "" ? "\n":""}Automations Version: (${atomicState?.swVer?.autoSaVer})" : ""
-            desc += "\n\n\bDevices:"
-            desc += atomicState?.swVer?.tDevVer != null ? "${desc != "" ? "\n":""} • Thermostat Version: (${atomicState?.swVer?.tDevVer})" : ""
-            desc += atomicState?.swVer?.pDevVer != null ? "${desc != "" ? "\n":""} • Protect Version: (${atomicState?.swVer?.pDevVer})" : ""
-            desc += atomicState?.swVer?.camDevVer != null ? "${desc != "" ? "\n":""} • Camera Version: (${atomicState?.swVer?.camDevVer})" : ""
-            desc += atomicState?.swVer?.presDevVer != null ? "${desc != "" ? "\n":""} • Presence Version: (${atomicState?.swVer?.presDevVer})" : ""
+	dynamicPage(name: "codeUpdatesPage", uninstall: false, install: false) {
+		def theURL = "https://consigliere-regional.api.smartthings.com/?redirect=" + URLEncoder.encode(getAppEndpointUrl("stupdate"))
+		section() {
+			def desc = "\bSmartApps:"
+			desc += atomicState?.swVer?.mgrVer != null ? "${desc != "" ? "\n":""}Manager Version: (${atomicState?.swVer?.mgrVer})" : ""
+			desc += atomicState?.swVer?.autoSaVer != null ? "${desc != "" ? "\n":""}Automations Version: (${atomicState?.swVer?.autoSaVer})" : ""
+			desc += "\n\n\bDevices:"
+			desc += atomicState?.swVer?.tDevVer != null ? "${desc != "" ? "\n":""} • Thermostat Version: (${atomicState?.swVer?.tDevVer})" : ""
+			desc += atomicState?.swVer?.pDevVer != null ? "${desc != "" ? "\n":""} • Protect Version: (${atomicState?.swVer?.pDevVer})" : ""
+			desc += atomicState?.swVer?.camDevVer != null ? "${desc != "" ? "\n":""} • Camera Version: (${atomicState?.swVer?.camDevVer})" : ""
+			desc += atomicState?.swVer?.presDevVer != null ? "${desc != "" ? "\n":""} • Presence Version: (${atomicState?.swVer?.presDevVer})" : ""
 			desc += atomicState?.swVer?.weatDevVer != null ? "${desc != "" ? "\n":""} • Weather Version: (${atomicState?.swVer?.weatDevVer})" : ""
-            paragraph desc, state: "complete"
-        }
-        section() {
+			paragraph desc, state: "complete"
+		}
+		section() {
 			paragraph title: "What will this do?", "This process makes sure the following are up-to-date:\n • All SmartApps\n • All Devices\n\nAll you will need to do is sign in to the IDE and watch it go..."
-            href url: theURL, title: "Tap to Update", description: null, image: getAppImg("update_icon.png")
-        }
-    }
+			href url: theURL, title: "Tap to Update", description: null, image: getAppImg("update_icon.png")
+		}
+	}
 }
 
 def reviewSetupPage() {
@@ -2060,8 +2060,11 @@ def nestTokenResetPage() {
  *#########################	NATIVE ST APP METHODS ############################*
  ******************************************************************************/
 def installed() {
-	LogAction("Installed with settings: ${settings}", "debug", true)
-	if(!parent) {
+	if(parent) {
+		LogAction("${app.label} BAD CHILD AUTOMATION FILE installed()...with settings: ${settings}", "error", true)
+		return
+	} else {
+		LogAction("Installed with settings: ${settings}", "debug", true)
 		atomicState?.installData = ["initVer":appVersion(), "dt":getDtNow().toString(), "updatedDt":"Not Set", "freshInstall":true, "shownDonation":false, "shownFeedback":false, "shownChgLog":true, "usingNewAutoFile":true, "liteAppMode":isAppLiteMode()]
 		sendInstallSlackNotif()
 	}
@@ -2070,14 +2073,17 @@ def installed() {
 }
 
 def updated() {
-	LogAction("${app.label} Updated...with settings: ${settings}", "debug", true)
+	if(parent) {
+		LogAction("${app.label} BAD CHILD AUTOMATION FILE Updated...with settings: ${settings}", "error", true)
+		return
+	} else {
+		LogAction("${app.label} Updated...with settings: ${settings}", "debug", true)
+	}
 	// if(atomicState?.migrationInProgress == true) { LogAction("Skipping updated() as migration in-progress", "warn", true); return }
 	if(atomicState?.needToFinalize == true) { LogAction("Skipping updated() as auth change in-progress", "warn", true); return }
 	initialize()
 	sendNotificationEvent("${appName()} has updated settings")
-	if(parent) {
-		atomicState?.lastUpdatedDt = getDtNow()
-	}
+	atomicState?.lastUpdatedDt = getDtNow()
 }
 
 def uninstalled() {
@@ -2101,7 +2107,6 @@ def initialize() {
 		runIn(5, "reInitBuiltins", [overwrite: true])  // These are to have these apps release subscriptions to devices (in case of delete)
 	}
 	runIn(21, "initManagerApp", [overwrite: true])	// need to give time for watchdog updates before we try to delete devices.
-	//runIn(34, "reInitBuiltins", [overwrite: true])	// need to have watchdog/nestmode check if we created devices
 }
 
 def reInitBuiltins() {
@@ -2222,24 +2227,65 @@ def finishInitManagerApp() {
 	if(atomicState?.isInstalled && atomicState?.installData?.usingNewAutoFile) {
 		createSavedNest()
 		if(app.label == "Nest Manager") { app.updateLabel("NST Manager") }
+		def badAutomation = false
 		def autoId = null
-		getChildApps()?.sort()?.each { chld ->
-			if(autoId == null) {autoId = chld?.smartAppId}
-			chld?.update()
+		if(!isAppLiteMode()) {
+			getChildApps()?.sort()?.each { chld ->
+				if(autoId == null) {autoId = chld?.smartAppId}
+				chld?.update()
+			}
+		} else {
+			badAutomation = true
 		}
 		if(autoId) { updAppCodeId("auto", autoId) }
-		if(!isAppLiteMode()) {
-			def tstatAutoApp = getChildApps()?.find {
-				try {
-					def aa = it?.getAutomationType()
-					def bb = it?.getCurrentSchedule()
-					def ai = it?.getAutomationsInstalled()
-				} catch (Exception e) {
-					LogAction("BAD Automation file ${it?.label?.toString()}, please INSTALL proper automation file", "error", true)
-					appUpdateNotify(true)
-				}
+
+		def tstatAutoApp = getChildApps()?.find {
+			try {
+				def aa = it?.getAutomationType()
+				def bb = it?.getCurrentSchedule()
+				def ai = it?.getAutomationsInstalled()
+			} catch (Exception e) {
+				LogAction("BAD Automation file ${it?.label?.toString()}, please INSTALL proper automation file", "error", true)
+				badAutomation = true
+				appUpdateNotify(true)
 			}
+		}
+		if(!isAppLiteMode()) {
 			runIn(5, "reInitBuiltins", [overwrite: true])  // need to have watchdog/nestmode check if we created devices
+		}
+		if(badAutomation) {
+			LogAction("Deleting Automations in 10 mins", "warn", true)
+			runIn(600, "removeBadAutomations", [overwrite: true])
+		}
+	}
+}
+
+def removeBadAutomations() {
+	bad = false
+	if(isAppLiteMode()) {
+		bad = true
+	}
+	if(!bad) {
+		def tstatAutoApp = getChildApps()?.find {
+			try {
+				def aa = it?.getAutomationType()
+				def bb = it?.getCurrentSchedule()
+				def ai = it?.getAutomationsInstalled()
+			} catch (Exception e) {
+				bad = true
+			}
+		}
+	}
+	if(bad) {
+		def tstatAutoApp = getChildApps()?.find {
+			try {
+				LogAction("Calling uninstall on Automation (${it?.id})", "warn", true)
+				//it?.uninstAutomationApp()
+			} catch (Exception e) {
+				;
+			}
+			LogAction("Deleting bad Automation (${it?.id})", "warn", true)
+ 			//deleteChildApp(it)
 		}
 	}
 }
@@ -3598,8 +3644,8 @@ def didChange(old, newer, type, src) {
 				// def t1 = newer && atomicState?.structures ? newer[atomicState?.structures] : null
 				def tt0 = atomicState?.structData?.size() ? atomicState?.structData : null
 				// Null safe does not work on array references that miss
-		        def t0 = tt0 && atomicState?.structures && tt0?."${atomicsState?.structures}" ?  tt0[atomicState?.structures] : null
-		        def t1 = newer && atomicState?.structures && newer?."${atomicState?.structures}" ? newer[atomicState?.structures] : null
+				def t0 = tt0 && atomicState?.structures && tt0?."${atomicsState?.structures}" ?  tt0[atomicState?.structures] : null
+				def t1 = newer && atomicState?.structures && newer?."${atomicState?.structures}" ? newer[atomicState?.structures] : null
 
 				if(t1 && t0 != t1) {
 					result = true
@@ -3607,11 +3653,11 @@ def didChange(old, newer, type, src) {
 					LogTrace("structure old newer not the same ${atomicState?.structures}")
 					// whatChanged(t0, t1, "/structures", "structure")
 					if(settings?.showDataChgdLogs == true && atomicState?.enRemDiagLogging != true) {
-			            def chgs = getChanges(t0, t1, "/structures", "structure")
-			            if(chgs) { LogAction("STRUCTURE Changed ($srcStr): ${chgs}", "info", true) }
-			        } else {
-			            LogAction("API Structure Data HAS Changed ($srcStr)", "info", true)
-			        }
+						def chgs = getChanges(t0, t1, "/structures", "structure")
+						if(chgs) { LogAction("STRUCTURE Changed ($srcStr): ${chgs}", "info", true) }
+					} else {
+						LogAction("API Structure Data HAS Changed ($srcStr)", "info", true)
+					}
 				}
 				atomicState?.structData = newer
 			}
@@ -5842,10 +5888,10 @@ def reqSchedInfoRprt(child, report=true) {
 			} else {
 				def tempScaleStr = " degrees"
 				def canHeat = tstat?.currentCanHeat?.toString() == "true" ? true : false
-		        def canCool = tstat?.currentCanCool?.toString() == "true" ? true : false
-		        def curMode = tstat?.currentnestThermostatMode?.toString()
-		        def curOper = tstat?.currentThermostatOperatingState?.toString()
-		        def curHum = tstat?.currentHumidity?.toString()
+				def canCool = tstat?.currentCanCool?.toString() == "true" ? true : false
+				def curMode = tstat?.currentnestThermostatMode?.toString()
+				def curOper = tstat?.currentThermostatOperatingState?.toString()
+				def curHum = tstat?.currentHumidity?.toString()
 				def schedDesc = schedVoiceDesc(actSchedNum, schedData, schedMotionActive)
 				str += schedDesc ?: " There are No Schedules currently Active. "
 
@@ -7643,16 +7689,13 @@ def sendFeedbackPage() {
 }
 
 def getAppIds() {
-	def appIds = atomicState?.appCodeIdData ?: [:]
-	if(appIds["main"] == null) {
-		appIds["main"] = app?.smartAppId.toString()
-		atomicState?.appCodeIdData = appIds
-	}
-    return appIds
+	updAppCodeId("main", app?.smartAppId.toString())
+	def appIds = atomicState?.appCodeIdData
+	return appIds
 }
 
 def getDevIds() {
-    return atomicState?.devCodeIdData ?: [:]
+	return atomicState?.devCodeIdData ?: [:]
 }
 
 def updWebHeadHtml(title) {
@@ -9666,7 +9709,7 @@ def gitRepo()		{ return "tonesto7/nest-manager"}
 def gitBranch()		{ return betaMarker() ? "beta" : "master" }
 def gitPath()		{ return "${gitRepo()}/${gitBranch()}"}
 def developerVer()	{ return false }
-def betaMarker()	{ return true }
+def betaMarker()	{ return false }
 def appDevType()	{ return false }
 def appDevName()	{ return appDevType() ? " (Dev)" : "" }
 def appInfoDesc()	{
