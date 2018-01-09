@@ -35,8 +35,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.1" }
-def appVerDate() { "01-08-2017" }
+def appVersion() { "5.3.2" }
+def appVerDate() { "01-09-2017" }
 def minVersions() {
 	return [
 		"automation":["val":530, "desc":"5.3.0"],
@@ -3160,8 +3160,11 @@ def checkIfSwupdated() {
 		iData["shownFeedback"] = false
 		iData["shownDonation"] = false
 		atomicState?.installData = iData
-		sendInstallSlackNotif(false)
 		updated()
+		def sData = atomicState?.swVer ?: [:]
+		sData["mgrVer"] = appVersion()
+		atomicState?.swVer = sData
+		sendInstallSlackNotif(false)
 		return true
 	}
 	return false
@@ -7723,6 +7726,7 @@ def updWebHeadHtml(title) {
 		<link href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/nst_master.css" rel="stylesheet">
         <link href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/st_updater.css" rel="stylesheet">
     """
+/* "" */
 }
 
 def updWebFooterHtml() {
@@ -8156,6 +8160,7 @@ def renderDiagHome() {
 				<script src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/diaghome.min.js"></script>
 			</body>
 		"""
+/* """ */
 		render contentType: "text/html", data: html
 	} catch (ex) { log.error "renderDiagUrl Exception:", ex }
 }
@@ -8584,6 +8589,7 @@ def renderAutomationData() {
 				</script>
 		</body>
 		"""
+	/* """ */
 		render contentType: "text/html", data: html
 	} catch (ex) { log.error "renderAutomationData Exception:", ex }
 }
@@ -8814,6 +8820,7 @@ def renderDeviceData() {
 			  	</script>
 			</body>
 		"""
+	/* """ */
 		log.debug apiServerUrl("/api/rooms")
 		render contentType: "text/html", data: html
 	} catch (ex) { log.error "renderDeviceData Exception:", ex }
@@ -9071,7 +9078,7 @@ def renderHtmlMapDesc(title, heading, datamap) {
   			   	<script src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/diagpages.js"></script>
 			</body>
 		"""
-	/* "" */
+	/* """ */
 		render contentType: "text/html", data: html
 	} catch (ex) { log.error "getAppDataFile Exception:", ex }
 }
