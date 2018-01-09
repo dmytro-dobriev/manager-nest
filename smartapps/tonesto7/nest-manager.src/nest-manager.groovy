@@ -35,7 +35,7 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.3" }
+def appVersion() { "5.3.0" }
 def appVerDate() { "01-09-2017" }
 def minVersions() {
 	return [
@@ -6930,7 +6930,7 @@ def Logger(msg, type, logSrc=null, noSTlogger=false) {
 		if(settings?.debugAppendAppName || settings?.debugAppendAppName == null) { labelstr = "${app.label} | " }
 		def themsg = tokenStrScrubber("${labelstr}${msg}")
 
-		if(!noSTlogger) {
+		if(!saveLogtoRemDiagStore(themsg, type, logSrc) && !noSTlogger) {
 			switch(type) {
 				case "debug":
 					log.debug "${themsg}"
@@ -6953,12 +6953,12 @@ def Logger(msg, type, logSrc=null, noSTlogger=false) {
 			}
 		}
 		//log.debug "Logger remDiagTest: $msg | $type | $logSrc"
-		saveLogtoRemDiagStore(themsg, type, logSrc)
 	}
 	else { log.error "${labelstr}Logger Error - type: ${type} | msg: ${msg} | logSrc: ${logSrc}" }
 }
 
 def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=false) {
+	def retVal = false
 	//log.trace "saveLogtoRemDiagStore($msg, $type, $logSrcType)"
 	if(atomicState?.enRemDiagLogging && settings?.enRemDiagLogging) {
 		def turnOff = false
@@ -6986,6 +6986,7 @@ def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=f
 					def item = ["dt":new Date().getTime(), "type":type, "src":(logSrcType ?: "Not Set"), "msg":msg]
 					data << item
 					atomicState?.remDiagLogDataStore = data
+					retVal = true
 				}
 			}
 
@@ -7001,11 +7002,13 @@ def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=f
 					if(getRemDiagActSec() > 20) {	// avoid race that child did not start yet
 						diagLogProcChange(false)
 					}
+					retVal = false
 				}
 				atomicState?.remDiagLogDataStore = []
 			}
 		}
 	}
+	return retVal
 }
 
 def fixState() {

@@ -28,7 +28,7 @@ definition(
 }
 
 def appVersion() { "5.3.0" }
-def appVerDate() { "01-08-2018" }
+def appVerDate() { "01-09-2018" }
 
 preferences {
 	//startPage
@@ -7456,20 +7456,23 @@ def savetoRemDiagChild(List newdata) {
 		}
 		if(newdata?.size() > 0) {
 			def data = atomicState?.remDiagLogDataStore ?: []
+			def pdata = atomicState?.remDiagLogpDataStore ?: []
 			def cnt = 0
-			while(data && stateSz >= 70 && cnt < 50) {
+			while(data && stateSz >= 60 && cnt < 50) {
 				data.remove(0)
 				atomicState?.remDiagLogDataStore = data
 				stateSz = getStateSizePerc()
 				cnt += 1
 			}
 			newdata?.each { logItem ->
+				pdata << logItem
 				data << logItem
 				cnt -= 1
 				//log.debug "item: $logItem"
 				//def item = ["dt":getDtNow(), "type":type, "src":(logSrcType ?: "Not Set"), "msg":msg]
 			}
 			atomicState?.remDiagLogDataStore = data
+			atomicState?.remDiagLogpDataStore = pdata
 			stateSz = getStateSizePerc()
 			while(data && stateSz >= 75 && cnt < 50) {
 				data.remove(0)
@@ -7477,9 +7480,41 @@ def savetoRemDiagChild(List newdata) {
 				stateSz = getStateSizePerc()
 				cnt += 1
 			}
+			runIn(6, "displayLogData", [overwrite: true])
 			log.debug "Log Items (${data?.size()}) | State Size: (${stateSz}%)"
 		} else { log.error "bad call to savetoRemDiagChild - no data" }
 	} else { Logger("bad call to savetoRemDiagChild - wrong automation") }
+}
+
+def displayLogData() {
+		def logData = atomicState?.remDiagLogpDataStore ?: []
+		def logSz = logData?.size() ?: 0
+		def cnt = 1
+		if(logSz > 0) {
+			logData?.sort { it?.dt }.reverse()?.each { logItem ->
+				switch(logItem?.type) {
+					case "info":
+						log.info "${logItem?.src} ${logItem.msg}"
+						break
+					case "warn":
+						log.warn "${logItem?.src} ${logItem.msg}"
+						break
+					case "error":
+						log.error "${logItem?.src} ${logItem.msg}"
+						break
+					case "trace":
+						log.trace "${logItem?.src} ${logItem.msg}"
+						break
+					case "debug":
+						log.debug "${logItem?.src} ${logItem.msg}"
+						break
+					default:
+						log.debug "${logItem?.src} ${logItem.msg}"
+						break
+				}
+			}
+			atomicState?.remDiagLogpDataStore = []
+		}
 }
 
 def getRemLogData() {
@@ -7915,39 +7950,38 @@ def Logger(msg, type, logSrc=null, noSTlogger=false) {
 		}
 		if(atomicState?.debugAppendAppName) { labelstr = "${app.label} | " }
 		def themsg = "${labelstr}${msg}"
-		if(!noSTlogger) {
-			switch(type) {
-				case "debug":
-					log.debug "${themsg}"
-					break
-				case "info":
-					log.info "||| ${themsg}"
-					break
-				case "trace":
-					log.trace "| ${themsg}"
-					break
-				case "error":
-					log.error "| ${themsg}"
-					break
-				case "warn":
-					log.warn "|| ${themsg}"
-					break
-				default:
-					log.debug "${themsg}"
-					break
-			}
-		}
 		//log.debug "Logger remDiagTest: $msg | $type | $logSrc"
-		if(parent) {
+		if(atomicState?.enRemDiagLogging == null) {
+			atomicState?.enRemDiagLogging = parent?.state?.enRemDiagLogging
 			if(atomicState?.enRemDiagLogging == null) {
-				atomicState?.enRemDiagLogging = parent?.state?.enRemDiagLogging
-				if(atomicState?.enRemDiagLogging == null) {
-					atomicState?.enRemDiagLogging = false
-				}
-				//log.debug "set enRemDiagLogging to ${atomicState?.enRemDiagLogging}"
+				atomicState?.enRemDiagLogging = false
 			}
-			if(atomicState?.enRemDiagLogging) {
-				parent?.saveLogtoRemDiagStore(themsg, type, logSrc)
+			//log.debug "set enRemDiagLogging to ${atomicState?.enRemDiagLogging}"
+		}
+		if(atomicState?.enRemDiagLogging) {
+			parent?.saveLogtoRemDiagStore(themsg, type, logSrc)
+		} else {
+			if(!noSTlogger) {
+				switch(type) {
+					case "debug":
+						log.debug "${themsg}"
+						break
+					case "info":
+						log.info "||| ${themsg}"
+						break
+					case "trace":
+						log.trace "| ${themsg}"
+						break
+					case "error":
+						log.error "| ${themsg}"
+						break
+					case "warn":
+						log.warn "|| ${themsg}"
+						break
+					default:
+						log.debug "${themsg}"
+						break
+				}
 			}
 		}
 	}
