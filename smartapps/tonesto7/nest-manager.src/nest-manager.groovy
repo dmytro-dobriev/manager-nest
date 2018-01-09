@@ -35,7 +35,7 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.2" }
+def appVersion() { "5.3.3" }
 def appVerDate() { "01-09-2017" }
 def minVersions() {
 	return [
@@ -2114,7 +2114,7 @@ def reInitBuiltins() {
 		initWatchdogApp()
   		initNestModeApp()
 	}
-	diagLogProcChange((settings?.enDiagWebPage && settings?.enRemDiagLogging))
+	//diagLogProcChange((settings?.enDiagWebPage && settings?.enRemDiagLogging))
 	if(atomicState?.tsMigration) { diagLogProcChange((settings?.enDiagWebPage && settings?.enRemDiagLogging)) }
 }
 
@@ -6972,7 +6972,6 @@ def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=f
 				turnOff = true
 				reasonStr += "appData does not allow"
 			}
-			def remDiagApp = getRemDiagApp()
 		}
 		if(turnOff) {
 			saveLogtoRemDiagStore("Diagnostics disabled due to ${reasonStr}", "info", "Manager", true)
@@ -6993,12 +6992,15 @@ def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=f
 			def data = atomicState?.remDiagLogDataStore ?: []
 			def t0 = data?.size()
 			if(t0 && (t0 > 30 || frc || getLastRemDiagSentSec() > 120 || getStateSizePerc() >= 65)) {
+				def remDiagApp = getRemDiagApp()
 				if(remDiagApp) {
 					remDiagApp?.savetoRemDiagChild(data)
 					atomicState?.remDiagDataSentDt = getDtNow()
 				} else {
-					//diagLogProcChange(false)
 					log.warn "Remote Diagnostics Child app not found"
+					if(getRemDiagActSec() > 20) {	// avoid race that child did not start yet
+						diagLogProcChange(false)
+					}
 				}
 				atomicState?.remDiagLogDataStore = []
 			}
@@ -7012,7 +7014,7 @@ def fixState() {
 	def before = getStateSizePerc()
 	if(!parent) {
 		if(!atomicState?.resetAllData && resetAllData) {
-			def data = getState()?.findAll { !(it?.key in ["accessToken", "authToken", "authTokenExpires", "timestampDtMap", "authTokenNum", "enRemDiagLogging", "installationId", "installData", "remDiagLogDataStore", "remDiagDataSentDt", "resetAllData", "pollingOn", "apiCommandCnt", "autoMigrationComplete" ]) }
+			def data = getState()?.findAll { !(it?.key in ["accessToken", "authToken", "authTokenExpires", "timestampDtMap", "authTokenNum", "enRemDiagLogging", "installationId", "installData", "remDiagLogDataStore", "remDiagDataSentDt", "resetAllData", "pollingOn", "apiCommandCnt", "autoMigrationComplete", "tsMigration" ]) }
 			data.each { item ->
 				state.remove(item?.key.toString())
 			}
@@ -7125,7 +7127,7 @@ def timestampMigration() {
 		if(sData[item] == null) { sData[item] = state[item] }
 		state.remove(item)
 	}
-	atomicState?.tsMigrationDone = true
+	atomicState?.tsMigration = true
 }
 
 //Things that need to clear up on updates go here
@@ -7139,7 +7141,7 @@ def stateCleanup() {
 		"appApiIssuesWaitVal", "misPollNotifyWaitVal", "misPollNotifyMsgWaitVal", "devHealthMsgWaitVal", "nestLocAway", "heardFromRestDt", "autoSaVer", "lastAnalyticUpdDt", "lastHeardFromRestDt",
 		"remDiagApp", "remDiagClientId", "restorationInProgress", "diagManagAppStateFilters", "diagChildAppStateFilters", "lastFinishedPoll",
 		"curAlerts", "curAstronomy", "curForecast", "curWeather", "detailEventHistory", "detailExecutionHistory", "evalExecutionHistory", "lastForecastUpdDt", "lastWeatherUpdDt",
-		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName", "ReallyChanged", "savedNestSettings", "savedNestSettingslastbuild", "savedNestSettingsprev"
+		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName", "ReallyChanged", "savedNestSettings", "savedNestSettingslastbuild", "savedNestSettingsprev", "tsMigrationDone"
  	]
 
 	["oldTstatData", "oldCamData", "oldProtData", "oldPresData", "oldWeatherData", "lastCmdSentDt"]?.each { oi->
