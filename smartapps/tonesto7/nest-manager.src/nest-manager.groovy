@@ -1749,11 +1749,11 @@ void diagLogProcChange(setOn) {
 			doInit = true
 		}
 	} else {
-		if(getTimestampVal("remDiagLogActivatedDt") != null) {
+		if(getTimestampVal("remDiagLogActivatedDt") != null || atomicState?.enRemDiagLogging) {
 			msg += "deactivated"
 			settingUpdate("enRemDiagLogging", "false","bool")
 			atomicState?.enRemDiagLogging = false
-			updTimestampMap("remDiagLogActivatedDt", null)	// require toggle off then on again to force back on after timeout
+			updTimestampMap("remDiagLogActivatedDt", null)
 			doInit = true
 		}
 	}
@@ -2114,8 +2114,7 @@ def reInitBuiltins() {
 		initWatchdogApp()
   		initNestModeApp()
 	}
-	//diagLogProcChange((settings?.enDiagWebPage && settings?.enRemDiagLogging))
-	if(atomicState?.tsMigration) { diagLogProcChange((settings?.enDiagWebPage && settings?.enRemDiagLogging)) }
+	if(atomicState?.tsMigration) { initRemDiagApp() }
 }
 
 def initBuiltin(btype) {
@@ -2136,8 +2135,12 @@ def initBuiltin(btype) {
 			autoStr = "watchDog"
 			break
 		case "initRemDiagApp":
-			if(atomicState?.enRemDiagLogging) {
+			if(settings?.enRemDiagLogging) {
 				keepApp = true
+			} else {
+				settingUpdate("enRemDiagLogging", "false","bool")
+				atomicState?.enRemDiagLogging = false
+				updTimestampMap("remDiagLogActivatedDt", null)
 			}
 			autoStr = "remDiag"
 			break
@@ -3841,7 +3844,7 @@ def updateChildData(force = false) {
 		def useMt = !useMilitaryTime ? false : true
 		def dbg = !childDebug ? false : true
 		def logNamePrefix = (settings?.debugAppendAppName || settings?.debugAppendAppName == null) ? true : false
-		def remDiag = (atomicState?.appData?.database?.allowRemoteDiag && atomicState?.enRemDiagLogging) ? true: false
+		def remDiag = (atomicState?.appData?.database?.allowRemoteDiag && atomicState?.enRemDiagLogging && settings?.enRemDiagLogging) ? true: false
 		def nestTz = getNestTimeZone()?.toString()
 		def api = !apiIssues() ? false : true
 		def htmlInfo = getHtmlInfo()
