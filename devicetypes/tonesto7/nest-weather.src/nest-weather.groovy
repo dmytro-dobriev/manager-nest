@@ -963,10 +963,10 @@ private estimateLux(weatherIcon) {
 		}
 	}
 	catch (ex) {
-		log.error("estimateLux Exception:", ex)
 		log.warn "state.sunriseDate: ${state?.sunriseDate}"
 		log.warn "state.sunsetDate: ${state?.sunsetDate}"
 		exceptionDataHandler(ex.message, "estimateLux")
+		log.error("estimateLux Exception:", ex)
 	}
 	return null
 }
@@ -1223,12 +1223,12 @@ def getSunriseSunset() {
 	// Sunrise / sunset
 	try {
 		def a = state?.curAstronomy?.moon_phase
-		if(state.curWeather?.current_observation?.local_tz_offset == null || a == null) { Logger("observation issue") ; return }
-		def today = localDate("GMT${state.curWeather?.current_observation?.local_tz_offset}")
+		if(state?.curWeather?.current_observation?.local_tz_offset == null || a == null) { Logger("observation issue") ; return }
+		def today = localDate("GMT${state?.curWeather?.current_observation?.local_tz_offset}")
 
 		def ltf = new SimpleDateFormat("yyyy-MM-dd HH:mm")
 
-		ltf.setTimeZone(TimeZone.getTimeZone("GMT${state.curWeather?.current_observation?.local_tz_offset}"))
+		ltf.setTimeZone(TimeZone.getTimeZone("GMT${state?.curWeather?.current_observation?.local_tz_offset}"))
 
 		def utf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
 		utf.setTimeZone(TimeZone.getTimeZone("GMT"))
@@ -1239,7 +1239,7 @@ def getSunriseSunset() {
 		state.sunsetDate = sunsetDate
 
 		def tf = new java.text.SimpleDateFormat("h:mm a")
-		tf.setTimeZone(TimeZone.getTimeZone("GMT${state.curWeather?.current_observation?.local_tz_offset}"))
+		tf.setTimeZone(TimeZone.getTimeZone("GMT${state?.curWeather?.current_observation?.local_tz_offset}"))
 		def localSunrise = "${tf.format(sunriseDate)}"
 		def localSunset = "${tf.format(sunsetDate)}"
 		state.localSunrise = localSunrise
