@@ -888,10 +888,10 @@ def luxUpdate() {
 private estimateLux(weatherIcon) {
 	//LogAction("estimateLux ( ${weatherIcon} )", "trace")
 	try {
-		if(!weatherIcon || !state?.sunriseDate || !state?.sunsetDate || !state?.sunriseDate?.time || !state?.sunsetDate?.time) {
+		if(!weatherIcon || !state?.sunriseDate || !state?.sunsetDate || ! (long) state?.sunriseDate?.time || ! (long) state?.sunsetDate?.time) {
 			Logger("estimateLux: Weather Data missing...", "warn")
-			Logger("state.sunriseDate: ${state?.sunriseDate} state.sunriseDate.time: ${state?.sunriseDate?.time}")
-			Logger("state.sunsetDate: ${state?.sunsetDate} state.sunsetDate.time: ${state?.sunsetDate?.time}")
+			Logger("state.sunriseDate: ${state?.sunriseDate} state.sunsetDate: ${state?.sunsetDate}")
+			Logger("state.sunriseDate.time: ${ (long) state?.sunriseDate?.time} state.sunsetDate.time: ${ (long) state?.sunsetDate?.time}")
 			return null
 		} else {
 			def lux = 0
