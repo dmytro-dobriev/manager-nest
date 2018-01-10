@@ -35,8 +35,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.0" }
-def appVerDate() { "01-09-2017" }
+def appVersion() { "5.3.1" }
+def appVerDate() { "01-10-2018" }
 def minVersions() {
 	return [
 		"automation":["val":530, "desc":"5.3.0"],
@@ -2249,7 +2249,7 @@ def finishInitManagerApp() {
 				def bb = it?.getCurrentSchedule()
 				def ai = it?.getAutomationsInstalled()
 			} catch (Exception e) {
-				LogAction("BAD Automation file ${it?.label?.toString()}, please INSTALL proper automation file", "error", true)
+				LogAction("BAD Automation file ${it?.label?.toString()} (${it?.id}), please INSTALL proper automation file", "error", true)
 				badAutomation = true
 				appUpdateNotify(true)
 			}
@@ -2258,7 +2258,7 @@ def finishInitManagerApp() {
 			runIn(5, "reInitBuiltins", [overwrite: true])  // need to have watchdog/nestmode check if we created devices
 		}
 		if(badAutomation) {
-			LogAction("Deleting Automations in 10 mins", "warn", true)
+			LogAction("Deleting BAD Automations in 10 mins", "warn", true)
 			runIn(600, "removeBadAutomations", [overwrite: true])
 		}
 	}
@@ -2276,6 +2276,7 @@ def removeBadAutomations() {
 				def bb = it?.getCurrentSchedule()
 				def ai = it?.getAutomationsInstalled()
 			} catch (Exception e) {
+				LogAction("BAD Automation (${it?.id}) found", "warn", true)
 				bad = true
 			}
 		}
@@ -2284,12 +2285,12 @@ def removeBadAutomations() {
 		def tstatAutoApp = getChildApps()?.find {
 			try {
 				LogAction("Calling uninstall on Automation (${it?.id})", "warn", true)
-				//it?.uninstAutomationApp()
+				it?.uninstAutomationApp()
 			} catch (Exception e) {
 				;
 			}
 			LogAction("Deleting bad Automation (${it?.id})", "warn", true)
- 			//deleteChildApp(it)
+ 			deleteChildApp(it)
 		}
 	}
 }
@@ -6747,7 +6748,7 @@ def callback() {
 				atomicState.needStrPoll = true
 				atomicState?.needDevPoll = true
 				atomicState?.needMetaPoll = true
-				//runIn(5, "finishRemap", [overwrite: true])
+				runIn(5, "finishRemap", [overwrite: true])
 				success()
 
 			} else {
@@ -6762,20 +6763,20 @@ def callback() {
 	}
 }
 
-// // ERSERS check remapping
-// def finishRemap() {
-// 	checkRemapping()
-// 	atomicState.needToFinalize = true
-// 	runIn(21, "finalizeRemap", [overwrite: true])
-// }
-//
-// def finalizeRemap() {
-// 	fixDevAS()
-// 	sendInstallSlackNotif(false)
-// 	atomicState.needToFinalize = false
-// 	initManagerApp()
-// 	state.remove("needToFinalize")
-// }
+// ERSERS check remapping
+def finishRemap() {
+ 	checkRemapping()
+ 	atomicState.needToFinalize = true
+ 	runIn(21, "finalizeRemap", [overwrite: true])
+}
+
+def finalizeRemap() {
+ 	fixDevAS()
+ 	sendInstallSlackNotif(false)
+ 	atomicState.needToFinalize = false
+ 	initManagerApp()
+ 	state.remove("needToFinalize")
+}
 
 def revokeNestToken() {
 	if(atomicState?.authToken) {
