@@ -28,7 +28,7 @@ definition(
 }
 
 def appVersion() { "5.3.0" }
-def appVerDate() { "01-10-2018" }
+def appVerDate() { "01-11-2018" }
 
 preferences {
 	//startPage
@@ -3681,7 +3681,7 @@ def isLeakWatConfigured() {
 }
 
 def getLeakWatSensorsOk() { return settings?.leakWatSensors?.currentState("water")?.value.contains("wet") ? false : true }
-def leakWatSensorsOk() { return (!settings?.leakWatSensors) ? false : true }
+//def leakWatSensorsOk() { return (!settings?.leakWatSensors) ? false : true }
 //def leakWatScheduleOk() { return autoScheduleOk(leakWatPrefix()) }
 
 // TODO allow override from schedule?
