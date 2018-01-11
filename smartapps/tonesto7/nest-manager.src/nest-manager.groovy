@@ -2309,7 +2309,7 @@ def createSavedNest() {
 				def t0 = [:]
 
 				t0 = dData?.thermostats?.findAll { it?.key?.toString() in settings?.thermostats }
-				LogAction("${str} | Thermostats(${t0?.size()}): ${settings?.thermostats}", "info", false)
+				LogAction("${str} | Thermostats(${t0?.size()}): ${settings?.thermostats}", "info", true)
 				def t1 = [:]
 				t0?.each { devItem ->
 					LogAction("${str}: Found (${devItem?.value?.name})", "info", false)
