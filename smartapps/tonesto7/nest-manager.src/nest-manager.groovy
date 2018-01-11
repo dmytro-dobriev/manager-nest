@@ -35,7 +35,7 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.1" }
+def appVersion() { "5.3.2" }
 def appVerDate() { "01-10-2018" }
 def minVersions() {
 	return [
@@ -2266,23 +2266,16 @@ def finishInitManagerApp() {
 
 def removeBadAutomations() {
 	bad = false
-	if(isAppLiteMode()) {
-		bad = true
-	}
-	if(!bad) {
-		def tstatAutoApp = getChildApps()?.find {
-			try {
-				def aa = it?.getAutomationType()
-				def bb = it?.getCurrentSchedule()
-				def ai = it?.getAutomationsInstalled()
-			} catch (Exception e) {
-				LogAction("BAD Automation (${it?.id}) found", "warn", true)
-				bad = true
-			}
+	def tstatAutoApp = getChildApps()?.find {
+		try {
+			def aa = it?.getAutomationType()
+			def bb = it?.getCurrentSchedule()
+			def ai = it?.getAutomationsInstalled()
+		} catch (Exception e) {
+			LogAction("BAD Automation (${it?.id}) found", "warn", true)
+			bad = true
 		}
-	}
-	if(bad) {
-		def tstatAutoApp = getChildApps()?.find {
+		if(bad || isAppLiteMode()) {
 			try {
 				LogAction("Calling uninstall on Automation (${it?.id})", "warn", true)
 				it?.uninstAutomationApp()
@@ -2292,6 +2285,7 @@ def removeBadAutomations() {
 			LogAction("Deleting bad Automation (${it?.id})", "warn", true)
  			deleteChildApp(it)
 		}
+		bad = false
 	}
 }
 
