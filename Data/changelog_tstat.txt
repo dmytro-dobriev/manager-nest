@@ -1,4 +1,4 @@
-<p style="font-size: 15px;"><strong>V5.3.0 (December 17th, 2017):</strong><p>
+<p style="font-size: 15px;"><strong>V5.3.1 (January 11th, 2018):</strong><p>
 <hr noshade>
 <ul style="font-size: 12px; padding: 0 10px 0 10px; Margin: 0;">
     <li><strong>UPDATED:</strong> Lot's of HTML UI polishing.</li>
@@ -10,7 +10,5 @@
 <p style="font-size: 15px;"><strong>V5.2.0 (November 8th, 2017):</strong><p>
 <hr noshade>
 <ul style="font-size: 12px; padding: 0 10px 0 10px; Margin: 0;">
-    <li><strong>ADDED:</strong> Added Android Disclaimer for HTML.</li>
-    <li><strong>UPDATED:</strong> Some Minor Device Health Tweaks.</li>
     <li><strong>FIXED:</strong> Refresh Button now works again on HTML (iOS only).</li>
 </ul>

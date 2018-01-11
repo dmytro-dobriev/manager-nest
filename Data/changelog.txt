@@ -1,12 +1,11 @@
-V5.3.0 (December 17th, 2017):
+V5.3.2 (January 11th, 2018):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
  • FIXED: Lot's of bug fixes and optimizations
- • FIXED: I now remove white spaces in client id and client secret to stop the install issues.
- • UPDATED: Modified the pre-install section to show you issues and take you to wiki for that issue.
+ • FIXED: Remote diag logging
+ • UPDATED: Will remove un-needed or broken automations
  • ADDED: New Lite Install Mode (No Watchdog or Automations)
  • ADDED: Add Web UI for all of the Devices
- • FIXED: Stuff I can't remember
 
-Automation App 5.3.0:
+Automation App 5.3.1:
 • FIXED: More Cleanups and Bug fixes
