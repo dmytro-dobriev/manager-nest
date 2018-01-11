@@ -28,7 +28,7 @@ definition(
 }
 
 def appVersion() { "5.3.0" }
-def appVerDate() { "01-09-2018" }
+def appVerDate() { "01-10-2018" }
 
 preferences {
 	//startPage
@@ -511,13 +511,14 @@ def stateUpdate(key, value) {
 
 def initAutoApp() {
 	//log.debug "${app.label} initAutoApp..."			// Must be log.debug
-	def restoreId = settings["restoreId"]
-	def restoreComplete = settings["restoreCompleted"] == true ? true : false
+	//def restoreId = settings["restoreId"]
+	//def restoreComplete = settings["restoreCompleted"] == true ? true : false
 	if(settings["watchDogFlag"]) {
 		atomicState?.automationType = "watchDog"
 	} else if(settings["remDiagFlag"]) {
 		atomicState?.automationType = "remDiag"
 	}
+/*
 	else if (restoreId != null && restoreComplete == false) {
 		LogAction("Restored AutomationType: (${settings?.automationTypeFlag})", "info", true)
 		if(parent?.callRestoreState(app, restoreId)) {
@@ -527,6 +528,7 @@ def initAutoApp() {
 			settingUpdate("restoreCompleted", true, "bool")
 		}
 	}
+*/
 
 	def autoType = getAutoType()
 	if(autoType == "nMode") {
@@ -536,7 +538,9 @@ def initAutoApp() {
 	unsubscribe()
 	def autoDisabled = getIsAutomationDisabled()
 
-	if(!autoDisabled && (restoreId && restoreComplete == false ? false : true)) {
+	//if(!autoDisabled && (restoreId && restoreComplete == false ? false : true)) {
+
+	if(!autoDisabled) {
 		automationsInst()
 
 		if(autoType == "schMot" && isSchMotConfigured()) {
@@ -1031,7 +1035,7 @@ def subscribeToEvents() {
 	}
 	//watchDog Subscriptions
 	if(autoType == "watchDog") {
-		// if(isWatchdogConfigured()) {
+		// if(isWatchdogConfigured())
 		def tstats = parent?.getTstats()
 		def foundTstats
 
@@ -1051,11 +1055,12 @@ def subscribeToEvents() {
 				return d1
 			}
 		}
-		//Alarm status monitoring
-		if(settings["${autoType}AlarmDevices"] && settings?."${pName}AllowAlarmNotif") {
-			if(settings["${autoType}_Alert_1_Use_Alarm"] || settings["${autoType}_Alert_2_Use_Alarm"]) {
-				subscribe(settings["${autoType}AlarmDevices"], "alarm", alarmAlertEvt)
-			}
+	}
+
+	//Alarm status monitoring if any automation has alarm notification enabled
+	if(settings["${autoType}AlarmDevices"] && settings?."${pName}AllowAlarmNotif") {
+		if(settings["${autoType}_Alert_1_Use_Alarm"] || settings["${autoType}_Alert_2_Use_Alarm"]) {
+			subscribe(settings["${autoType}AlarmDevices"], "alarm", alarmAlertEvt)
 		}
 	}
 

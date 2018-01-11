@@ -2129,7 +2129,9 @@ def initBuiltin(btype) {
 			}
 			break
 		case "initWatchdogApp":
-			if(atomicState?.isInstalled) {
+			def t0 = settings?.thermostats?.size()
+			def t1 = atomicState?.thermostats?.size()
+			if(atomicState?.isInstalled && t0 && t1) { // only need watchDog if we have thermostats
 				keepApp = true
 			}
 			autoStr = "watchDog"
