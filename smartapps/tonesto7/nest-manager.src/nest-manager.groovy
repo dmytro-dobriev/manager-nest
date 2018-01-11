@@ -2935,10 +2935,11 @@ def getInstAutoTypesDesc() {
 	sData["autoSaVer"] = null
 	atomicState?.swVer = sData
 	childApps?.each { a ->
-		def type = a?.getAutomationType()
+		def type
 		def ver
 		def dis
 		try {
+			type = a?.getAutomationType()
 			dis = a?.getIsAutomationDisabled()
 			ver = a?.appVersion()
 		}
@@ -6674,7 +6675,7 @@ def getAccessToken() {
 		sendPush(msg)
 		log.error "getAccessToken Exception", ex
 		LogAction("getAccessToken Exception | $msg", "warn", true)
-		sendExceptionData(ex, "getAccessToken")
+		//sendExceptionData(ex, "getAccessToken")
 		return false
 	}
 }
@@ -7821,6 +7822,7 @@ def runStUpdateHtml() {
         ${updWebFooterHtml()}
     </body>
     </html>"""
+/* """ */
     render contentType: "text/html", data: html
 }
 
@@ -7828,24 +7830,29 @@ def getDeviceMetricCnts() {
 	def data = [:]
 	def devs = app.getChildDevices(true)
 	if(devs?.size() >= 1) {
-		devs?.each { dev ->
-			def mData = dev?.getMetricCntData()
-			if(mData != null) {
-				//log.debug "mData: ${mData}"
-				mData?.each { md ->
-					def objKey = md?.key.toString()
-					def objVal = md?.value?.toInteger() ?: 0
-					if(data?.containsKey("${objKey}")) {
-						def newVal = 0
-						def prevVal = data?.get("${objKey}") ?: 0
-						newVal = prevVal?.toInteger()+objVal
-						//log.debug "$objKey Data: [prevVal: $prevVal | objVal: $objVal | newVal: $newVal]"
-						data << ["${objKey}":newVal]
-					} else {
-						data << ["${objKey}":objVal]
+		try {
+			devs?.each { dev ->
+				def mData = dev?.getMetricCntData()
+				if(mData != null) {
+					//log.debug "mData: ${mData}"
+					mData?.each { md ->
+						def objKey = md?.key.toString()
+						def objVal = md?.value?.toInteger() ?: 0
+						if(data?.containsKey("${objKey}")) {
+							def newVal = 0
+							def prevVal = data?.get("${objKey}") ?: 0
+							newVal = prevVal?.toInteger()+objVal
+							//log.debug "$objKey Data: [prevVal: $prevVal | objVal: $objVal | newVal: $newVal]"
+							data << ["${objKey}":newVal]
+						} else {
+							data << ["${objKey}":objVal]
+						}
 					}
 				}
 			}
+		} catch (ex) {
+			log.error "getDeviceMetricCnts", ex 
+			sendExceptionData(ex, "getDeviceMetricCnts")
 		}
 	}
 	//log.debug "data: ${data}"
@@ -9136,7 +9143,7 @@ def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 		//LogAction("${labelstr}sendExceptionData(method: $methodName, isChild: $isChild, autoType: $autoType)", "info", false)
 		LogAction("${labelstr}sendExceptionData(method: $methodName, isChild: $isChild, autoType: $autoType, ex: ${ex})", "error", showErrLog)
 		if(atomicState?.appData?.database?.disableExceptions == true) {
-			return
+			;
 		} else {
 			def exCnt = atomicState?.appExceptionCnt ?: 1
 			atomicState?.appExceptionCnt = exCnt?.toInteger() + 1
@@ -9153,6 +9160,12 @@ def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 				def results = new groovy.json.JsonOutput().toJson(exData)
 				sendFirebaseData(results, "${getDbExceptPath()}/${appType}/${methodName}/${atomicState?.installationId}.json", "post", "Exception")
 			}
+		}
+		if(ex instanceof physicalgraph.exception.StateCharacterLimitExceededException) {
+			state.remove("remDiagLogDataStore")
+			settingUpdate("resetAllData", "true", "bool")
+			atomicState?.resetAllData = false
+			runIn(20, "updated", [overwrite: true])
 		}
 	} catch (e) {
 		log.debug "other exception caught"
