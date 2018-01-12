@@ -248,9 +248,12 @@ def mainPage() {
 			}
 			if(atomicState?.appData && !appDevType()) {
 				if(isAppUpdateAvail()) {
-					href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!",
+					if(atomicState?.appData?.updater?.allowInApp == true || getDevOpt()) {
+						href "codeUpdatesPage", title: "SmartApp and Device Code Updates", description: "Tap Here to Update", state: "complete", image: getAppImg("update_icon.png")
+					} else {
+						href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!",
 							description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in Browser", state: "complete", image: getAppImg("update_icon.png")
-					href "codeUpdatesPage", title: "SmartApp and Device Code Updates", description: "Tap Here to Update", state: "complete", image: getAppImg("update_icon.png")
+					}
 				}
 				if(atomicState?.clientBlacklisted) {
 					paragraph "This ID is blacklisted, please update software!\nIf software is up to date, contact developer", required: true, state: null
