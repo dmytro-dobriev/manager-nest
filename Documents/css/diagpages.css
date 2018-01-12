@@ -71,6 +71,16 @@ html, body {
     }
 }
 
+.hamburger-box {
+    width: 27px;
+    height: 24px;
+}
+
+.hamburger-inner, .hamburger-inner:after, .hamburger-inner:before {
+    width: 27px;
+    height: 4px;
+}
+
 .export-pdf-btn {
     color: white;
     width: auto;
