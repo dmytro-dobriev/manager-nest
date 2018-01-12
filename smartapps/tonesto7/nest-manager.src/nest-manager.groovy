@@ -3154,6 +3154,9 @@ def pollFollow() { poll() }
 def checkIfSwupdated() {
 	// if(checkMigrationRequired()) { return true }
 	if(atomicState?.swVer?.mgrVer != appVersion()) {
+		def sData = atomicState?.swVer ?: [:]
+		sData["mgrVer"] = appVersion()
+		atomicState?.swVer = sData
 		LogAction("checkIfSwupdated: new version ${appVersion()}", "info", true)
 		def iData = atomicState?.installData
 		iData["updatedDt"] = getDtNow().toString()
@@ -3162,9 +3165,6 @@ def checkIfSwupdated() {
 		iData["shownDonation"] = false
 		atomicState?.installData = iData
 		updated()
-		def sData = atomicState?.swVer ?: [:]
-		sData["mgrVer"] = appVersion()
-		atomicState?.swVer = sData
 		sendInstallSlackNotif(false)
 		return true
 	}
@@ -6769,7 +6769,7 @@ def finishRemap() {
 
 def finalizeRemap() {
  	fixDevAS()
- 	sendInstallSlackNotif(false)
+ 	//sendInstallSlackNotif(false)
  	atomicState.needToFinalize = false
  	initManagerApp()
  	state.remove("needToFinalize")
