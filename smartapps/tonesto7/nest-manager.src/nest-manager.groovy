@@ -2185,7 +2185,6 @@ def initBuiltin(btype) {
 			}
 		}
 	}
-*/
 }
 
 def initNestModeApp() {
