@@ -14,11 +14,11 @@ $("#rfrshBtn").hover(function(e) {
     $("#rfrshBtnIcn").toggleClass("fa-spin");
 });
 
-$("#goHomeBtn").click(function() {
-    closeNavMenu();
-    toggleMenuBtn();
-    window.history.back();
-});
+// $("#goHomeBtn").click(function() {
+//     closeNavMenu();
+//     toggleMenuBtn();
+//     window.history.back();
+// });
 
 $("body").flowtype({
     minFont: 8,
