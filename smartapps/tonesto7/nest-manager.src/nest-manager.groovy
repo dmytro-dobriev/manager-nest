@@ -2270,7 +2270,6 @@ def finishInitManagerApp() {
 			runIn(600, "removeBadAutomations", [overwrite: true])
 		}
 	}
-	runIn(5, "reInitBuiltins", [overwrite: true])	// need to have watchdog/nestmode check if we created devices
 }
 
 def removeBadAutomations() {
@@ -9089,7 +9088,7 @@ def sendChildExceptionData(devType, devVer, ex, methodName) {
 	def exString = "${ex}"
 	LogAction("sendChildExceptionData(device: $deviceType, devVer: $devVer, method: $methodName, ex: ${ex}", "error", showErrLog)
 	def exCnt = atomicState?.childExceptionCnt ?: 1
-	atomicState?.childExceptionCnt = exCnt?.toInteger() + 1
+	atomicState?.childExceptionCnt = exCnt.toInteger() + 1
 	if(settings?.optInSendExceptions || settings?.optInSendExceptions == null) {
 		generateInstallId()
 		def exData = ["deviceType":devType, "devVersion":(devVer ?: "Not Available"), "methodName":methodName, "errorMsg":exString, "errorDt":getDtNow().toString()]
