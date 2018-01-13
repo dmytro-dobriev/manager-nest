@@ -9117,7 +9117,8 @@ def sendFeedbackData(msg) {
 }
 
 def sendFirebaseData(data, pathVal, cmdType=null, type=null, noAsync=false) {
-	LogTrace("sendFirebaseData(${data}, ${pathVal}, $cmdType, $type")
+	LogAction("sendFirebaseData(${data}, ${pathVal}, $cmdType, $type, $noAsync", "info", true)
+	LogTrace("sendFirebaseData(${data}, ${pathVal}, $cmdType, $type, $noAsync")
 
 	def allowAsync = false
 	def metstr = "sync"
