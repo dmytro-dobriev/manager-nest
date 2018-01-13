@@ -35,7 +35,7 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.3" }
+def appVersion() { "5.3.2" }
 def appVerDate() { "01-13-2018" }
 def minVersions() {
 	return [
@@ -1784,7 +1784,7 @@ void diagLogProcChange(setOn) {
 			}
 		}
 		atomicState.forceChildUpd = true
-		atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+		updTimestampMap("lastAnalyticUpdDt", null)
 	}
 }
 
@@ -2160,7 +2160,7 @@ def initBuiltin(btype) {
 		def mynestApp = getChildApps()?.findAll { it?.getAutomationType() == autoStr }
 		if(keepApp && mynestApp?.size() < 1 && btype != "initNestModeApp") {
 			LogAction("Installing ${autoStr}", "info", true)
-			atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+			updTimestampMap("lastAnalyticUpdDt", null)
 			try {
 				if(btype == "initRemDiagApp") {
 					addChildApp(appNamespace(), autoAppName(), getRemDiagAppChildName(), [settings:[remDiagFlag:["type":"bool", "value":true]]])
@@ -2181,7 +2181,7 @@ def initBuiltin(btype) {
 					def slbl = keepApp ? "warn" : "info"
 					LogAction("initBuiltin: Deleting ${keepApp ? "Extra " : ""}${autoStr} (${chld?.id})", slbl, true)
 					deleteChildApp(chld)
-					atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+					updTimestampMap("lastAnalyticUpdDt", null)
 				}
 				cnt = cnt+1
 			}
@@ -2294,7 +2294,7 @@ def removeBadAutomations() {
 			}
 			LogAction("Deleting Automation (${it?.id})", "warn", true)
 			deleteChildApp(it)
-			atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+			updTimestampMap("lastAnalyticUpdDt", null)
 		}
 		bad = false
 	}
@@ -2981,7 +2981,7 @@ def getInstAutoTypesDesc() {
  						dat.nestMode = dat.nestMode - 1
  						LogAction("Deleting Extra Nest Mode (${a?.id})", "warn", true)
  						deleteChildApp(a)
-						atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+						updTimestampMap("lastAnalyticUpdDt", null)
  					}
 					break
 				case "schMot":
@@ -3013,7 +3013,7 @@ def getInstAutoTypesDesc() {
  						dat.watchDog = dat.watchDog - 1
  						LogAction("Deleting Extra Watchdog (${a?.id})", "warn", true)
  						deleteChildApp(a)
-						atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+						updTimestampMap("lastAnalyticUpdDt", null)
  					}
  					break
 				case "remDiag":
@@ -3022,13 +3022,13 @@ def getInstAutoTypesDesc() {
  						dat.remDiag = dat.remDiag - 1
  						LogAction("Deleting Extra Remote Diagnostic (${a?.id})", "warn", true)
  						deleteChildApp(a)
-						atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+						updTimestampMap("lastAnalyticUpdDt", null)
  					}
  					break
  				default:
  					LogAction("Deleting Unknown Automation (${a?.id})", "warn", true)
  					deleteChildApp(a)
-					atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+					updTimestampMap("lastAnalyticUpdDt", null)
 					break
 			}
 		}
@@ -5280,7 +5280,7 @@ def loggingRemindNotify(msgOn) {
 	if(dbgAlert) {
 		def msg = "Your debug logging has remained enabled for more than 24 hours please disable them to reduce resource usage on ST platform."
 		if(sendMsg(("${app?.name} Debug Logging Reminder"), msg, true)) {
-			atomicState?.lastLogRemindMsgDt = getDtNow()
+			updTimestampMap("lastLogRemindMsgDt", getDtNow())
 		}
 	}
 }
@@ -6490,7 +6490,7 @@ def addRemoveDevices(uninst = null) {
 			if(devsCrt > 0) {
 				noCreates = false
 				LogAction("Created Devices;  Current Devices: (${tstats?.size()}) Thermostat(s), (${nVstats?.size() ?: 0}) Virtual Thermostat(s), (${nProtects?.size() ?: 0}) Protect(s), (${nCameras?.size() ?: 0}) Cameras(s), ${presCnt} Presence Device and ${weathCnt} Weather Device", "debug", true)
-				atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+				updTimestampMap("lastAnalyticUpdDt", null)
 			}
 		}
 
@@ -6518,7 +6518,7 @@ def addRemoveDevices(uninst = null) {
 		if(delete?.size() > 0) {
 			noDeletes = false
 			noDeleteErr = false
-			atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+			updTimestampMap("lastAnalyticUpdDt", null)
 			LogAction("Removing ${delete.size()} devices: ${delete}", "debug", true)
 			delete.each { deleteChildDevice(it.deviceNetworkId) }
 			noDeleteErr = true
@@ -9164,7 +9164,7 @@ def processFirebaseSlackResponse(resp, data) {
 			if(typeDesc?.toString() == "Remote Diag Logs") {
 
 			} else {
-				if(typeDesc?.toString() == "heartbeat") { atomicState?.lastAnalyticUpdDt = getDtNow() }
+				if(typeDesc?.toString() == "heartbeat") { updTimestampMap("lastAnalyticUpdDt", getDtNow()) }
 			}
 			result = true
 		}
@@ -9207,7 +9207,7 @@ def syncSendFirebaseData(data, pathVal, cmdType=null, type=null) {
 				if(typeDesc.toString() == "Remote Diag Logs") {
 
 				} else {
-					if(typeDesc?.toString() == "heartbeat") { atomicState?.lastAnalyticUpdDt = getDtNow() }
+					if(typeDesc?.toString() == "heartbeat") { updTimestampMap("lastAnalyticUpdDt", getDtNow()) }
 				}
 				result = true
 			}
