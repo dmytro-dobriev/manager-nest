@@ -35,8 +35,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.2" }
-def appVerDate() { "01-11-2018" }
+def appVersion() { "5.3.3" }
+def appVerDate() { "01-13-2018" }
 def minVersions() {
 	return [
 		"automation":["val":531, "desc":"5.3.1"],
@@ -1784,7 +1784,7 @@ void diagLogProcChange(setOn) {
 			}
 		}
 		atomicState.forceChildUpd = true
-		atomicState?.lastAnalyticUpdDt = null		// will force def autoDesc = getInstAutoTypesDesc()	// This is a hack to get installedAutomations data updated without waiting for user to hit done
+		atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
 	}
 }
 
@@ -2160,6 +2160,7 @@ def initBuiltin(btype) {
 		def mynestApp = getChildApps()?.findAll { it?.getAutomationType() == autoStr }
 		if(keepApp && mynestApp?.size() < 1 && btype != "initNestModeApp") {
 			LogAction("Installing ${autoStr}", "info", true)
+			atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
 			try {
 				if(btype == "initRemDiagApp") {
 					addChildApp(appNamespace(), autoAppName(), getRemDiagAppChildName(), [settings:[remDiagFlag:["type":"bool", "value":true]]])
@@ -2180,6 +2181,7 @@ def initBuiltin(btype) {
 					def slbl = keepApp ? "warn" : "info"
 					LogAction("initBuiltin: Deleting ${keepApp ? "Extra " : ""}${autoStr} (${chld?.id})", slbl, true)
 					deleteChildApp(chld)
+					atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
 				}
 				cnt = cnt+1
 			}
@@ -2290,8 +2292,9 @@ def removeBadAutomations() {
 			} catch (Exception e) {
 				;
 			}
-			LogAction("Deleting bad Automation (${it?.id})", "warn", true)
- 			deleteChildApp(it)
+			LogAction("Deleting Automation (${it?.id})", "warn", true)
+			deleteChildApp(it)
+			atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
 		}
 		bad = false
 	}
@@ -2978,6 +2981,7 @@ def getInstAutoTypesDesc() {
  						dat.nestMode = dat.nestMode - 1
  						LogAction("Deleting Extra Nest Mode (${a?.id})", "warn", true)
  						deleteChildApp(a)
+						atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
  					}
 					break
 				case "schMot":
@@ -3009,6 +3013,7 @@ def getInstAutoTypesDesc() {
  						dat.watchDog = dat.watchDog - 1
  						LogAction("Deleting Extra Watchdog (${a?.id})", "warn", true)
  						deleteChildApp(a)
+						atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
  					}
  					break
 				case "remDiag":
@@ -3017,11 +3022,13 @@ def getInstAutoTypesDesc() {
  						dat.remDiag = dat.remDiag - 1
  						LogAction("Deleting Extra Remote Diagnostic (${a?.id})", "warn", true)
  						deleteChildApp(a)
+						atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
  					}
  					break
  				default:
  					LogAction("Deleting Unknown Automation (${a?.id})", "warn", true)
  					deleteChildApp(a)
+					atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
 					break
 			}
 		}
@@ -6483,6 +6490,7 @@ def addRemoveDevices(uninst = null) {
 			if(devsCrt > 0) {
 				noCreates = false
 				LogAction("Created Devices;  Current Devices: (${tstats?.size()}) Thermostat(s), (${nVstats?.size() ?: 0}) Virtual Thermostat(s), (${nProtects?.size() ?: 0}) Protect(s), (${nCameras?.size() ?: 0}) Cameras(s), ${presCnt} Presence Device and ${weathCnt} Weather Device", "debug", true)
+				atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
 			}
 		}
 
@@ -6510,6 +6518,7 @@ def addRemoveDevices(uninst = null) {
 		if(delete?.size() > 0) {
 			noDeletes = false
 			noDeleteErr = false
+			atomicState?.lastAnalyticUpdDt = null	// This is a hack to get installedAutomations data updated without waiting for user to hit done
 			LogAction("Removing ${delete.size()} devices: ${delete}", "debug", true)
 			delete.each { deleteChildDevice(it.deviceNetworkId) }
 			noDeleteErr = true
