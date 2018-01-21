@@ -35,7 +35,7 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.3" }
+def appVersion() { "5.3.4" }
 def appVerDate() { "01-21-2018" }
 def minVersions() {
 	return [
@@ -131,6 +131,7 @@ mappings {
 def startPage() {
 	if(parent) {
 		atomicState?.isParent = false
+		uninstallPage()
 	} else {
 		atomicState?.isParent = true
 		authPage()
@@ -1815,11 +1816,14 @@ def uninstallPage() {
 				paragraph "This will uninstall the App, All Automation Apps and Child Devices.\n\nPlease make sure that any devices created by this app are removed from any routines/rules/smartapps before tapping Remove."
 			}
 		}
-		section("Did You Get an Error?") {
-			href "forceUninstallPage", title: "Perform Some Cleanup Steps", description: ""
+		if(!parent) {
+			section("Did You Get an Error?") {
+				href "forceUninstallPage", title: "Perform Some Cleanup Steps", description: ""
+			}
+			remove("Remove ${appName()} and Devices!", "WARNING!!!", "Last Chance to Stop!\nThis action is not reversible\n\nThis App, All Devices, and Automations will be removed")
+		} else {
+			remove("Remove ${app?.label}", "WARNING!!!", "BAD Automation SHOULD be removed")
 		}
-		remove("Remove ${appName()} and Devices!", "WARNING!!!", "Last Chance to Stop!\nThis action is not reversible\n\nThis App, All Devices, and Automations will be removed")
-	}
 }
 
 def forceUninstallPage() {
@@ -2068,6 +2072,7 @@ def nestTokenResetPage() {
 def installed() {
 	if(parent) {
 		LogAction("${app.label} BAD CHILD AUTOMATION FILE installed()...with settings: ${settings}", "error", true)
+		uninstAutomationApp()
 		return
 	} else {
 		LogAction("Installed with settings: ${settings}", "debug", true)
@@ -2081,6 +2086,7 @@ def installed() {
 def updated() {
 	if(parent) {
 		LogAction("${app.label} BAD CHILD AUTOMATION FILE Updated...with settings: ${settings}", "error", true)
+		uninstAutomationApp()
 		return
 	} else {
 		LogAction("${app.label} Updated...with settings: ${settings}", "debug", true)
@@ -2254,8 +2260,9 @@ def finishInitManagerApp() {
 		if(autoId) { updAppCodeId("auto", autoId) }
 
 		def tstatAutoApp = getChildApps()?.find {
+			def aa = null
 			try {
-				def aa = it?.getAutomationType()
+				aa = it?.getAutomationType()
 				def bb = it?.getCurrentSchedule()
 				def ai = it?.getAutomationsInstalled()
 			} catch (Exception e) {
@@ -2263,6 +2270,7 @@ def finishInitManagerApp() {
 				badAutomation = true
 				appUpdateNotify(true)
 			}
+			if( !badAutomation && !(aa in ["nMode", "watchDog", "remDiag", "schMot"]) ) { badAutomation = true }
 		}
 		if(!isAppLiteMode()) {
 			runIn(5, "reInitBuiltins", [overwrite: true])  // need to have watchdog/nestmode check if we created devices
@@ -2275,16 +2283,18 @@ def finishInitManagerApp() {
 }
 
 def removeBadAutomations() {
-	bad = false
 	def tstatAutoApp = getChildApps()?.find {
+		def bad = false
+		def aa = null
 		try {
-			def aa = it?.getAutomationType()
+			aa = it?.getAutomationType()
 			def bb = it?.getCurrentSchedule()
 			def ai = it?.getAutomationsInstalled()
 		} catch (Exception e) {
 			LogAction("BAD Automation (${it?.id}) found", "warn", true)
 			bad = true
 		}
+		if( !bad && !(aa in ["nMode", "watchDog", "remDiag", "schMot"]) ) { bad = true }
 		if(bad || isAppLiteMode()) {
 			try {
 				LogAction("Calling uninstall on Automation (${it?.id})", "warn", true)
@@ -2296,7 +2306,6 @@ def removeBadAutomations() {
 			deleteChildApp(it)
 			updTimestampMap("lastAnalyticUpdDt", null)
 		}
-		bad = false
 	}
 }
 
