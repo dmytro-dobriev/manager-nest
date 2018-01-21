@@ -1824,6 +1824,7 @@ def uninstallPage() {
 		} else {
 			remove("Remove ${app?.label}", "WARNING!!!", "BAD Automation SHOULD be removed")
 		}
+	}
 }
 
 def forceUninstallPage() {
