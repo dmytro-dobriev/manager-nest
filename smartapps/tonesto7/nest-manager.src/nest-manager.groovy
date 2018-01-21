@@ -3170,6 +3170,7 @@ def checkIfSwupdated() {
 		def sData = atomicState?.swVer ?: [:]
 		sData["mgrVer"] = appVersion()
 		atomicState?.swVer = sData
+		updTimestampMap("lastAnalyticUpdDt", null)
 		LogAction("checkIfSwupdated: new version ${appVersion()}", "info", true)
 		def iData = atomicState?.installData
 		iData["updatedDt"] = getDtNow().toString()
