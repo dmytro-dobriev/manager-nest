@@ -35,11 +35,11 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.2" }
-def appVerDate() { "01-13-2018" }
+def appVersion() { "5.3.3" }
+def appVerDate() { "01-21-2018" }
 def minVersions() {
 	return [
-		"automation":["val":531, "desc":"5.3.1"],
+		"automation":["val":532, "desc":"5.3.2"],
 		"thermostat":["val":531, "desc":"5.3.1"],
 		"protect":["val":531, "desc":"5.3.1"],
 		"presence":["val":531, "desc":"5.3.1"],
@@ -2876,7 +2876,7 @@ def receiveStreamStatus() {
 			//LogAction("Sending restStreamHandler(Stop) Event to local node service", "debug", false)
 			restStreamHandler(true)
 		} else if (settings?.restStreaming && !atomicState?.restStreamingOn) {		// suppose to be on
-			runIn(21, "startStopStream", [overwrite: true])
+			runIn(31, "startStopStream", [overwrite: true])
 		}
 		if(settings?.restStreaming && t0) {		// All good
 			updTimestampMap("lastHeardFromNestDt", getDtNow())
