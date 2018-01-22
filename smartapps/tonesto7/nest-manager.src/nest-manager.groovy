@@ -35,8 +35,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.4" }
-def appVerDate() { "01-21-2018" }
+def appVersion() { "5.3.3" }
+def appVerDate() { "01-22-2018" }
 def minVersions() {
 	return [
 		"automation":["val":532, "desc":"5.3.2"],
@@ -6644,6 +6644,7 @@ def addRemoveVthermostat(tstatdni, tval, myID) {
 			LogAction("addRemoveVthermostat() unexpected operation state ${myID} ${atomicState?."vThermostat${devId}"} ${atomicState?."vThermostatChildAppId${devId}"}", "warn", true)
 			return false
 		}
+		updTimestampMap("lastAnalyticUpdDt", null)
 		return true
 	}
 }
@@ -8933,6 +8934,7 @@ def renderDeviceTiles(type=null) {
 			  	</script>
 			</body>
 		"""
+/* """ */
 		render contentType: "text/html", data: html
 	} catch (ex) { log.error "renderDeviceData Exception:", ex }
 }
