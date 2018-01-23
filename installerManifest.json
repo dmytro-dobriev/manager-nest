@@ -1,6 +1,7 @@
 {
     "namespace": "tonesto7",
     "repoName": "nest-manager",
+    "repoBranch": "master",
     "name": "NST Manager",
     "author": "Anthony S.",
     "description": "The Best Solution to integrate your Nest Products with SmartThings.",
