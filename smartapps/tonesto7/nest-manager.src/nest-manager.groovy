@@ -1843,17 +1843,19 @@ def getDevOpt() {
 	appSettings?.devOpt.toString() == "true" ? true : false
 }
 
-def devPageFooter(var, eTime) {
+void devPageFooter(var, eTime) {
 	def res = []
 	def data = atomicState?.usageMetricsStore ?: [:]
-	data[var] = (data[var] == null) ? 1 : data[var].toInteger()+1
+	log.debug "data[$var]: ${data[var]}"
+	data[var] = data[var] != null ? data[var.toString()].toInteger() + 1 : 1
+	log.debug "data[$var] after: ${data[var]}"
 	atomicState?.usageMetricsStore = data
 	// if(getDevOpt()) {
 	// 	res += 	section() {
 	// 		paragraph "    Page Loads: (${atomicState?.usageMetricsStore["${var}"] ?: 0}) | LoadTime: (${eTime ? (now()-eTime) : 0}ms)"
 	// 	}
 	// }
-	return res?.size() ? res : ""
+	// return res?.size() ? res : ""
 }
 
 /******************************************************************************
@@ -7123,7 +7125,7 @@ void settingUpdate(name, value, type=null) {
 }
 
 void settingRemove(name) {
-	LogAction("settingRemoce($name)...", "trace", false)
+	LogAction("settingRemove($name)...", "trace", false)
 	if(name) { app?.deleteSetting("$name") }
 }
 
@@ -7524,13 +7526,12 @@ def minDevVer2Str(val) {
 /******************************************************************************
 *					 	DIAGNOSTIC & NEST API INFO PAGES		  	  		  *
 *******************************************************************************/
-def alarmTestPage () {
+def alarmTestPage() {
 	def execTime = now()
 	dynamicPage(name: "alarmTestPage", install: false, uninstall: false) {
 		if(atomicState?.protects) {
 			section("Select Carbon/Smoke Device to Test:") {
-				input(name: "alarmCoTestDevice", title:"Select the Protect to Test", type: "enum", required: false, multiple: false, submitOnChange: true,
-						metadata: [values:atomicState?.protects], image: getAppImg("protect_icon.png"))
+				input name: "alarmCoTestDevice", title:"Select the Protect to Test", type: "enum", required: false, multiple: false, submitOnChange: true, metadata: [values:atomicState?.protects], image: getAppImg("protect_icon.png")
 			}
 			if(settings?.alarmCoTestDevice) {
 				section("Select the Event to Generate:") {
