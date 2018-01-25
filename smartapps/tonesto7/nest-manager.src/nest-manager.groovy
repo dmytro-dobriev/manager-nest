@@ -7570,8 +7570,8 @@ def alarmTestPage() {
 				}
 			}
 		}
+		devPageFooter("protTestLoadCnt", execTime)
 	}
-	devPageFooter("protTestLoadCnt", execTime)
 }
 
 void resetAlarmTest() {
