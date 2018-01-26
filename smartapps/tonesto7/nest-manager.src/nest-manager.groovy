@@ -36,15 +36,15 @@ definition(
 }
 
 def appVersion() { "5.3.4" }
-def appVerDate() { "01-29-2018" }
+def appVerDate() { "01-26-2018" }
 def minVersions() {
 	return [
 		"automation":["val":532, "desc":"5.3.2"],
-		"thermostat":["val":531, "desc":"5.3.1"],
-		"protect":["val":531, "desc":"5.3.1"],
-		"presence":["val":531, "desc":"5.3.1"],
+		"thermostat":["val":531, "desc":"5.3.2"],
+		"protect":["val":531, "desc":"5.3.2"],
+		"presence":["val":531, "desc":"5.3.2"],
 		"weather":["val":531, "desc":"5.3.1"],
-		"camera":["val":531, "desc":"5.3.1"],
+		"camera":["val":531, "desc":"5.3.3"],
 		"stream":["val":101, "desc":"1.0.1"]
 	]
 }
@@ -3300,7 +3300,7 @@ def poll(force = false, type = null) {
 
 def finishPoll(str=null, dev=null) {
 	LogTrace("finishPoll($str, $dev) received")
-	if(atomicState?.pollBlocked) { LogAction("Polling BLOCKED | Reason: (${atomicState?.pollBlockedReason})", "trace", true); schedNextWorkQ(null); return }
+	if(atomicState?.pollBlocked) { LogAction("Polling BLOCKED | Reason: (${atomicState?.pollBlockedReason})", "trace", true); schedNextWorkQ(); return }
 	if(dev || str || atomicState?.forceChildUpd || atomicState?.needChildUpd) { updateChildData() }
 	updateWebStuff()
 	notificationCheck() //Checks if a notification needs to be sent for a specific event
@@ -3352,7 +3352,7 @@ def forcedPoll(type = null) {
 		updTimestampMap("lastWebUpdDt", null)
 		updTimestampMap("lastWeatherUpdDt" , null)
 		updTimestampMap("lastForecastUpdDt", null)
-		schedNextWorkQ(null)
+		schedNextWorkQ()
 	} else {
 		LogAction("Too Soon for Update; Elapsed (${lastFrcdPoll}) seconds; minimum (${settings?.pollWaitVal})", "debug", true)
 		atomicState.needStrPoll = true
@@ -4384,19 +4384,70 @@ def apiVar() {
 			targetF:"target_temperature_f", targetC:"target_temperature_c", targetLowF:"target_temperature_low_f", setLabel:"label",
 			targetLowC:"target_temperature_low_c", targetHighF:"target_temperature_high_f", targetHighC:"target_temperature_high_c",
 			fanActive:"fan_timer_active", fanTimer:"fan_timer_timeout", fanDuration:"fan_timer_duration", hvacMode:"hvac_mode",
-			away:"away", streaming:"is_streaming", setTscale:"temperature_scale", trip_id: "trip_id", estimated_arrival_window_begin: "estimated_arrival_window_begin",
-			estimated_arrival_window_end: "estimated_arrival_window_end"
+			away:"away", streaming:"is_streaming", setTscale:"temperature_scale", eta:"eta"
 		]
 	]
 	return api
 }
 
-def setEtaState(child, etaData) {
+def setEtaState(child, etaData, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? child?.toString() : child?.device?.deviceNetworkId.toString()
-	def etaMap = [:]
-	// "trip_id":"sample-trip-id","estimated_arrival_window_begin":"2014-10-31T22:42:00.000Z","estimated_arrival_window_end":"2014-10-31T23:59:59.000Z"
-	LogAction("setEtaState | Setting Eta (${child?.device?.displayName} - ${devId}) | Trip_Id: ${etaData.trip_id} | Begin: ${etaData?.estimated_arrival_window_begin} | End: ${etaData?.estimated_arrival_window_end}", "debug", true)
-	return sendNestApiCmd(structures, apiVar().rootTypes.struct, "eta.json", etaData, devId)
+	def virt = virtual.toBoolean()
+	if(etaData?.trip_id && etaData?.estimated_arrival_window_begin && etaData?.estimated_arrival_window_end) {
+		def etaObj = [ etaData.trip_id.toString(), etaData.estimated_arrival_window_begin.toString(), etaData.estimated_arrival_window_end.toString() ]
+		// "trip_id":"sample-trip-id","estimated_arrival_window_begin":"2014-10-31T22:42:00.000Z","estimated_arrival_window_end":"2014-10-31T23:59:59.000Z"
+		// new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))
+
+		if(virt && atomicState?.vThermostats && devId) {
+			if(atomicState?."vThermostat${devId}") {
+				def pdevId = atomicState?."vThermostatMirrorId${devId}"
+				def pChild
+				if(pdevId) { pChild = getChildDevice(pdevId) }
+
+				if(pChild) {
+					pChild.setNestEta(etaData?.trip_id, etaData?.estimated_arrival_window_begin, etaData.estimated_arrival_window_end) {
+					}
+				} else { 
+					LogAction("setEtaState | CANNOT Set Eta (${child?.device?.displayName} - ${devId}) | Trip_Id: ${etaData.trip_id} | Begin: ${etaData?.estimated_arrival_window_begin} | End: ${etaData?.estimated_arrival_window_end}", "warn", true)
+				}
+			}
+		} else {
+			LogAction("setEtaState | Setting Eta (${child?.device?.displayName} - ${devId}) | Trip_Id: ${etaData?.trip_id} | Begin: ${etaData?.estimated_arrival_window_begin} | End: ${etaData?.estimated_arrival_window_end}", "debug", true)
+			return sendNestApiCmd(atomicState?.structures, apiVar().rootTypes.struct, apiVar().cmdObjs.eta, etaObj, devId)
+		}
+	} else {
+		LogAction("setEtaState | BAD data (${child?.device?.displayName} - ${devId}) | Trip_Id: ${etaData?.trip_id} | Begin: ${etaData?.estimated_arrival_window_begin} | End: ${etaData?.estimated_arrival_window_end}", "warn", true)
+	}
+}
+
+def cancelEtaState(child, trip_id, virtual=false) {
+	def devId = !child?.device?.deviceNetworkId ? child?.toString() : child?.device?.deviceNetworkId.toString()
+	def virt = virtual.toBoolean()
+	if(trip_id) {
+		def etaObj = [ trip_id.toString(), 0 as Integer, 0 as Integer ]
+		// "trip_id":"sample-trip-id","estimated_arrival_window_begin":"2014-10-31T22:42:00.000Z","estimated_arrival_window_end":"2014-10-31T23:59:59.000Z"
+		// new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))
+
+		if(virt && atomicState?.vThermostats && devId) {
+			if(atomicState?."vThermostat${devId}") {
+				def pdevId = atomicState?."vThermostatMirrorId${devId}"
+				def pChild
+				if(pdevId) { pChild = getChildDevice(pdevId) }
+
+				if(pChild) {
+					pChild.cancelNestEta(trip_id) {
+					}
+				} else { 
+					LogAction("cancelEtaState | CANNOT Set Eta (${child?.device?.displayName} - ${devId}) | Trip_Id: ${trip_id}", "warn", true)
+				}
+			}
+		} else {
+			LogAction("cancelEtaState | Cancel Eta (${child?.device?.displayName} - ${devId}) | Trip_Id: ${trip_id}", "debug", true)
+			return sendNestApiCmd(atomicState?.structures, apiVar().rootTypes.struct, apiVar().cmdObjs.eta, etaObj, devId)
+		}
+	} else {
+		LogAction("cancelEtaState | BAD data (${child?.device?.displayName} - ${devId}) | Trip_Id: ${trip_id}", "warn", true)
+	}
 }
 
 def setCamStreaming(child, streamOn) {
@@ -4446,7 +4497,7 @@ def setStructureAway(child, value, virtual=false) {
 	} else {
 		LogAction("setStructureAway - Setting Nest Location: (${child?.device?.displayName})${!devId ? "" : " ${devId}"} to (${val ? "Away" : "Home"})", "debug", true)
 		if(val) {
-			def ret = sendNestApiCmd(atomicState?.structures, apiVar()?.rootTypes?.struct, apiVar()?.cmdObjs?.away, "away", devId)
+			def ret = sendNestApiCmd(atomicState?.structures, apiVar().rootTypes.struct, apiVar().cmdObjs.away, "away", devId)
 			// Below is to ensure automations read updated value even if queued
 			if(ret && atomicState?.structData && atomicState?.structures && atomicState?.structData[atomicState?.structures]?.away) {
 				def t0 = atomicState?.structData
@@ -4457,7 +4508,7 @@ def setStructureAway(child, value, virtual=false) {
 			return ret
 		}
 		else {
-			def ret = sendNestApiCmd(atomicState?.structures, apiVar()?.rootTypes?.struct, apiVar()?.cmdObjs?.away, "home", devId)
+			def ret = sendNestApiCmd(atomicState?.structures, apiVar().rootTypes.struct, apiVar().cmdObjs.away, "home", devId)
 			if(ret && atomicState?.structData && atomicState?.structures && atomicState?.structData[atomicState?.structures]?.away) {
 				def t0 = atomicState?.structData
 				t0[atomicState?.structures].away = "home"
@@ -4670,7 +4721,7 @@ def sendNestApiCmd(cmdTypeId, cmdType, cmdObj, cmdObjVal, childId) {
 
 	try {
 		if(cmdTypeId) {
-			def qnum = getQueueNumber(cmdTypeId, childId)
+			def qnum = getQueueNumber(cmdTypeId)
 			if(qnum == -1 ) { return false }
 
 			atomicState?.pollBlocked = true
@@ -4698,7 +4749,7 @@ def sendNestApiCmd(cmdTypeId, cmdType, cmdObj, cmdObjVal, childId) {
 					skipped = true
 					tempQueue << newCmd
 				} else if(newCmd[1] == cmdType?.toString() && newCmd[2] == cmdObj?.toString() &&
-						newCmd[2] != apiVar().cmdObjs.away && newCmd[2] != apiVar().cmdObjs.fanActive && newCmd[2] != apiVar().cmdObjs.fanTimer) {
+						newCmd[2] != apiVar().cmdObjs.away && newCmd[2] != apiVar().cmdObjs.fanActive && newCmd[2] != apiVar().cmdObjs.fanTimer && newCmd[2] != apiVar().cmdObjs.eta) {
 					// if we are changing the same setting again use latest - this is Temp settings, hvac
 					replaced = true
 					tempQueue << cmdData
@@ -4721,7 +4772,7 @@ def sendNestApiCmd(cmdTypeId, cmdType, cmdObj, cmdObjVal, childId) {
 
 			LogAction("${str} Cmd to Queue ${qnum} (qsize: ${tempQueue?.size()}): $cmdTypeId, $cmdType, $cmdObj, $cmdObjVal, $childId", "info", true)
 			atomicState?.lastQcmd = cmdData
-			schedNextWorkQ(childId)
+			schedNextWorkQ()
 			return true
 
 		} else {
@@ -4736,7 +4787,7 @@ def sendNestApiCmd(cmdTypeId, cmdType, cmdObj, cmdObjVal, childId) {
 	}
 }
 
-private getQueueNumber(cmdTypeId, childId) {
+private getQueueNumber(cmdTypeId) {
 	if(!atomicState?.cmdQlist) { atomicState.cmdQlist = [] }
 	def cmdQueueList = atomicState?.cmdQlist
 	def qnum = cmdQueueList.indexOf(cmdTypeId)
@@ -4774,7 +4825,7 @@ def getQueueToWork() {
 	return qnum
 }
 
-void schedNextWorkQ(childId, useShort=false) {
+void schedNextWorkQ(useShort=false) {
 	def cmdDelay = getChildWaitVal()
 
 	def allowAsync = false
@@ -4954,7 +5005,7 @@ def finishWorkQ(cmd, result) {
 		atomicState.needChildUpd = true
 		runIn(cmdDelay, "postCmd", [overwrite: true])
 	}
-	else { schedNextWorkQ(null, true) }
+	else { schedNextWorkQ(true) }
 
 	if(cmdQueue?.size() > 10) {
 		sendMsg("Warning", "There is now ${cmdQueue?.size()} events in the Command Queue. Something must be wrong", true)

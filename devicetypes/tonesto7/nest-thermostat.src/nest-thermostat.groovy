@@ -373,7 +373,16 @@ void installed() {
 
 void updated() {
 	Logger("Device Updated...")
-	initialize()
+/* DEBUG */
+	if(!state?.tick) {
+		setNestEta("EricTst", "2018-02-10T22:42:00.000Z", "2018-02-10T23:15:00.000Z")
+		state.tick = true
+	} else {
+		cancelNestEta("EricTst")
+		state.remove("tick")
+	}
+/* FIX */
+	//initialize()
 }
 
 void checkVirtualStatus() {
@@ -1910,15 +1919,13 @@ def setHome() {
 }
 
 def setNestEta(tripId, begin, end){
-	if(tripId && begin && end) {
-		parent?.setNestState(this, ["trip_id": tripId, "estimated_arrival_window_begin": begin, "estimated_arrival_window_end": end])
-	}
+	LogAction("setNestEta()...", "trace")
+	parent?.setEtaState(this, ["trip_id": "${tripId}", "estimated_arrival_window_begin": "${begin}", "estimated_arrival_window_end": "${end}" ], virtType() )
 }
 
 def cancelNestEta(tripId){
-	if(tripId) {
-		parent?.setNestState(this, ["trip_id": tripId, "estimated_arrival_window_begin": 0])
-	}
+	LogAction("cancelNestEta()...", "trace")
+	parent?.cancelEtaState(this, "${tripId}", virtType() )
 }
 
 /************************************************************************************************
