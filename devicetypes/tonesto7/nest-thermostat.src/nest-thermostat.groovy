@@ -374,12 +374,17 @@ void installed() {
 void updated() {
 	Logger("Device Updated...")
 /* DEBUG */
-	if(!state?.tick) {
-		setNestEta("EricTst", "2018-02-10T22:42:00.000Z", "2018-02-10T23:15:00.000Z")
-		state.tick = true
+	if(!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 2000) {
+		state.updatedLastRanAt = now()
+		if(!state?.tick) {
+			setNestEta("EricTst", "2018-02-10T22:42:00.000Z", "2018-02-10T23:15:00.000Z")
+			state.tick = true
+		} else {
+			cancelNestEta("EricTst")
+			state.remove("tick")
+		}
 	} else {
-		cancelNestEta("EricTst")
-		state.remove("tick")
+		log.trace "initialize(): Ran within last 2 seconds - SKIPPING"
 	}
 /* FIX */
 	//initialize()
