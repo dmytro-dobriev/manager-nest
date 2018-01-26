@@ -13,7 +13,7 @@
 import java.text.SimpleDateFormat
 import groovy.time.*
 
-def devVer() { return "5.3.1" }
+def devVer() { return "5.3.2" }
 
 // for the UI
 metadata {
@@ -60,6 +60,8 @@ metadata {
 		command "updateNestReportData"
 		command "ecoDesc", ["string"]
 		command "whoMadeChanges", ["string", "string", "string"]
+		command "setNestEta", ["string", "string", "string"]
+		command "cancelNestEta", ["string"]
 
 		attribute "devVer", "string"
 		attribute "temperatureUnit", "string"
@@ -160,21 +162,21 @@ metadata {
 		}
 
 
-		standardTile("offBtn", "device.off", width:1, height:1, decoration: "flat") {
+		standardTile("offBtn", "device.off", width:2, height:2, decoration: "flat") {
 			state("default", action: "offbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_btn_icon.png")
 		}
-		standardTile("ecoBtn", "device.eco", width:1, height:1, decoration: "flat") {
+		standardTile("ecoBtn", "device.eco", width:2, height:2, decoration: "flat") {
 			state("default", action: "ecobtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/eco_icon.png")
 		}
-		standardTile("heatBtn", "device.canHeat", width:1, height:1, decoration: "flat") {
+		standardTile("heatBtn", "device.canHeat", width:2, height:2, decoration: "flat") {
 			state("true", action: "heatbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_btn_icon.png")
 			state "false", label: ''
 		}
-		standardTile("coolBtn", "device.canCool", width:1, height:1, decoration: "flat") {
+		standardTile("coolBtn", "device.canCool", width:2, height:2, decoration: "flat") {
 			state("true", action: "coolbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/cool_btn_icon.png")
 			state "false", label: ''
 		}
-		standardTile("autoBtn", "device.hasAuto", width:1, height:1, decoration: "flat") {
+		standardTile("autoBtn", "device.hasAuto", width:2, height:2, decoration: "flat") {
 			state("true", action: "autobtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_cool_btn_icon.png")
 			state "false", label: ''
 		}
@@ -228,18 +230,48 @@ metadata {
 			state "setCoolingSetpoint", action:"setCoolingSetpoint", backgroundColor:"#0099FF"
 			state "", label: ''
 		}
+		valueTile("softwareVer", "device.softwareVer", inactiveLabel: false, width: 3, height: 1, decoration: "flat", wordWrap: true) {
+			state("default", label: 'Firmware:\nv${currentValue}')
+		}
+		valueTile("lastConnection", "device.lastConnection", inactiveLabel: false, width: 3, height: 1, decoration: "flat", wordWrap: true) {
+			state("default", label: 'Tstat Last Checked-In:\n${currentValue}')
+		}
+		valueTile("lastUpdatedDt", "device.lastUpdatedDt", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+			state("default", label: 'Data Last Received:\n${currentValue}')
+		}
+		valueTile("devTypeVer", "device.devTypeVer",  width: 3, height: 1, decoration: "flat") {
+			state("default", label: 'Device Type:\nv${currentValue}')
+		}
+		valueTile("apiStatus", "device.apiStatus", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+			state "ok", label: "API Status:\nOK"
+			state "issue", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
+		}
+		valueTile("debugOn", "device.debugOn", width: 2, height: 1, decoration: "flat") {
+			state "true", 	label: 'Debug:\n${currentValue}'
+			state "false", 	label: 'Debug:\n${currentValue}'
+		}
+		valueTile("onlineStatus", "device.onlineStatus", width: 2, height: 1, wordWrap: true, decoration: "flat") {
+			state("default", label: 'Network Status:\n${currentValue}')
+		}
 
 		standardTile("blank", "device.heatingSetpoint", width: 1, height: 1, canChangeIcon: false, decoration: "flat") {
 			state "default", label: ''
 		}
-		htmlTile(name:"graphHTML", action: "graphHTML", width: 6, height: 13, whitelist: ["www.gstatic.com", "raw.githubusercontent.com", "cdn.rawgit.com"])
+		standardTile("blank2", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, decoration: "flat") {
+			state "default", label: ''
+		}
+		//htmlTile(name:"graphHTML", action: "graphHTML", width: 6, height: 13, whitelist: ["www.gstatic.com", "raw.githubusercontent.com", "cdn.rawgit.com"])
 		valueTile("remind", "device.blah", inactiveLabel: false, width: 6, height: 2, decoration: "flat", wordWrap: true) {
-			state("default", label: 'Reminder:\nHTML Content is Available in SmartApp')
+			state("default", label: 'Reminder:\nHTML Graph and History Content is Available in SmartApp')
 		}
 		main("temp2")
 		details( ["temperature", "thermostatMode", "nestPresence", "thermostatFanMode",
 				"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp",
-				"heatSliderControl", "coolSliderControl", "graphHTML", "offBtn", "ecoBtn", "heatBtn", "coolBtn", "autoBtn", "blank", "remind", "refresh"] )
+				"heatSliderControl", "coolSliderControl", "autoBtn", "heatBtn", "coolBtn", "offBtn", "ecoBtn", "blank2", "onlineStatus","debugOn",
+				"apiStatus", "lastConnection", "lastUpdatedDt", "devTypeVer", "softwareVer", "remind", "refresh"] )
+		// details( ["temperature", "thermostatMode", "nestPresence", "thermostatFanMode",
+		// 		"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp",
+		// 		"heatSliderControl", "coolSliderControl", "offBtn", "ecoBtn", "heatBtn", "coolBtn", "autoBtn", "blank", "remind", "refresh"] )
 	}
 	preferences {
 		input "resetHistoryOnly", "bool", title: "Reset History Data", description: "", displayDuringSetup: false
@@ -1875,6 +1907,18 @@ def setAway() {
 def setHome() {
 	LogAction("setHome()...", "trace")
 	if(parent.setStructureAway(this, "false", virtType()) ) { presenceEvent("home") }
+}
+
+def setNestEta(tripId, begin, end){
+	if(tripId && begin && end) {
+		parent?.setNestState(this, ["trip_id": tripId, "estimated_arrival_window_begin": begin, "estimated_arrival_window_end": end])
+	}
+}
+
+def cancelNestEta(tripId){
+	if(tripId) {
+		parent?.setNestState(this, ["trip_id": tripId, "estimated_arrival_window_begin": 0])
+	}
 }
 
 /************************************************************************************************

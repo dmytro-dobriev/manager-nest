@@ -35,8 +35,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.3" }
-def appVerDate() { "01-28-2018" }
+def appVersion() { "5.3.4" }
+def appVerDate() { "01-29-2018" }
 def minVersions() {
 	return [
 		"automation":["val":532, "desc":"5.3.2"],
@@ -4384,10 +4384,19 @@ def apiVar() {
 			targetF:"target_temperature_f", targetC:"target_temperature_c", targetLowF:"target_temperature_low_f", setLabel:"label",
 			targetLowC:"target_temperature_low_c", targetHighF:"target_temperature_high_f", targetHighC:"target_temperature_high_c",
 			fanActive:"fan_timer_active", fanTimer:"fan_timer_timeout", fanDuration:"fan_timer_duration", hvacMode:"hvac_mode",
-			away:"away", streaming:"is_streaming", setTscale:"temperature_scale"
+			away:"away", streaming:"is_streaming", setTscale:"temperature_scale", trip_id: "trip_id", estimated_arrival_window_begin: "estimated_arrival_window_begin",
+			estimated_arrival_window_end: "estimated_arrival_window_end"
 		]
 	]
 	return api
+}
+
+def setEtaState(child, etaData) {
+	def devId = !child?.device?.deviceNetworkId ? child?.toString() : child?.device?.deviceNetworkId.toString()
+	def etaMap = [:]
+	// "trip_id":"sample-trip-id","estimated_arrival_window_begin":"2014-10-31T22:42:00.000Z","estimated_arrival_window_end":"2014-10-31T23:59:59.000Z"
+	LogAction("setEtaState | Setting Eta (${child?.device?.displayName} - ${devId}) | Trip_Id: ${etaData.trip_id} | Begin: ${etaData?.estimated_arrival_window_begin} | End: ${etaData?.estimated_arrival_window_end}", "debug", true)
+	return sendNestApiCmd(structures, apiVar().rootTypes.struct, "eta.json", etaData, devId)
 }
 
 def setCamStreaming(child, streamOn) {

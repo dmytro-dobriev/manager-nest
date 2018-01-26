@@ -13,7 +13,7 @@ import groovy.time.TimeCategory
 
 preferences { }
 
-def devVer() { return "5.3.2" }
+def devVer() { return "5.3.3" }
 
 metadata {
 	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
@@ -125,7 +125,7 @@ metadata {
 			state("default", label: 'Reminder:\nHTML Content is Available in SmartApp')
 		}
 		main "isStreamingStatus"
-		details(["videoPlayer", "isStreaming", "take", "refresh", "devCamHtml", "cameraDetails", "motion", "sound", "remind" ])
+		details(["videoPlayer", "isStreaming", "take", "refresh", "cameraDetails", "motion", "sound", "remind" ])
 
 	}
 	preferences {
