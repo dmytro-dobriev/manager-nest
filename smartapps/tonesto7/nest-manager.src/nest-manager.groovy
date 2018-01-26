@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.3" }
-def appVerDate() { "01-22-2018" }
+def appVerDate() { "01-28-2018" }
 def minVersions() {
 	return [
 		"automation":["val":532, "desc":"5.3.2"],
@@ -1843,19 +1843,17 @@ def getDevOpt() {
 	appSettings?.devOpt.toString() == "true" ? true : false
 }
 
-void devPageFooter(var, eTime) {
+def devPageFooter(var, eTime) {
 	def res = []
 	def data = atomicState?.usageMetricsStore ?: [:]
-	log.debug "data[$var]: ${data[var]}"
 	data[var] = data[var] != null ? data[var.toString()].toInteger() + 1 : 1
-	log.debug "data[$var] after: ${data[var]}"
 	atomicState?.usageMetricsStore = data
 	// if(getDevOpt()) {
 	// 	res += 	section() {
 	// 		paragraph "    Page Loads: (${atomicState?.usageMetricsStore["${var}"] ?: 0}) | LoadTime: (${eTime ? (now()-eTime) : 0}ms)"
 	// 	}
 	// }
-	// return res?.size() ? res : ""
+	return res?.size() ? res : ""
 }
 
 /******************************************************************************
