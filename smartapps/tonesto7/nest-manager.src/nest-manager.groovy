@@ -3891,6 +3891,7 @@ def updateChildData(force = false) {
 		def hcRepairEnabled = atomicState?.appData?.healthcheck?.repairEnabled != false ? true : false
 		def locPresence = getLocationPresence()
 		def locSecurityState = getSecurityState()
+		def locEtaBegin = getEtaBegin()
 		def nPrefs = atomicState?.notificationPrefs
 		def devBannerData = atomicState?.devBannerData ?: null
 		def streamingActive = atomicState?.restStreamingOn == true ? true : false
@@ -3933,7 +3934,7 @@ def updateChildData(force = false) {
 						"comfortDewpoint":comfortDewpoint, "pres":locPresence, "childWaitVal":getChildWaitVal().toInteger(), "htmlInfo":htmlInfo, "allowDbException":allowDbException,
 						"latestVer":latestTstatVer()?.ver?.toString(), "vReportPrefs":vRprtPrefs, "clientBl":clientBl, "curWeatherData":curWeatherData, "logPrefix":logNamePrefix, "hcTimeout":hcTstatTimeout,
 						"mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "autoSchedData":autoSchedData, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg, "showGraphs":showGraphs,
-						"devBannerData":devBannerData, "restStreaming":streamingActive, "isBeta":isBeta, "hcRepairEnabled":hcRepairEnabled]
+						"devBannerData":devBannerData, "restStreaming":streamingActive, "isBeta":isBeta, "hcRepairEnabled":hcRepairEnabled, "etaBegin":locEtaBegin ]
 				def oldTstatData = atomicState?."oldTstatData${devId}"
 				def tDataChecksum = generateMD5_A(tData.toString())
 				atomicState."oldTstatData${devId}" = tDataChecksum
@@ -4154,10 +4155,11 @@ def updateChildData(force = false) {
 					}
 
 					def autoSchedData = reqSchedInfoRprt(it, false) as Map
-					def tData = ["data":data, "mt":useMt, "debug":dbg, "tz":nestTz, "apiIssues":api, "safetyTemps":safetyTemps, "comfortHumidity":comfortHumidity, "hcRepairEnabled":hcRepairEnabled,
+					def tData = ["data":data, "mt":useMt, "debug":dbg, "tz":nestTz, "apiIssues":api, "safetyTemps":safetyTemps, "comfortHumidity":comfortHumidity, 
 						"comfortDewpoint":comfortDewpoint, "pres":locPresence, "childWaitVal":getChildWaitVal().toInteger(), "htmlInfo":htmlInfo, "allowDbException":allowDbException,
 						"latestVer":latestvStatVer()?.ver?.toString(), "vReportPrefs":vRprtPrefs, "clientBl":clientBl, "curWeatherData":curWeatherData, "logPrefix":logNamePrefix, "hcTimeout":hcTstatTimeout,
-						"mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "autoSchedData":autoSchedData, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg, "showGraphs":showGraphs, "devBannerData":devBannerData, "isBeta":isBeta]
+						"mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "autoSchedData":autoSchedData, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg, "showGraphs":showGraphs,
+						"devBannerData":devBannerData, "restStreaming":streamingActive, "isBeta":isBeta, "hcRepairEnabled":hcRepairEnabled, "etaBegin":locEtaBegin ]
 
 					def oldTstatData = atomicState?."oldvStatData${devId}"
 					def tDataChecksum = generateMD5_A(tData.toString())
@@ -5308,18 +5310,33 @@ def deviceHealthNotify(child, Boolean isHealthy) {
 	atomicState?.lastDevHealthMsgData = ["device":"$devLbl", "dt":getDtNow()]
 }
 
-def getSecurityState() {
+def getNestZipCode() {
+	def tt = getStrucVal("postal_code")
+	return tt ?: ""
+}
+
+def getNestTimeZone() {
+	return getStrucVal("time_zone")
+}
+
+def getEtaBegin() {
+	return getStrucVal("eta_begin")
+}
+
+def getStrucVal(svariable) {
 	def sData = atomicState?.structData
 	def sKey = atomicState?.structures
-	def secState = sData && sKey && sData[sKey] && sData[sKey]?.wwn_security_state ? sData[sKey]?.wwn_security_state : null
-	return (secState != null) ? secState as String : null
+	def asStruc = sData && sKey && sData[sKey] ? sData[sKey] : null
+	def retVal = asStruc ? asStruc[svariable] ?: null : null
+	return (retVal != null) ? retVal as String : null
+}
+
+def getSecurityState() {
+	return getStrucVal("wwn_security_state")
 }
 
 def getLocationPresence() {
-	def sData = atomicState?.structData
-	def sKey = atomicState?.structures
-	def away = sData && sKey && sData[sKey] && sData[sKey]?.away ? sData[sKey]?.away : null
-	return (away != null) ? away as String : null
+	return getStrucVal("away")
 }
 
 def locationPresNotify(pres) {
@@ -5521,16 +5538,6 @@ def getLastAnalyticUpdSec() { return !getTimestampVal("lastAnalyticUpdDt") ? 100
 def getLastUpdateMsgSec() { return !getTimestampVal("lastUpdateMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastUpdateMsgDt"), null, "getLastUpdateMsgSec").toInteger() }
 
 def getStZipCode() { return location?.zipCode?.toString() }
-def getNestZipCode() {
-	if(atomicState?.structures && atomicState?.structData) {
-		return atomicState?.structData[atomicState?.structures]?.postal_code ? atomicState?.structData[atomicState?.structures]?.postal_code.toString() : ""
-	} else { return "" }
-}
-def getNestTimeZone() {
-	if(atomicState?.structures && atomicState?.structData) {
-		return atomicState?.structData[atomicState?.structures]?.time_zone ?: null
-	} else { return null }
-}
 
 def updateWebStuff(now = false) {
 	LogTrace("updateWebStuff")

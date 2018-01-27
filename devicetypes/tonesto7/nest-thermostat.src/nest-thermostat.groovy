@@ -63,6 +63,7 @@ metadata {
 		command "setNestEta", ["string", "string", "string"]
 		command "cancelNestEta", ["string"]
 
+		attribute "etaBegin", "string"
 		attribute "devVer", "string"
 		attribute "temperatureUnit", "string"
 		attribute "targetTemp", "string"
@@ -521,6 +522,7 @@ void processEvent(data) {
 			canHeatCool(eventData?.data?.can_heat, eventData?.data?.can_cool)
 			hasFan(eventData?.data?.has_fan.toString())
 			presenceEvent(eventData?.pres)
+			etaEvent(eventData?.etaBegin)
 
 			def curMode = device?.currentState("nestThermostatMode")?.stringValue
 			hvacModeEvent(eventData?.data?.hvac_mode.toString())
@@ -1005,6 +1007,14 @@ def humidityEvent(humidity) {
 		LogAction("UPDATED | Humidity is (${humidity}) | Original State: (${hum})")
 		sendEvent(name:'humidity', value: humidity, unit: "%", descriptionText: "Humidity is ${humidity}", displayed: false, isStateChange: true)
 	} else { LogAction("Humidity is (${humidity}) | Original State: (${hum})") }
+}
+
+def etaEvent(String eta) {
+	def oeta = device.currentState("etaBegin")?.value
+	if(isStateChange(device, "etaBegin", eta.toString())) {
+		LogAction("UPDATED | Eta Begin is (${eta}) | Original State: (${oeta})")
+		sendEvent(name:'etaBegin', value: eta, descriptionText: "Eta is ${eta}", displayed: true, isStateChange: true)
+	} else { LogAction("Eta Begin is (${eta}) | Original State: (${oeta})") }
 }
 
 def presenceEvent(String presence) {
