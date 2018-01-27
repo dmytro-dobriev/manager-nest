@@ -360,6 +360,7 @@ def initialize() {
 		state.updatedLastRanAt = now()
 		checkVirtualStatus()
 		verifyHC()
+		state.isInstalled = true
 	} else {
 		log.trace "initialize(): Ran within last 2 seconds - SKIPPING"
 	}
@@ -367,28 +368,14 @@ def initialize() {
 
 void installed() {
 	Logger("installed...")
-	initialize()
-	state.isInstalled = true
+	runIn( 5, "initialize", [overwrite: true] )
 }
 
 void updated() {
-	def tt = now()
 	Logger("Device Updated...")
-/* DEBUG */
-	if(!state.updatedLastRanAt || tt >= state.updatedLastRanAt + 2000) {
-		state.updatedLastRanAt = tt
-		if(!state.tick) {
-			setNestEta("EricTst", "2018-01-27T01:02:00.000Z", "2018-01-27T02:15:00.000Z")
-			state.tick = true
-		} else {
-			cancelNestEta("EricTst")
-			state.remove("tick")
-		}
-	} else {
-		log.trace "initialize(): Ran within last 2 seconds - SKIPPING"
-	}
-/* FIX */
-	//initialize()
+	//setNestEta("EricTst", "2018-01-27T01:02:00.000Z", "2018-01-27T02:15:00.000Z")
+	//cancelNestEta("EricTst")
+	runIn( 5, "initialize", [overwrite: true] )
 }
 
 void checkVirtualStatus() {
