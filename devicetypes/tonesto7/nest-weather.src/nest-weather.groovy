@@ -965,8 +965,8 @@ private estimateLux(weatherIcon) {
 	catch (ex) {
 		log.warn "state.sunriseDate: ${state?.sunriseDate}"
 		log.warn "state.sunsetDate: ${state?.sunsetDate}"
-		exceptionDataHandler(ex?.message, "estimateLux")
 		log.error("estimateLux Exception:", ex)
+		exceptionDataHandler(ex?.message, "estimateLux")
 	}
 	return null
 }
