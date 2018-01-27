@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "5.3.2" }
+def devVer() { return "5.3.3" }
 
 // for the UI
 metadata {
@@ -79,8 +79,7 @@ mappings {
 
 void installed() {
 	Logger("installed...")
-	initialize()
-	state?.isInstalled = true
+	runIn(5, "initialize", [overwrite: true])
 }
 
 def initialize() {
@@ -89,6 +88,7 @@ def initialize() {
 	if (!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 2000) {
 		state.updatedLastRanAt = now()
 		verifyHC()
+		state?.isInstalled = true
 	} else {
 		log.trace "initialize(): Ran within last 2 seconds - SKIPPING"
 	}
@@ -96,7 +96,7 @@ def initialize() {
 
 void updated() {
 	Logger("updated...")
-	initialize()
+	runIn(5, "initialize", [overwrite: true])
 }
 
 def useTrackedHealth() { return state?.useTrackedHealth ?: false }

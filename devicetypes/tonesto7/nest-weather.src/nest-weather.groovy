@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "5.3.2" }
+def devVer() { return "5.3.3" }
 
 metadata {
 	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
@@ -174,6 +174,7 @@ def initialize() {
 	if (!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 2000) {
 		state.updatedLastRanAt = now()
 		verifyHC()
+		state.isInstalled = true
 		getWAlertFilters()
 		if(state?.shortcutAppId) { parent?.updShortcutAppId(atomicState?.shortcutAppId) }
 	} else {
@@ -183,13 +184,12 @@ def initialize() {
 
 void installed() {
 	Logger("installed...")
-	initialize()
-	state.isInstalled = true
+	runIn(5, "initialize", [overwrite: true] )
 }
 
 void updated() {
 	Logger("updated...")
-	initialize()
+	runIn(5, "initialize", [overwrite: true] )
 }
 
 def useTrackedHealth() { return state?.useTrackedHealth ?: false }

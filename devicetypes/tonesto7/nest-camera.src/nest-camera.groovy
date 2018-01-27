@@ -149,6 +149,7 @@ def initialize() {
 	if (!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 2000) {
 		state.updatedLastRanAt = now()
 		verifyHC()
+		state?.isInstalled = true
 	} else {
 		log.trace "initialize(): Ran within last 2 seconds - SKIPPING"
 	}
@@ -156,15 +157,14 @@ def initialize() {
 
 void installed() {
 	Logger("installed...")
-	initialize()
-	state?.isInstalled = true
+	runIn(5, "initialize", [overwrite: true] )
 	state?.shownChgLog = true
-	runIn(15, "refresh")
+	runIn(15, "refresh", [overwrite: true])
 }
 
 void updated() {
 	Logger("updated...")
-	initialize()
+	runIn(5, "initialize", [overwrite: true] )
 }
 
 def useTrackedHealth() { return state?.useTrackedHealth ?: false }

@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
 
 preferences { }
 
-def devVer() { return "5.3.2" }
+def devVer() { return "5.3.3" }
 
 metadata {
 	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
@@ -157,7 +157,7 @@ def initialize() {
 	if (!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 2000) {
 		state.updatedLastRanAt = now()
 		verifyHC()
-		//poll()
+		state?.isInstalled = true
 	} else {
 		log.trace "initialize(): Ran within last 2 seconds - SKIPPING"
 	}
@@ -165,13 +165,12 @@ def initialize() {
 
 void installed() {
 	Logger("installed...")
-	initialize()
-	state?.isInstalled = true
+	runIn(5, "initialize", [overwrite: true])
 }
 
 void updated() {
 	Logger("updated...")
-	initialize()
+	runIn(5, "initialize", [overwrite: true])
 }
 
 def useTrackedHealth() { return state?.useTrackedHealth ?: false }
