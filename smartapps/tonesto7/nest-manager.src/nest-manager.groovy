@@ -3890,6 +3890,7 @@ def updateChildData(force = false) {
 		def hcLongTimeout = atomicState?.appData?.healthcheck?.longTimeout ?: 120
 		def hcRepairEnabled = atomicState?.appData?.healthcheck?.repairEnabled != false ? true : false
 		def locPresence = getLocationPresence()
+		def locSecurityState = getSecurityState()
 		def nPrefs = atomicState?.notificationPrefs
 		def devBannerData = atomicState?.devBannerData ?: null
 		def streamingActive = atomicState?.restStreamingOn == true ? true : false
@@ -3999,7 +4000,7 @@ def updateChildData(force = false) {
 						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestCamVer()?.ver?.toString(), "clientBl":clientBl,
 						"hcTimeout":hcCamTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg,
 						"streamNotify":nPrefs?.dev?.camera?.streamMsg, "devBannerData":devBannerData, "restStreaming":streamingActive, "motionSndChgWaitVal":motionSndChgWaitVal,
-						"isBeta":isBeta, "camTakeSnapOnEvt": camTakeSnapOnEvt, "hcRepairEnabled":hcRepairEnabled ]
+						"isBeta":isBeta, "camTakeSnapOnEvt": camTakeSnapOnEvt, "hcRepairEnabled":hcRepairEnabled, "secState":locSecurityState ]
 				def oldCamData = atomicState?."oldCamData${devId}"
 				def cDataChecksum = generateMD5_A(camData.toString())
 				atomicState."oldCamData${devId}" = cDataChecksum
@@ -5305,6 +5306,13 @@ def deviceHealthNotify(child, Boolean isHealthy) {
 	if(isHealthy == true || nPrefs?.healthMsg != true || (getLastDevHealthMsgSec() <= nPrefs?.healthMsgWait.toInteger() && sameAsLastDev) ) { return }
 	sendMsg("$devLbl Health Warning", "\nDevice is currently OFFLINE. Please check your logs for possible issues.")
 	atomicState?.lastDevHealthMsgData = ["device":"$devLbl", "dt":getDtNow()]
+}
+
+def getSecurityState() {
+	def sData = atomicState?.structData
+	def sKey = atomicState?.structures
+	def secState = sData && sKey && sData[sKey] && sData[sKey]?.wwn_security_state ? sData[sKey]?.wwn_security_state : null
+	return (secState != null) ? secState as String : null
 }
 
 def getLocationPresence() {

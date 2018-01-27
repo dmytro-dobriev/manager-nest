@@ -57,6 +57,7 @@ metadata {
 		attribute "debugOn", "string"
 		attribute "devTypeVer", "string"
 		attribute "onlineStatus", "string"
+		attribute "securityState", "string"
 	}
 
 	simulator { }
@@ -300,6 +301,7 @@ def processEvent() {
 			publicShareUrlEvent(results?.public_share_url)
 			onlineStatusEvent(results?.is_online?.toString())
 			isStreamingEvent(results?.is_streaming)
+			securityStateEvent(eventData?.secState)
 			publicShareEnabledEvent(results?.is_public_share_enabled?.toString())
 			videoHistEnabledEvent(results?.is_video_history_enabled?.toString())
 			if(results?.last_is_online_change) { lastOnlineEvent(results?.last_is_online_change?.toString()) }
@@ -451,6 +453,16 @@ def onlineStatusEvent(isOnline) {
 		sendEvent(name: "onlineStatus", value: onlineStat.toString(), descriptionText: "Online Status is: ${onlineStat}", displayed: true, isStateChange: true, state: onlineStat)
 		addCheckinReason("onlineStatusChange")
 	} else { LogAction("Online Status is: (${onlineStat}) | Original State: (${prevOnlineStat})") }
+}
+
+def securityStateEvent(sec) {
+	def val = ""
+	def oldState = device.currentState("securityState")?.value
+	if(sec) { val = sec }
+	if(isStateChange(device, "securityState", val.toString())) {
+		Logger("UPDATED | Security State is (${val}) | Original State: (${oldState})")
+		sendEvent(name: "securityState", value: val, descriptionText: "Location Security State is: ${val}", displayed: true, isStateChange: true, state: val)
+	} else { LogAction("Location Security State is: (${val}) | Original State: (${oldState})") }
 }
 
 def isStreamingEvent(isStreaming, override=false) {
