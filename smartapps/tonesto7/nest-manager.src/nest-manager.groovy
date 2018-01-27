@@ -4394,7 +4394,7 @@ def apiVar() {
 			targetF:"target_temperature_f", targetC:"target_temperature_c", targetLowF:"target_temperature_low_f", setLabel:"label",
 			targetLowC:"target_temperature_low_c", targetHighF:"target_temperature_high_f", targetHighC:"target_temperature_high_c",
 			fanActive:"fan_timer_active", fanTimer:"fan_timer_timeout", fanDuration:"fan_timer_duration", hvacMode:"hvac_mode",
-			away:"away", streaming:"is_streaming", setTscale:"temperature_scale", eta:"eta.json"
+			away:"away", streaming:"is_streaming", setTscale:"temperature_scale", eta:"eta"
 		]
 	]
 	return api
@@ -7023,9 +7023,9 @@ def tokenStrScrubber(str) {
 }
 
 def Logger(msg, type, logSrc=null, noSTlogger=false) {
+	def labelstr = ""
+	if(settings?.debugAppendAppName || settings?.debugAppendAppName == null) { labelstr = "${app.label} | " }
 	if(msg && type) {
-		def labelstr = ""
-		if(settings?.debugAppendAppName || settings?.debugAppendAppName == null) { labelstr = "${app.label} | " }
 		def themsg = tokenStrScrubber("${labelstr}${msg}")
 
 		if(!saveLogtoRemDiagStore(themsg, type, logSrc) && !noSTlogger) {
