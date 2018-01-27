@@ -372,12 +372,13 @@ void installed() {
 }
 
 void updated() {
+	def tt = now()
 	Logger("Device Updated...")
 /* DEBUG */
-	if(!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 2000) {
-		state.updatedLastRanAt = now()
-		if(!state?.tick) {
-			setNestEta("EricTst", "2018-02-10T22:42:00.000Z", "2018-02-10T23:15:00.000Z")
+	if(!state.updatedLastRanAt || tt >= state.updatedLastRanAt + 2000) {
+		state.updatedLastRanAt = tt
+		if(!state.tick) {
+			setNestEta("EricTst", "2018-01-27T01:02:00.000Z", "2018-01-27T02:15:00.000Z")
 			state.tick = true
 		} else {
 			cancelNestEta("EricTst")
