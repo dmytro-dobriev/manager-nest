@@ -61,7 +61,7 @@
             "published": false,
             "version": "5.3.3",
             "appUrl": "deviceTypes/tonesto7/nest-presence.src/nest-presence.groovy",
-            "optional": false
+            "optional": true
         },
         {
             "name": "Nest Weather",
@@ -69,7 +69,7 @@
             "published": false,
             "version": "5.3.3",
             "appUrl": "deviceTypes/tonesto7/nest-weather.src/nest-weather.groovy",
-            "optional": false
+            "optional": true
         }
     ]
 }
