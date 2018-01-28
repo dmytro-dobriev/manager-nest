@@ -16,7 +16,7 @@
             "iconUrl": "https://raw.githubusercontent.com/master/Images/App/nst_manager_5.png",
             "published": true,
             "oAuth": true,
-            "version": "5.3.2",
+            "version": "5.3.4",
             "appSettings": {},
             "appUrl": "smartapps/tonesto7/nest-manager.src/nest-manager.groovy"
         },
@@ -25,7 +25,7 @@
             "iconUrl": "https://raw.githubusercontent.com/master/Images/App/nst_automations_5.png",
             "published": true,
             "oAuth": false,
-            "version": "5.3.1",
+            "version": "5.3.2",
             "appSettings": {},
             "appUrl": "smartapps/tonesto7/nst-automations.src/nst-automations.groovy",
             "optional": false
@@ -35,7 +35,7 @@
             "name": "Nest Thermostat",
             "iconUrl": "https://s3.amazonaws.com/smartapp-icons/Convenience/App.png",
             "published": true,
-            "version": "5.3.1",
+            "version": "5.3.3",
             "appUrl": "deviceTypes/tonesto7/nest-thermostat.src/nest-thermostat.groovy",
             "optional": false
         },
@@ -43,7 +43,7 @@
             "name": "Nest Protect",
             "iconUrl": "https://s3.amazonaws.com/smartapp-icons/Convenience/App.png",
             "published": true,
-            "version": "5.3.1",
+            "version": "5.3.3",
             "appUrl": "deviceTypes/tonesto7/nest-protect.src/nest-protect.groovy",
             "optional": false
         },
@@ -51,7 +51,7 @@
             "name": "Nest Camera",
             "iconUrl": "https://s3.amazonaws.com/smartapp-icons/Convenience/App.png",
             "published": false,
-            "version": "5.3.1",
+            "version": "5.3.3",
             "appUrl": "deviceTypes/tonesto7/nest-camera.src/nest-camera.groovy",
             "optional": false
         },
@@ -59,7 +59,7 @@
             "name": "Nest Presence",
             "iconUrl": "https://s3.amazonaws.com/smartapp-icons/Convenience/App.png",
             "published": false,
-            "version": "5.3.1",
+            "version": "5.3.3",
             "appUrl": "deviceTypes/tonesto7/nest-presence.src/nest-presence.groovy",
             "optional": false
         },
@@ -67,7 +67,7 @@
             "name": "Nest Weather",
             "iconUrl": "https://s3.amazonaws.com/smartapp-icons/Convenience/App.png",
             "published": false,
-            "version": "5.3.1",
+            "version": "5.3.3",
             "appUrl": "deviceTypes/tonesto7/nest-weather.src/nest-weather.groovy",
             "optional": false
         }
