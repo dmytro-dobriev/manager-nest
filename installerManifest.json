@@ -10,6 +10,8 @@
     "videoUrl": "http://f.cl.ly/items/3O2L03471l2K3E3l3K1r/Zombie%20Kid%20Likes%20Turtles.mp4",
     "photoUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5.png",
     "bannerUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5_banner.png",
+    "forumUrl": "https://community.smartthings.com/t/release-nst-manager-v5-0/",
+    "releaseType": "production",
     "smartApps": {
         "parent": {
             "name": "Nest Manager",
