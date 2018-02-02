@@ -12,7 +12,7 @@
     "docUrl": "http://thingsthataresmart.wiki/index.php?title=NST_Manager",
     "releaseType": "production",
     "keywords": ["nest", "thermostat", "nst"],
-    "notes": "change text here or html here",
+    "notes": "<h6>Changes</h6><p>Listing all sorts of important stuff right here<p><br><ul><li>Changed something there</li><li>rebuilt something there</li></ul>",
     "smartApps": {
         "parent": {
             "name": "Nest Manager",
