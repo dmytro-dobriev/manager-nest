@@ -7,12 +7,14 @@
     "author": "Anthony S.",
     "description": "The Best Solution to integrate your Nest Products with SmartThings.",
     "category": "My Apps",
-    "videoUrl": "http://f.cl.ly/items/3O2L03471l2K3E3l3K1r/Zombie%20Kid%20Likes%20Turtles.mp4",
-    "photoUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5.png",
+    "videoUrl": "",
+    "photoUrl": "",
     "bannerUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5_banner.png",
     "forumUrl": "https://community.smartthings.com/t/release-nst-manager-v5-0/",
     "docUrl": "http://thingsthataresmart.wiki/index.php?title=NST_Manager",
     "releaseType": "production",
+    "keywords": ["nest", "thermostat", "nst"],
+    "notes": "change text here or html here",
     "smartApps": {
         "parent": {
             "name": "Nest Manager",
