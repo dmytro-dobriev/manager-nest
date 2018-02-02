@@ -13,7 +13,6 @@
     "releaseType": "production",
     "keywords": ["nest", "thermostat", "nst"],
     "notes": "change text here or html here",
-    "appName": "Nest Manager",
     "smartApps": {
         "parent": {
             "name": "Nest Manager",
