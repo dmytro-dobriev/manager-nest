@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.4" }
-def appVerDate() { "01-26-2018" }
+def appVerDate() { "02-03-2018" }
 def minVersions() {
 	return [
 		"automation":["val":532, "desc":"5.3.2"],
@@ -5305,7 +5305,7 @@ def deviceHealthNotify(child, Boolean isHealthy) {
 	def nPrefs = atomicState?.notificationPrefs?.dev?.devHealth
 	def devLbl = child?.device?.displayName
 	def sameAsLastDev = (atomicState?.lastDevHealthMsgData?.device == devLbl)
-	if(isHealthy == true || nPrefs?.healthMsg != true || (getLastDevHealthMsgSec() <= nPrefs?.healthMsgWait.toInteger() && sameAsLastDev) ) { return }
+	if(isHealthy == true || nPrefs?.healthMsg != true || (getLastDevHealthMsgSec() <= nPrefs?.healthMsgWait?.toInteger() && sameAsLastDev) ) { return }
 	sendMsg("$devLbl Health Warning", "\nDevice is currently OFFLINE. Please check your logs for possible issues.")
 	atomicState?.lastDevHealthMsgData = ["device":"$devLbl", "dt":getDtNow()]
 }
@@ -5462,7 +5462,7 @@ def appUpdateNotify(badAuto=false) {
 def updateHandler() {
 	LogTrace("updateHandler")
 	if(atomicState?.isInstalled) {
-		if(atomicState?.appData?.updater?.updateType.toString() == "critical" && atomicState?.lastCritUpdateInfo?.ver.toInteger() != atomicState?.appData?.updater?.updateVer.toInteger()) {
+		if(atomicState?.appData?.updater?.updateType.toString() == "critical" && atomicState?.lastCritUpdateInfo?.ver?.toInteger() != atomicState?.appData?.updater?.updateVer?.toInteger()) {
 			sendMsg("Critical", "There are Critical Updates available for ${appName()}! Please visit the IDE and make sure to update the App and Devices Code")
 			atomicState?.lastCritUpdateInfo = ["dt":getDtNow(), "ver":atomicState?.appData?.updater?.updateVer?.toInteger()]
 		}
@@ -7223,7 +7223,7 @@ def setStateVar(frc = false) {
 	//the app to create any new state values that might not exist or reset those that do to prevent errors
 	def stateVer = 3
 	def stateVar = !atomicState?.stateVarVer ? 0 : atomicState?.stateVarVer.toInteger()
-	if(!atomicState?.stateVarUpd || frc || (stateVer < atomicState?.appData.state.stateVarVer.toInteger())) {
+	if(!atomicState?.stateVarUpd || frc || (stateVer < atomicState?.appData?.state?.stateVarVer?.toInteger())) {
 		if(!atomicState?.newSetupComplete)		{ atomicState.newSetupComplete = false }
 		if(!atomicState?.setupVersion)			{ atomicState?.setupVersion = 0 }
 		if(!atomicState?.custLabelUsed)			{ atomicState?.custLabelUsed = false }
