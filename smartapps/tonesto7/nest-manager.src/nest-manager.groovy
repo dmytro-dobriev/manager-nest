@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.4" }
-def appVerDate() { "02-03-2018" }
+def appVerDate() { "02-05-2018" }
 def minVersions() {
 	return [
 		"automation":["val":532, "desc":"5.3.2"],
@@ -4890,7 +4890,7 @@ private getLastCmdSentSeconds(qnum) { return getTimestampVal("lastCmdSentDt${qnu
 
 private setLastCmdSentSeconds(qnum, val) {
 	updTimestampMap("lastCmdSentDt${qnum}", val)
-	updTimestampMap("lastCmdSentDt", val)
+	if(val != null) { updTimestampMap("lastCmdSentDt", val) }
 }
 
 def storeLastCmdData(cmd, qnum) {
