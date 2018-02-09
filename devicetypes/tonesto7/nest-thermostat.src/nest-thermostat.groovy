@@ -5,7 +5,7 @@
  *	Contributor: Ben W. (@desertBlade)
  *  Graphing Modeled on code from Andreas Amann (@ahndee)
  *
- * Modeled after the EcoBee thermostat under Templates in the IDE
+ * Modeled after the EcoBee thermostat under Templates in the IDE 
  * Copyright (C) 2017 Anthony S.
  * Licensing Info: Located at https://raw.githubusercontent.com/tonesto7/nest-manager/master/LICENSE.md
  */
