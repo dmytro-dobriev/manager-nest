@@ -3683,7 +3683,7 @@ def didChange(old, newer, type, src) {
 				// def t1 = newer && atomicState?.structures ? newer[atomicState?.structures] : null
 				def tt0 = atomicState?.structData?.size() ? atomicState?.structData : null
 				// Null safe does not work on array references that miss
-				def t0 = tt0 && atomicState?.structures && tt0?."${atomicsState?.structures}" ?  tt0[atomicState?.structures] : null
+				def t0 = tt0 && atomicState?.structures && tt0?."${atomicState?.structures}" ? tt0[atomicState?.structures] : null
 				def t1 = newer && atomicState?.structures && newer?."${atomicState?.structures}" ? newer[atomicState?.structures] : null
 
 				if(t1 && t0 != t1) {
