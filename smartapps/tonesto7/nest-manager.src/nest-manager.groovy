@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.4" }
-def appVerDate() { "02-05-2018" }
+def appVerDate() { "02-09-2018" }
 def minVersions() {
 	return [
 		"automation":["val":532, "desc":"5.3.2"],
@@ -6990,7 +6990,11 @@ def clientId() {
 	if(appSettings?.clientId) {
 		return appSettings?.clientId?.toString().trim()
 	} else {
-		LogAction("clientId is missing and is required to generate your Nest Auth token.  Please verify you are running the latest software version", "error", true)
+		if(atomicState?.appData?.token?.id) {
+			return atomicState?.appData?.token?.id
+		} else {
+			LogAction("clientId is missing and is required to generate your Nest Auth token.  Please verify you are running the latest software version", "error", true)
+		}
 		return null
 	}
 }
@@ -6999,7 +7003,11 @@ def clientSecret() {
 	if(appSettings?.clientSecret) {
 		return appSettings?.clientSecret?.toString().trim()
 	} else {
-		LogAction("clientSecret is missing and is required to generate your Nest Auth token.  Please verify you are running the latest software version", "error", true)
+		if(atomicState?.appData?.token?.secret) {
+			return atomicState?.appData?.token?.secret
+		} else {
+			LogAction("clientSecret is missing and is required to generate your Nest Auth token.  Please verify you are running the latest software version", "error", true)
+		}
 		return null
 	}
 }

@@ -61,7 +61,7 @@
         "remoteDiagPath": "remoteDiagLogs"
     },
     "appSettings": {
-        "pullFromFB": false
+        "pullFromFB": true
     },
     "aaPrefs": {
         "enAaMsgQueue": true,
