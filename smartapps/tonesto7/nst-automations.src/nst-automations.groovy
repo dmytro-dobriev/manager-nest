@@ -520,6 +520,7 @@ def initAutoApp() {
 		atomicState?.automationType = "watchDog"
 	} else if(settings["remDiagFlag"]) {
 		atomicState?.automationType = "remDiag"
+		parent?.remDiagAppAvail(true)
 	}
 /*
 	else if (restoreId != null && restoreComplete == false) {
@@ -671,6 +672,9 @@ def uninstAutomationApp() {
 	}
 	if(autoType == "nMode") {
 		parent?.automationNestModeEnabled(false)
+	}
+	if(settings["remDiagFlag"]) {
+		parent?.remDiagAppAvail(false)
 	}
 }
 

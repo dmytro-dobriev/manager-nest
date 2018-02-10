@@ -2320,6 +2320,10 @@ def removeBadAutomations() {
 	}
 }
 
+def remDiagAppAvail(available) {
+	atomicState?.remDiagAppAvailable = (available == true)
+}
+
 def createSavedNest() {
 	def str = "createSavedNest"
 	LogTrace("${str}")
@@ -7051,7 +7055,7 @@ def Logger(msg, type, logSrc=null, noSTlogger=false) {
 	if(msg && type) {
 		def themsg = tokenStrScrubber("${labelstr}${msg}")
 
-		if(!saveLogtoRemDiagStore(themsg, type, logSrc) && !noSTlogger) {
+		if(saveLogtoRemDiagStore(themsg, type, logSrc) == false && !noSTlogger) {
 			switch(type) {
 				case "debug":
 					log.debug "${themsg}"
@@ -7081,15 +7085,19 @@ def Logger(msg, type, logSrc=null, noSTlogger=false) {
 def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=false) {
 	def retVal = false
 	//log.trace "saveLogtoRemDiagStore($msg, $type, $logSrcType)"
+
 	if(atomicState?.enRemDiagLogging && settings?.enRemDiagLogging) {
 		def turnOff = false
+		if(atomicState?.remDiagAppAvailable != true) {
+			log.warn "Remote Diag Logging is Enabled but child app not installed..."
+		}
 		def reasonStr = ""
 		if(frc == false) {
 			if(getRemDiagActSec() > (3600 * 48)) {
 				turnOff = true
 				reasonStr += "was active for last 48 hours "
 			}
-			if(!atomicState?.appData?.database?.allowRemoteDiag) {
+			if(atomicState?.appData?.database?.allowRemoteDiag != true) {
 				turnOff = true
 				reasonStr += "appData does not allow"
 			}
@@ -7097,14 +7105,15 @@ def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=f
 		if(turnOff) {
 			saveLogtoRemDiagStore("Diagnostics disabled due to ${reasonStr}", "info", "Manager", true)
 			diagLogProcChange(false)
-			LogAction("Remote Diagnostics disabled ${reasonStr}", "info", true)
+			log.info "Remote Diagnostics disabled ${reasonStr}"
 		} else {
 			if(getStateSizePerc() >= 65) {
 				log.warn "saveLogtoRemDiagStore: remoteDiag log storage suspended state size is ${getStateSizePerc()}%"
 			} else {
 				if(msg) {
 					def data = atomicState?.remDiagLogDataStore ?: []
-					def item = ["dt":new Date().getTime(), "type":type, "src":(logSrcType ?: "Not Set"), "msg":msg]
+					def dt = new Date().getTime()
+					def item = ["dt":dt, "type":type, "src":(logSrcType ?: "Not Set"), "msg":msg]
 					data << item
 					atomicState?.remDiagLogDataStore = data
 					retVal = true
