@@ -1009,12 +1009,14 @@ def humidityEvent(humidity) {
 	} else { LogAction("Humidity is (${humidity}) | Original State: (${hum})") }
 }
 
-def etaEvent(String eta) {
-	def oeta = device.currentState("etaBegin")?.value
-	if(isStateChange(device, "etaBegin", eta.toString())) {
-		LogAction("UPDATED | Eta Begin is (${eta}) | Original State: (${oeta})")
-		sendEvent(name:'etaBegin', value: eta, descriptionText: "Eta is ${eta}", displayed: true, isStateChange: true)
-	} else { LogAction("Eta Begin is (${eta}) | Original State: (${oeta})") }
+def etaEvent(eta) {
+	if(eta) {
+		def oeta = device.currentState("etaBegin")?.value
+		if(isStateChange(device, "etaBegin", eta.toString())) {
+			LogAction("UPDATED | Eta Begin is (${eta}) | Original State: (${oeta})")
+			sendEvent(name:'etaBegin', value: eta, descriptionText: "Eta is ${eta}", displayed: true, isStateChange: true)
+		} else { LogAction("Eta Begin is (${eta}) | Original State: (${oeta})") }
+	}
 }
 
 def presenceEvent(String presence) {
