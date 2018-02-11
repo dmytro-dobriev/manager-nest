@@ -7051,11 +7051,18 @@ def tokenStrScrubber(str) {
 
 def Logger(msg, type, logSrc=null, noSTlogger=false) {
 	def labelstr = ""
+	def logOut = true
 	if(settings?.debugAppendAppName || settings?.debugAppendAppName == null) { labelstr = "${app.label} | " }
 	if(msg && type) {
 		def themsg = tokenStrScrubber("${labelstr}${msg}")
 
-		if(saveLogtoRemDiagStore(themsg, type, logSrc) == false && noSTlogger == false) {
+		if(atomicState?.enRemDiagLogging && settings?.enRemDiagLogging && atomicState?.remDiagAppAvailable == true) {
+			if(saveLogtoRemDiagStore(themsg, type, logSrc) == true) {
+				logOut = false
+			}
+		}
+		// log.debug "logOut: $logOut | noSTlogger: $noSTlogger"
+		if(logOut == true && noSTlogger == false) {
 			switch(type) {
 				case "debug":
 					log.debug "${themsg}"
@@ -7088,10 +7095,6 @@ def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=f
 
 	if(atomicState?.enRemDiagLogging && settings?.enRemDiagLogging) {
 		def turnOff = false
-		if(atomicState?.remDiagAppAvailable != true) {
-			log.warn "Remote Diag Logging is Enabled but child app not installed..."
-			return false
-		}
 		def reasonStr = ""
 		if(frc == false) {
 			if(getRemDiagActSec() > (3600 * 48)) {
