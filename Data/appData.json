@@ -24,10 +24,10 @@
         "setupVersion": 2,
         "versions": {
             "app": {
-                "ver": "5.3.4"
+                "ver": "5.3.5"
             },
             "autoapp": {
-                "ver": "5.3.2"
+                "ver": "5.3.3"
             },
             "thermostat": {
                 "ver": "5.3.3"

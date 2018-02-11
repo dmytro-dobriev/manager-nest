@@ -27,7 +27,7 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.2" }
+def appVersion() { "5.3.3" }
 def appVerDate() { "01-21-2018" }
 
 preferences {

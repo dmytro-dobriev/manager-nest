@@ -35,7 +35,7 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.4" }
+def appVersion() { "5.3.5" }
 def appVerDate() { "02-10-2018" }
 def minVersions() {
 	return [
@@ -106,7 +106,6 @@ mappings {
 		path("/protectTiles")	{action: [GET: "getProtectTiles"]}
 		path("/cameraTiles")	{action: [GET: "getCamTiles"]}
 		path("/weatherTile")	{action: [GET: "getWeatherTile"]}
-		path("/stupdate") 			{action: [GET: "runStUpdateHtml"]}
 		path("/renderInstallData")	{action: [GET: "renderInstallData"]}
 		path("/receiveEventData") 	{action: [POST: "receiveEventData"]}
 		path("/streamStatus")		{action: [POST: "receiveStreamStatus"]}
@@ -249,12 +248,8 @@ def mainPage() {
 			}
 			if(atomicState?.appData && !appDevType()) {
 				if(isAppUpdateAvail()) {
-					if(atomicState?.appData?.updater?.allowInApp == true || getDevOpt()) {
-						href "codeUpdatesPage", title: "SmartApp and Device Code Updates", description: "Tap Here to Update", state: "complete", image: getAppImg("update_icon.png")
-					} else {
-						href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!",
-							description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in Browser", state: "complete", image: getAppImg("update_icon.png")
-					}
+					href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!",
+						description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in Browser", state: "complete", image: getAppImg("update_icon.png")
 				}
 				if(atomicState?.clientBlacklisted) {
 					paragraph "This ID is blacklisted, please update software!\nIf software is up to date, contact developer", required: true, state: null
@@ -306,9 +301,6 @@ def mainPage() {
 				if(descStr.size() != sz) { descStr += "\n\n"; sz = descStr.size() }
 				def prefDesc = (descStr != "") ? "" : "Tap to configure"
 				href "prefsPage", title: "Application\nPreferences", description: prefDesc, state: (descStr ? "complete" : ""), image: getAppImg("settings_icon.png")
-				if(atomicState?.appData?.updater?.allowInApp == true || getDevOpt()) {
-					href "codeUpdatesPage", title: "Software Updates", description: "Tap Here to Update", state: "complete", image: getAppImg("update_icon.png")
-				}
 			}
 			section("Donate, Release and License Info") {
 				href "infoPage", title: "Info and More", description: "", image: getAppImg("info_bubble.png")
@@ -1674,7 +1666,7 @@ def debugPrefPage() {
 		section ("Application Logs") {
 			input ("debugAppendAppName", "bool", title: "Show App/Device Name on all Log Entries?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("log.png"))
 			input (name: "appDebug", type: "bool", title: "Show ${appName()} Logs in the IDE?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("log.png"))
-			if(appDebug) {
+			if(settings?.appDebug) {
 				input (name: "advAppDebug", type: "bool", title: "Show Verbose Logs?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("list_icon.png"))
 			} else {
 				settingUpdate("advAppDebug", "false", "bool")
@@ -7025,7 +7017,7 @@ def nestDevAccountCheckOk() {
 |									LOGGING AND Diagnostic										|
 *************************************************************************************************/
 def LogTrace(msg, logSrc=null) {
-	def trOn = (appDebug && advAppDebug) ? true : false
+	def trOn = (settings?.appDebug && settings?.advAppDebug && !settings?.enRemDiagLogging) ? true : false
 	if(trOn) {
 		def logOn = (settings?.enRemDiagLogging && atomicState?.enRemDiagLogging) ? true : false
 		def theLogSrc = (logSrc == null) ? (parent ? "Automation" : "Manager") : logSrc
@@ -7034,7 +7026,7 @@ def LogTrace(msg, logSrc=null) {
 }
 
 def LogAction(msg, type="debug", showAlways=false, logSrc=null) {
-	def isDbg = appDebug ? true : false
+	def isDbg = (settings?.appDebug && !settings?.enRemDiagLogging) ? true : false
 	def theLogSrc = (logSrc == null) ? (parent ? "Automation" : "Manager") : logSrc
 	if(showAlways) { Logger(msg, type, theLogSrc) }
 	else if(isDbg && !showAlways) { Logger(msg, type, theLogSrc) }
@@ -7052,7 +7044,7 @@ def tokenStrScrubber(str) {
 def Logger(msg, type, logSrc=null, noSTlogger=false) {
 	def labelstr = ""
 	def logOut = true
-	if(settings?.debugAppendAppName || settings?.debugAppendAppName == null) { labelstr = "${app.label} | " }
+	if(settings?.debugAppendAppName != false) { labelstr = "${app.label} | " }
 	if(msg && type) {
 		def themsg = tokenStrScrubber("${labelstr}${msg}")
 
@@ -7372,10 +7364,10 @@ def getStateSize() {
 }
 def getStateSizePerc()  { return (int) ((stateSize / 100000)*100).toDouble().round(0) } //
 
-def debugStatus() { return !appDebug ? "Off" : "On" }
-def deviceDebugStatus() { return !childDebug ? "Off" : "On" }
-def isAppDebug() { return !appDebug ? false : true }
-def isChildDebug() { return !childDebug ? false : true }
+def debugStatus() { return !settings?.appDebug ? "Off" : "On" }
+def deviceDebugStatus() { return !settings?.childDebug ? "Off" : "On" }
+def isAppDebug() { return !settings?.appDebug ? false : true }
+def isChildDebug() { return !settings?.childDebug ? false : true }
 
 def getLocationModes() {
 	def result = []

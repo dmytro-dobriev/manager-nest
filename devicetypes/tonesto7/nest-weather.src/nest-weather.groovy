@@ -367,7 +367,7 @@ void processEvent() {
 		//return null
 	}
 	catch (ex) {
-		log.error("generateEvent Exception:", ex)
+		log.error "generateEvent Exception:", ex
 		exceptionDataHandler(ex?.message, "generateEvent")
 	}
 }
@@ -567,9 +567,9 @@ def checkHealth() {
 |									Weather Info for Tiles										|
 *************************************************************************************************/
 
-def getWeatherConditions(Map weatData) {
+def getWeatherConditions(weatData) {
 	try {
-		if(!weatData?.current_observation) {
+		if(!weatData || !weatData?.current_observation) {
 			Logger("There is an Issue getting the weather condition data", "warn")
 			return
 		} else {
@@ -965,7 +965,7 @@ private estimateLux(weatherIcon) {
 	catch (ex) {
 		log.warn "state.sunriseDate: ${state?.sunriseDate}"
 		log.warn "state.sunsetDate: ${state?.sunsetDate}"
-		log.error("estimateLux Exception:", ex)
+		log.error "estimateLux Exception:", ex
 		exceptionDataHandler(ex?.message, "estimateLux")
 	}
 	return null

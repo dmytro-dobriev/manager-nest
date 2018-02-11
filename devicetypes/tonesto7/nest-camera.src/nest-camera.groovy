@@ -114,19 +114,34 @@ metadata {
 			state "detected", label:'Noise', icon:"st.sound.sound.detected", backgroundColor:"#00a0dc"
 			state "not detected", label:'Quiet', icon:"st.sound.sound.notdetected", backgroundColor:"#ffffff"
 		}
+		valueTile("softwareVer", "device.softwareVer", inactiveLabel: false, width: 3, height: 1, decoration: "flat", wordWrap: true) {
+			state("default", label: 'Firmware:\nv${currentValue}')
+		}
+		valueTile("lastConnection", "device.lastConnection", inactiveLabel: false, width: 3, height: 1, decoration: "flat", wordWrap: true) {
+			state("default", label: 'Protect Last Checked-In:\n${currentValue}')
+		}
+		valueTile("onlineStatus", "device.onlineStatus", width: 2, height: 1, wordWrap: true, decoration: "flat") {
+			state("default", label: 'Network Status:\n${currentValue}')
+		}
+		valueTile("lastUpdatedDt", "device.lastUpdatedDt", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+			state("default", label: 'Data Last Received:\n${currentValue}')
+		}
+		valueTile("devTypeVer", "device.devTypeVer",  width: 3, height: 1, decoration: "flat") {
+			state("default", label: 'Device Type:\nv${currentValue}')
+		}
+		valueTile("apiStatus", "device.apiStatus", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+			state "ok", label: "API Status:\nOK"
+			state "issue", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
+		}
 		standardTile("refresh", "device.refresh", width:2, height:2, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/refresh_icon.png"
 		}
 		htmlTile(name:"devCamHtml", action: "getCamHtml", width: 6, height: 10, whitelist: ["raw.githubusercontent.com", "cdn.rawgit.com"])
-
-		standardTile("test", "device.testBtn", width:2, height:2, decoration: "flat") {
-			state "default", label: 'Test', action:"testBtn"
-		}
 		valueTile("remind", "device.blah", inactiveLabel: false, width: 6, height: 2, decoration: "flat", wordWrap: true) {
 			state("default", label: 'Reminder:\nHTML Content is Available in SmartApp')
 		}
 		main "isStreamingStatus"
-		details(["videoPlayer", "isStreaming", "take", "refresh", "cameraDetails", "motion", "sound", "remind" ])
+		details(["videoPlayer", "isStreaming", "take", "refresh", "cameraDetails", "motion", "sound","onlineStatus","debugOn",  "apiStatus",  "lastConnection", "lastUpdatedDt", "lastTested","devTypeVer",  "softwareVer", "devCamHtml", "remind" ])
 
 	}
 	preferences {
@@ -322,7 +337,7 @@ def processEvent() {
 			}
 			deviceVerEvent(eventData?.latestVer.toString())
 			vidHistoryTimeEvent()
-			lastUpdatedEvent()
+			lastUpdatedEvent(true)
 			checkHealth()
 			if(state?.ok2Checkin == true) {
 				lastCheckinEvent(dtNow)

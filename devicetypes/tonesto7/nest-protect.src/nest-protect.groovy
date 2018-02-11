@@ -368,7 +368,7 @@ def processEvent(data) {
 			if(eventData?.allowDbException) { state?.allowDbException = eventData?.allowDbException = false ? false : true }
 			determinePwrSrc()
 
-			lastUpdatedEvent()
+			lastUpdatedEvent(true)
 			checkHealth()
 		}
 		return null

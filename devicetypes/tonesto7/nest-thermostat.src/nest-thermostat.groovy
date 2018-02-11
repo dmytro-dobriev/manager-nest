@@ -5,7 +5,7 @@
  *	Contributor: Ben W. (@desertBlade)
  *  Graphing Modeled on code from Andreas Amann (@ahndee)
  *
- * Modeled after the EcoBee thermostat under Templates in the IDE 
+ * Modeled after the EcoBee thermostat under Templates in the IDE
  * Copyright (C) 2017 Anthony S.
  * Licensing Info: Located at https://raw.githubusercontent.com/tonesto7/nest-manager/master/LICENSE.md
  */
@@ -254,25 +254,23 @@ metadata {
 		valueTile("onlineStatus", "device.onlineStatus", width: 2, height: 1, wordWrap: true, decoration: "flat") {
 			state("default", label: 'Network Status:\n${currentValue}')
 		}
-
 		standardTile("blank", "device.heatingSetpoint", width: 1, height: 1, canChangeIcon: false, decoration: "flat") {
 			state "default", label: ''
 		}
 		standardTile("blank2", "device.heatingSetpoint", width: 2, height: 2, canChangeIcon: false, decoration: "flat") {
 			state "default", label: ''
 		}
-		//htmlTile(name:"graphHTML", action: "graphHTML", width: 6, height: 13, whitelist: ["www.gstatic.com", "raw.githubusercontent.com", "cdn.rawgit.com"])
+		htmlTile(name:"graphHTML", action: "graphHTML", width: 6, height: 13, whitelist: ["www.gstatic.com", "raw.githubusercontent.com", "cdn.rawgit.com"])
 		valueTile("remind", "device.blah", inactiveLabel: false, width: 6, height: 2, decoration: "flat", wordWrap: true) {
 			state("default", label: 'Reminder:\nHTML Graph and History Content is Available in SmartApp')
 		}
 		main("temp2")
-		details( ["temperature", "thermostatMode", "nestPresence", "thermostatFanMode",
-				"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp",
-				"heatSliderControl", "coolSliderControl", "autoBtn", "heatBtn", "coolBtn", "offBtn", "ecoBtn", "blank2", "onlineStatus","debugOn",
-				"apiStatus", "lastConnection", "lastUpdatedDt", "devTypeVer", "softwareVer", "remind", "refresh"] )
-		// details( ["temperature", "thermostatMode", "nestPresence", "thermostatFanMode",
-		// 		"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp",
-		// 		"heatSliderControl", "coolSliderControl", "offBtn", "ecoBtn", "heatBtn", "coolBtn", "autoBtn", "blank", "remind", "refresh"] )
+		details([
+			"temperature", "thermostatMode", "nestPresence", "thermostatFanMode",
+			"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp", "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp",
+			"heatSliderControl", "coolSliderControl", "autoBtn", "heatBtn", "coolBtn", "offBtn", "ecoBtn", "blank2", "onlineStatus","debugOn",
+			"apiStatus", "lastConnection", "lastUpdatedDt", "devTypeVer", "softwareVer", "graphHTML", "remind", "refresh"
+		])
 	}
 	preferences {
 		input "resetHistoryOnly", "bool", title: "Reset History Data", description: "", displayDuringSetup: false
@@ -281,8 +279,8 @@ metadata {
 }
 
 def compileForC() {
-	def retVal = false   // if using C mode, set this to true so that enums and colors are correct (due to ST issue of compile time evaluation)
-	return retVal
+	// if using C mode, set this to true so that enums and colors are correct (due to ST issue of compile time evaluation)
+	return false
 }
 
 def getTempColors() {
@@ -656,7 +654,7 @@ void processEvent(data) {
 					break
 			}
 			getSomeData(true)
-			lastUpdatedEvent()
+			lastUpdatedEvent(true)
 			checkHealth()
 		}
 		//This will return all of the devices state data to the logs.
@@ -813,12 +811,11 @@ def lastCheckinEvent(checkin, isOnline) {
 
 	def lastChk = device.currentState("lastConnection")?.value
 	def lastConnSeconds = (lastChk && lastChk != "Not Available") ? getTimeDiffSeconds(lastChk) : 3000
-
 	def prevOnlineStat = device.currentState("onlineStatus")?.value
 
 	def hcTimeout = getHcTimeout()
-	def curConn = checkin ? "${tf.format(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", checkin))}" : "Not Available"
-	def curConnFmt = checkin ? "${formatDt(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", checkin))}" : "Not Available"
+	def curConn = checkin ? tf.format(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", checkin)) : "Not Available"
+	def curConnFmt = checkin ? formatDt(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", checkin)) : "Not Available"
 	def curConnSeconds = (checkin && curConnFmt != "Not Available") ? getTimeDiffSeconds(curConnFmt) : 3000
 
 	def onlineStat = isOnline.toString() == "true" ? "online" : "offline"
@@ -846,7 +843,7 @@ def lastCheckinEvent(checkin, isOnline) {
 
 def lastUpdatedEvent(sendEvt=false) {
 	def now = new Date()
-	def formatVal = state.useMilitaryTime ? "MMM d, yyyy - HH:mm:ss" : "MMM d, yyyy - h:mm:ss a"
+	def formatVal = state?.useMilitaryTime ? "MMM d, yyyy - HH:mm:ss" : "MMM d, yyyy - h:mm:ss a"
 	def tf = new SimpleDateFormat(formatVal)
 		tf.setTimeZone(getTimeZone())
 	def lastDt = "${tf?.format(now)}"
