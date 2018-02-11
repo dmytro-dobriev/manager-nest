@@ -150,7 +150,7 @@ def authPage() {
 	if(!atomicState?.devHandlersTested) { deviceHandlerTest() }
 
 	if(!atomicState?.accessToken || !nestDevAccountCheckOk() || (!atomicState?.isInstalled && (!atomicState?.devHandlersTested || !preReqOk)) || (stateSz > 80)) {
-		return dynamicPage(name: "authPage", title: "Status Page", nextPage: "", install: false, uninstall: false) {
+		return dynamicPage(name: "authPage", title: "Status Page", nextPage: "", install: (atomicState?.isInstalled == true ? true : false), uninstall: false) {
 			section () {
 				def title = ""
 				def desc = ""
