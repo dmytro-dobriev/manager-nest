@@ -3495,7 +3495,7 @@ def queueGetApiData(type = null, newUrl = null) {
 
 def procNestResponse(resp, data) {
 	LogTrace("procNestResponse(${data?.type})")
-	LogAction("procNestResponse | resp: $resp | data: $data", "info", false)
+	LogAction("procNestResponse | Status: ${resp?.getStatus()} | data: $data", "info", false)
 	def str = false
 	def dev = false
 	def meta = false
@@ -7055,7 +7055,7 @@ def Logger(msg, type, logSrc=null, noSTlogger=false) {
 	if(msg && type) {
 		def themsg = tokenStrScrubber("${labelstr}${msg}")
 
-		if(saveLogtoRemDiagStore(themsg, type, logSrc) == false && !noSTlogger) {
+		if(saveLogtoRemDiagStore(themsg, type, logSrc) == false && noSTlogger == false) {
 			switch(type) {
 				case "debug":
 					log.debug "${themsg}"
@@ -7090,6 +7090,7 @@ def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=f
 		def turnOff = false
 		if(atomicState?.remDiagAppAvailable != true) {
 			log.warn "Remote Diag Logging is Enabled but child app not installed..."
+			return false
 		}
 		def reasonStr = ""
 		if(frc == false) {
