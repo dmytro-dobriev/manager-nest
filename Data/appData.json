@@ -30,19 +30,19 @@
                 "ver": "5.3.3"
             },
             "thermostat": {
-                "ver": "5.3.3"
+                "ver": "5.3.4"
             },
             "protect": {
-                "ver": "5.3.3"
+                "ver": "5.3.4"
             },
             "camera": {
-                "ver": "5.3.3"
+                "ver": "5.3.4"
             },
             "presence": {
-                "ver": "5.3.3"
+                "ver": "5.3.4"
             },
             "weather": {
-                "ver": "5.3.3"
+                "ver": "5.3.4"
             }
         },
         "allowInApp": false
