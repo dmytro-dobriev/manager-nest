@@ -9044,8 +9044,6 @@ def renderInstData() {
 	renderHtmlMapDesc("Install Data", "Installation Data", getMapDescStr(createInstallDataJson(true)))
 }
 
-
-
 def renderHtmlMapDesc(title, heading, datamap) {
 	try {
 		def navHtml = ""
