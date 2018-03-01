@@ -15,7 +15,7 @@ preferences {  }
 def devVer() { return "5.3.4" }
 
 metadata {
-	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
+	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.", ocfDeviceType: "oic.d.sensor.temperature", cloudDeviceHandler: "tonesto7.cdh.handlers.nestWeather") {
 
 		capability "Illuminance Measurement"
 		capability "Sensor"

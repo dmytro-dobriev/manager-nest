@@ -17,7 +17,7 @@ def devVer() { return "5.3.4" }
 
 // for the UI
 metadata {
-	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
+	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.", ocfDeviceType: "oic.d.thermostat", cloudDeviceHandler: "tonesto7.cdh.handlers.nestThermostat") {
 		capability "Actuator"
 		capability "Relative Humidity Measurement"
 		capability "Refresh"

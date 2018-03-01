@@ -16,6 +16,7 @@ import groovy.json.*
 import java.text.SimpleDateFormat
 import java.security.MessageDigest
 include 'asynchttp_v1'
+include 'cirrus'
 
 definition(
 	name: "${appName()}",
@@ -27,6 +28,8 @@ definition(
 	iconX2Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_5%402x.png",
 	iconX3Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_5%403x.png",
 	singleInstance: true,
+	usesThirdPartyAuthentication: true,
+	pausable: false,
 	oauth: true )
 
 {
@@ -233,6 +236,71 @@ def authPage() {
 	else { return mainPage() }
 }
 
+def webhookCallback() {
+    log.debug "webhookCallback"
+    def data = request.JSON
+    // log.debug data
+    if (data) {
+        updateDevicesFromResponse(data)
+        [status: "ok", source: "smartApp"]
+    }
+    else {
+        [status: "operation not defined", source: "smartApp"]
+    }
+}
+
+void updateDevicesFromResponse(devices) {
+    log.debug("updateDevicesFromResponse(${devices.size()})")
+    def changed = false
+    def deviceIds = []
+    // def children = getChildDevices()
+    // devices.each { device ->
+    //     deviceIds << device.id
+    //     def childDevice = children.find {it.deviceNetworkId == device.id}
+    //     if (!childDevice) {
+    //         log.trace "adding child device $device.label"
+    //         if (device.product.capabilities.has_color) {
+    //             addChildDevice(app.namespace, "LIFX Color Bulb", device.id, null, ["label": device.label, "completedSetup": true])
+    //         } else {
+    //             addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, ["label": device.label, "completedSetup": true])
+    //         }
+    //         changed = true
+    //     }
+    // }
+
+    // children.findAll { !deviceIds.contains(it.deviceNetworkId) }.each {
+    //     log.trace "deleting child device $it.label"
+    //     deleteChildDevice(it.deviceNetworkId, true)
+    //     changed = true
+    // }
+
+    if (changed) {
+        // Run in a separate sandbox instance because caching issues can prevent children from being picked up
+        runIn(1, registerWithCirrus)
+    }
+}
+
+boolean getCirrusEnabled() {
+ def result = cirrus.enabled("smartthings.cdh.handlers.LifxLightHandler")
+ log.debug "cirrusEnabled=$result"
+ result
+}
+
+void switchToCirrus() {
+ log.info "Switching to cirrus"
+ registerWithCirrus()
+ unschedule()
+ runDaily(new Date(), registerWithCirrus)
+}
+
+def registerWithCirrus() {
+ cirrus.registerServiceManager("smartthings.cdh.handlers.LifxLightHandler", [
+		 remoteAuthToken: state.lifxAccessToken,
+		 lifxLocationId: settings.selectedLocationId,
+ ])
+}
+
+
 def mainPage() {
 	//LogTrace("mainPage")
 	def execTime = now()
@@ -269,7 +337,6 @@ def mainPage() {
 					href "devPrefPage", title: "Device Customization", description: "Tap to configure", image: getAppImg("device_pref_icon.png")
 				}
 			}
-			//getDevChgDesc()
 		}
 		if(!isInstalled) {
 			devicesPage()
@@ -2122,6 +2189,15 @@ def initialize() {
 		runIn(5, "reInitBuiltins", [overwrite: true])  // These are to have these apps release subscriptions to devices (in case of delete)
 	}
 	runIn(21, "initManagerApp", [overwrite: true])	// need to give time for watchdog updates before we try to delete devices.
+	log.debug "initialize"
+
+   if (cirrusEnabled) {
+	   // Create the devices
+	   updateDevicesFromResponse(devicesInLocation())
+
+	   // Sync with Cirrus once per day to ensure consistency and maintain polling by Gadfly
+	   runDaily(new Date(), registerWithCirrus)
+   }
 }
 
 def reInitBuiltins() {
