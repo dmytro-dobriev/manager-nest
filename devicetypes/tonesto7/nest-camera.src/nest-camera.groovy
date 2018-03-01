@@ -16,7 +16,7 @@ preferences { }
 def devVer() { return "5.3.4" }
 
 metadata {
-	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7", ocfDeviceType: "oic.d.camera", cloudDeviceHandler: "tonesto7.cdh.handlers.nestCamera") {
+	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Switch"

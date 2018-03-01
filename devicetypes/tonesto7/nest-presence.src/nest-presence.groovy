@@ -15,7 +15,7 @@ def devVer() { return "5.3.4" }
 
 // for the UI
 metadata {
-	definition (name: "${textDevName()}", namespace: "tonesto7", author: "DesertBlade", ocfDeviceType: "oic.d.presenceSensor", cloudDeviceHandler: "tonesto7.cdh.handlers.nestPresence") {
+	definition (name: "${textDevName()}", namespace: "tonesto7", author: "DesertBlade") {
 
 		capability "Actuator"
 		capability "Presence Sensor"

@@ -14,7 +14,7 @@ preferences { }
 def devVer() { return "5.3.4" }
 
 metadata {
-	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7", ocfDeviceType: "oic.d.smokeDetector", cloudDeviceHandler: "tonesto7.cdh.handlers.nestProtect") {
+	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
 		//capability "Polling"
 		capability "Actuator"
 		capability "Sensor"
