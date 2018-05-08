@@ -3676,6 +3676,17 @@ def didChange(old, newer, type, src) {
 		if(type == "dev") {
 			updTimestampMap("lastDevDataUpd", getDtNow())
 			atomicState?.needDevPoll = false
+			newer.each {
+				if(it?.value) {
+					def myId = it?.value?.device_id
+					if(myId) {
+						newer[myId].where_id = ""
+						if(newer[myId]?.app_url) {
+							newer[myId].app_url = ""
+						}
+					}
+				}
+			}
 		}
 		if(type == "meta") {
 			updTimestampMap("lastMetaDataUpd", getDtNow())
@@ -4902,7 +4913,7 @@ def storeLastCmdData(cmd, qnum) {
 		def newVal = ["qnum":qnum, "obj":cmd[2], "value":cmd[3], "date":getDtNow()]
 
 		def list = atomicState?.cmdDetailHistory ?: []
-		def listSize = 30
+		def listSize = 20
 		if(list?.size() < listSize) {
 			list.push(newVal)
 		}
