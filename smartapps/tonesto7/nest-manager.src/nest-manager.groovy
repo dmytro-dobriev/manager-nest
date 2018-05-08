@@ -35,8 +35,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.5" }
-def appVerDate() { "02-11-2018" }
+def appVersion() { "5.3.6" }
+def appVerDate() { "05-07-2018" }
 def minVersions() {
 	return [
 		"automation":["val":533, "desc":"5.3.3"],
@@ -3664,6 +3664,14 @@ def didChange(old, newer, type, src) {
 			// if(atomicState?.structures) {
 			// 	LogAction("NestAPI AWAY Debug | Current: (${newer[atomicState?.structures]?.away})${(newer[atomicState?.structures]?.away != old[atomicState?.structures]?.away) ? " | Previous: (${old[atomicState?.structures]?.away})" : ""}", "trace", false)
 			// }
+			newer.each {
+				if(it?.wheres) {
+					def myId = it?.structure_id
+					if(myId) {
+						newer[myId].wheres = [:]
+					}
+				}
+			}
 		}
 		if(type == "dev") {
 			updTimestampMap("lastDevDataUpd", getDtNow())
