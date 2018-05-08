@@ -3686,6 +3686,12 @@ def didChange(old, newer, type, src) {
 							if(newer."${dtyp}"[myId]?.app_url) {
 								newer."${dtyp}"[myId].app_url = ""
 							}
+							if(newer."${dtyp}"[myId]?.last_event?.app_url) {
+								newer."${dtyp}"[myId].last_event.app_url = ""
+							}
+							if(newer."${dtyp}"[myId]?.last_event?.image_url) {
+								newer."${dtyp}"[myId].last_event.image_url = ""
+							}
 						}
 					}
 				}
