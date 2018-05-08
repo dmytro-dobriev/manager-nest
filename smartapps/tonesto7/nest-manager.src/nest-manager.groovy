@@ -3676,13 +3676,16 @@ def didChange(old, newer, type, src) {
 		if(type == "dev") {
 			updTimestampMap("lastDevDataUpd", getDtNow())
 			atomicState?.needDevPoll = false
-			newer.each {
-				if(it?.value) {
-					def myId = it?.value?.device_id
-					if(myId) {
-						newer[myId].where_id = ""
-						if(newer[myId]?.app_url) {
-							newer[myId].app_url = ""
+			newer.each { t ->
+				def dtyp = t.key
+				t.value.each {
+					if(it?.value) {
+						def myId = it?.value?.device_id
+						if(myId) {
+							newer."${dtyp}"[myId].where_id = ""
+							if(newer."${dtyp}"[myId]?.app_url) {
+								newer."${dtyp}"[myId].app_url = ""
+							}
 						}
 					}
 				}
