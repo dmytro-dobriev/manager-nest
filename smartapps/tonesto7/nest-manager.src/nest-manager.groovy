@@ -3665,8 +3665,8 @@ def didChange(old, newer, type, src) {
 			// 	LogAction("NestAPI AWAY Debug | Current: (${newer[atomicState?.structures]?.away})${(newer[atomicState?.structures]?.away != old[atomicState?.structures]?.away) ? " | Previous: (${old[atomicState?.structures]?.away})" : ""}", "trace", false)
 			// }
 			newer.each {
-				if(it?.wheres) {
-					def myId = it?.structure_id
+				if(it?.value) {
+					def myId = it?.value?.structure_id
 					if(myId) {
 						newer[myId].wheres = [:]
 					}
