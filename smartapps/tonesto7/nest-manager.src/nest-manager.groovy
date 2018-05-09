@@ -1,6 +1,6 @@
 /********************************************************************************************
 |    Application Name: NST Manager                                                          |
-|    Copyright (C) 2017 Anthony S.                                                          |
+|    Copyright (C) 2017, 2018 Anthony S.                                                    |
 |    Authors: Anthony S. (@tonesto7), Eric S. (@E_sch)                                      |
 |    Contributors: Ben W. (@desertblade)                                                    |
 |    A few code methods are modeled from those in CoRE by Adrian Caramaliu                  |
@@ -35,11 +35,12 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.6" }
-def appVerDate() { "05-08-2018" }
+def appVersion() { "5.3.7" }
+def appVerDate() { "05-09-2018" }
 def minVersions() {
 	return [
-		"automation":["val":533, "desc":"5.3.3"],
+		"automation":["val":534, "desc":"5.3.4"],
+		"storage":["val":540, "desc":"5.4.0"],
 		"thermostat":["val":534, "desc":"5.3.4"],
 		"protect":["val":534, "desc":"5.3.4"],
 		"presence":["val":534, "desc":"5.3.4"],
@@ -111,6 +112,7 @@ mappings {
 		path("/streamStatus")		{action: [POST: "receiveStreamStatus"]}
 		//Web Diagnostics Pages
 		if(settings?.enDiagWebPage == true || getDevOpt()) {
+			path("/processCmd") 	{action: [POST: "procDiagCmd"]}
 			path("/diagHome")		{action: [GET: "renderDiagHome"]}
 			path("/getLogData")		{action: [GET: "renderLogData"]}
 			//path("/getLogMap")	{action: [GET: "getLogMap"]}
@@ -119,6 +121,7 @@ mappings {
 			path("/getDeviceData")	{action: [GET: "renderDeviceData"]}
 			path("/getInstData")	{action: [GET: "renderInstData"]}
 			path("/getAppData")		{action: [GET: "renderAppData"]}
+
 		}
 	}
 }
@@ -140,6 +143,7 @@ def startPage() {
 def authPage() {
 	//LogTrace("authPage()")
 	def execTime = now()
+	def storageApp = getStorageApp()
 	generateInstallId()
 	if(!atomicState?.accessToken) { getAccessToken() }
 	atomicState.ok2InstallAutoFlag = false
@@ -148,7 +152,7 @@ def authPage() {
 	def preReqOk = (atomicState?.preReqTested == true) ? true : preReqCheck()
 	def stateSz = getStateSizePerc()
 	if(!atomicState?.devHandlersTested) { deviceHandlerTest() }
-
+	
 	if(!atomicState?.accessToken || !nestDevAccountCheckOk() || (!atomicState?.isInstalled && (!atomicState?.devHandlersTested || !preReqOk)) || (stateSz > 80)) {
 		return dynamicPage(name: "authPage", title: "Status Page", nextPage: "", install: (atomicState?.isInstalled == true ? true : false), uninstall: false) {
 			section () {
@@ -183,6 +187,8 @@ def authPage() {
 				}
 				if(stateSz > 80) {
 					desc += "${desc != "" ? "\n\n" : ""}Your Manager State Usage is Greater than 80% full.  This is not normal and you should notify the developer."
+					settingUpdate("enDiagWebPage", "true", "bool")
+					href url: getAppEndpointUrl("diagHome"), style:"external", title:"NST Diagnostic Web Page", description:"Tap to view", required: true,state: "complete", image: getAppImg("web_icon.png")
 				}
 				LogAction("Status Message: $desc", "warn", true)
 				paragraph title: title, "$desc", required: true, state: null
@@ -211,31 +217,39 @@ def authPage() {
 		oauthTokenProvided = true
 	} else { description = "Click to enter Nest Credentials" }
 
-	if(!oauthTokenProvided && atomicState?.accessToken) {
-		def redirectUrl = buildRedirectUrl
-		//LogTrace("RedirectUrl = ${redirectUrl}")
-
-		LogAction("AuthToken not found: Directing to Login Page", "info", true)
-		return dynamicPage(name: "authPage", title: "Login Page", nextPage: "mainPage", install: false, uninstall: false) {
-			section("") {
-				paragraph appInfoDesc(), image: getAppImg("nst_manager_5%402x.png", true)
-			}
-			section(""){
-				paragraph "Tap 'Login to Nest' below to authorize SmartThings to your Nest Account.\n\nAfter login you will be taken to the 'Works with Nest' page. Read the info and if you 'Agree' press the 'Accept' button."
-				paragraph "❖ FYI: Please use the parent Nest account, Nest Family member accounts will not work correctly", state: "complete"
-				href url: redirectUrl, style:"embedded", required: true, title: "Login to Nest", description: description
-			}
-			devPageFooter("authLoadCnt", execTime)
+	if(!storageApp) {
+		section("Required Module Missing") {
+			paragraph "Please install the ES-Storage smartapp from the IDE and reload this page", required: true, state: null
 		}
+	} else {
+		if(!oauthTokenProvided && atomicState?.accessToken) {
+			def redirectUrl = buildRedirectUrl
+			//LogTrace("RedirectUrl = ${redirectUrl}")
+
+			LogAction("AuthToken not found: Directing to Login Page", "info", true)
+			return dynamicPage(name: "authPage", title: "Login Page", nextPage: "mainPage", install: false, uninstall: false) {
+				section("") {
+					paragraph appInfoDesc(), image: getAppImg("nst_manager_5%402x.png", true)
+				}
+				section(""){
+					paragraph "Tap 'Login to Nest' below to authorize SmartThings to your Nest Account.\n\nAfter login you will be taken to the 'Works with Nest' page. Read the info and if you 'Agree' press the 'Accept' button."
+					paragraph "❖ FYI: Please use the parent Nest account, Nest Family member accounts will not work correctly", state: "complete"
+					href url: redirectUrl, style:"embedded", required: true, title: "Login to Nest", description: description
+				}
+				devPageFooter("authLoadCnt", execTime)
+			}
+		}
+		
+		else if(showChgLogOk()) { return changeLogPage() }
+		else if(showDonationOk()) { return donationPage() }
+		else { return mainPage() }
 	}
-	else if(showChgLogOk()) { return changeLogPage() }
-	else if(showDonationOk()) { return donationPage() }
-	else { return mainPage() }
 }
 
 def mainPage() {
 	//LogTrace("mainPage")
 	def execTime = now()
+	def storageApp = getStorageApp()
 	def isInstalled = atomicState?.isInstalled
 	def setupComplete = (!atomicState?.newSetupComplete || !isInstalled) ? false : true
 	return dynamicPage(name: "mainPage", title: "", nextPage: (!setupComplete ? "reviewSetupPage" : null), install: setupComplete, uninstall: false) {
@@ -316,8 +330,57 @@ def mainPage() {
 			}
 		}
 		atomicState.ok2InstallAutoFlag = false
+		storageInfoSect()
 		devPageFooter("mainLoadCnt", execTime)
 	}
+}
+
+// NEW STORAGE SmartApp
+def storageInfoSect() {
+    def storApp = getStorageApp()
+    section("Storage App Info:") {
+        if(storApp) {
+            def str = ""
+            str += "Version: V${storApp?.appVersion()}"
+            str += "\nUsage: ${storApp?.getStateSizePerc()}%"
+            paragraph str, state: "complete"
+        } else {
+            paragraph "Error: Storage SmartApp Is Not Installed...", required: true, state: null
+        }
+    }
+}
+
+def getStorageStateVal(val) {
+    def storApp = getStorageApp()
+    if(val && storApp) {
+        return storApp?.getStateVal(val as String) ?: null
+    }
+}
+
+def updStorageStateVal(sKey, sValue) {
+    def storApp = getStorageApp()
+    if(sKey && storApp) {
+        return storApp?.stateUpdate(sKey as String, sValue)
+    }
+}
+
+private getStorageApp() {
+    def name = storageAppName()
+    def storageApp = findAllChildAppsByName(name)?.find{ it?.name == name }
+    if (storageApp) {
+        if (storageApp?.label != name) { storageApp.updateLabel(name) }
+        if(storageApp?.getSettingVal("childTypeFlag") != "storage") { storageApp?.settingUpdate("childTypeFlag", "storage", "text") }
+        return storageApp
+    }
+    try {
+        def setData = [:]
+        setData["childTypeFlag"] = [type:"text", value:"storage"]
+        storageApp = addChildApp(appNamespace(), name, app?.label, [settings:setData])
+    } catch (all) {
+        log.error "Please Make sure the NST Storage app is installed under the IDE"
+        return null
+    }
+    return storageApp
 }
 
 def donationPage() {
@@ -998,7 +1061,7 @@ def automationsPage() {
 		}
 		if(autoAppInst) {
 			section("Automation Details:") {
-				def schEn = getChildApps()?.findAll { (!(it.getAutomationType() in ["nMode", "watchDog", "remDiag"]) && it?.getActiveScheduleState()) }
+				def schEn = getChildApps()?.findAll { (!(it.getAutomationType() in ["nMode", "watchDog", "remDiag", "storage"]) && it?.getActiveScheduleState()) }
 				if(schEn?.size()) {
 					href "automationSchedulePage", title: "View Automation Schedule(s)", description: "", image: getAppImg("schedule_icon.png")
 				}
@@ -1007,8 +1070,8 @@ def automationsPage() {
 			section("Advanced Options: (Tap + to Show)                                                          ", hideable: true, hidden: true) {
 				def descStr = ""
 				descStr += (settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "Comfort Settings:" : ""
-				descStr += settings?.locDesiredHeatTemp ? "\n • Desired Heat Temp: (${settings?.locDesiredHeatTemp}°${getTemperatureScale()})" : ""
-				descStr += settings?.locDesiredCoolTemp ? "\n • Desired Cool Temp: (${settings?.locDesiredCoolTemp}°${getTemperatureScale()})" : ""
+				descStr += settings?.locDesiredHeatTemp ? "\n • Desired Heat Temp: (${settings?.locDesiredHeatTemp}\u00b0${getTemperatureScale()})" : ""
+				descStr += settings?.locDesiredCoolTemp ? "\n • Desired Cool Temp: (${settings?.locDesiredCoolTemp}\u00b0${getTemperatureScale()})" : ""
 				descStr += (settings?.locDesiredComfortDewpointMax) ? "${(settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "\n\n" : ""}Dew Point:" : ""
 				descStr += settings?.locDesiredComfortDewpointMax ? "\n • Max Dew Point: (${settings?.locDesiredComfortDewpointMax}${getTemperatureScale()})" : ""
 				descStr += "${(settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "\n\n" : ""}${getSafetyValuesDesc()}" ?: ""
@@ -1169,7 +1232,7 @@ def locDesiredClear() {
 }
 
 def getGlobTitleStr(typ) {
-	return "Desired Default ${typ} Temp (°${getTemperatureScale()})"
+	return "Desired Default ${typ} Temp (\u00b0${getTemperatureScale()})"
 }
 
 def automationGlobalPrefsPage() {
@@ -1187,8 +1250,8 @@ def automationGlobalPrefsPage() {
 						required: false, image: getAppImg("cool_icon.png")
 				def tRange = (getTemperatureScale() == "C") ? "15..19" : "60..66"
 				def wDev = getChildDevice(getNestWeatherId())
-				def curDewPnt = wDev ? "${wDev?.currentDewpoint}°${getTemperatureScale()}" : 0
-				input "locDesiredComfortDewpointMax", "decimal", title: "Default Dewpoint Threshold (${tRange} °${getTemperatureScale()})", required: false,  range: trange, submitOnChange: true,
+				def curDewPnt = wDev ? "${wDev?.currentDewpoint}\u00b0${getTemperatureScale()}" : 0
+				input "locDesiredComfortDewpointMax", "decimal", title: "Default Dewpoint Threshold (${tRange} \u00b0${getTemperatureScale()})", required: false,  range: trange, submitOnChange: true,
 						image: getAppImg("dewpoint_icon.png")
 				href url: "https://en.wikipedia.org/wiki/Dew_point#Relationship_to_human_comfort", style:"embedded", title: "What is Dew Point?",
 						description:"Tap to view", image: getAppImg("instruct_icon.png")
@@ -1219,15 +1282,15 @@ def automationGlobalPrefsPage() {
 
 						def str = ""
 						str += "Safety Values:"
-						str += safeTemp ? "\n• Safety Temps:\n  └ Min: ${safeTemp.min}°${getTemperatureScale()}/Max: ${safeTemp.max}°${getTemperatureScale()}" : "\n• Safety Temps: (Not Set)"
-						str += dew_max ? "\n• Comfort Max Dewpoint:\n  └ Max: ${dew_max}°${getTemperatureScale()}" : "\n• Comfort Max Dewpoint: (Not Set)"
+						str += safeTemp ? "\n• Safety Temps:\n  └ Min: ${safeTemp.min}\u00b0${getTemperatureScale()}/Max: ${safeTemp.max}\u00b0${getTemperatureScale()}" : "\n• Safety Temps: (Not Set)"
+						str += dew_max ? "\n• Comfort Max Dewpoint:\n  └ Max: ${dew_max}\u00b0${getTemperatureScale()}" : "\n• Comfort Max Dewpoint: (Not Set)"
 						paragraph "${str}", title:"${dev?.displayName}", state: "complete", image: getAppImg("instruct_icon.png")
 						if(canHeat) {
-							input "${dev?.deviceNetworkId}_safety_temp_min", "decimal", title: "Low Safety Temp °(${getTemperatureScale()})", description: "Range within ${tempRangeValues()}",
+							input "${dev?.deviceNetworkId}_safety_temp_min", "decimal", title: "Low Safety Temp \u00b0(${getTemperatureScale()})", description: "Range within ${tempRangeValues()}",
 									range: tempRangeValues(), submitOnChange: true, required: false, image: getAppImg("heat_icon.png")
 						}
 						if(canCool) {
-							input "${dev?.deviceNetworkId}_safety_temp_max", "decimal", title: "High Safety Temp °(${getTemperatureScale()})", description: "Range within ${tempRangeValues()}",
+							input "${dev?.deviceNetworkId}_safety_temp_max", "decimal", title: "High Safety Temp \u00b0(${getTemperatureScale()})", description: "Range within ${tempRangeValues()}",
 									range: tempRangeValues(), submitOnChange: true, required: false, image: getAppImg("cool_icon.png")
 						}
 						def tmin = settings?."${dev?.deviceNetworkId}_safety_temp_min"
@@ -1243,7 +1306,7 @@ def automationGlobalPrefsPage() {
 						atomicState?."${dev?.deviceNetworkId}_safety_temp_max" = tmax
 
 						def tRange = (getTemperatureScale() == "C") ? "15..19" : "60..66"
-						input "${dev?.deviceNetworkId}_comfort_dewpoint_max", "decimal", title: "Dewpoint Threshold (${tRange} °${getTemperatureScale()})", required: false, range: trange,
+						input "${dev?.deviceNetworkId}_comfort_dewpoint_max", "decimal", title: "Dewpoint Threshold (${tRange} \u00b0${getTemperatureScale()})", required: false, range: trange,
 									submitOnChange: true, image: getAppImg("dewpoint_icon.png")
 						// def hrange = "10..80"
 						// input "${dev?.deviceNetworkId}_comfort_humidity_max", "number", title: "Max. Humidity Desired (%)", description: "Range within ${hrange}", range: hrange,
@@ -1269,8 +1332,10 @@ def automationKickStartPage() {
 		section("Running Update All Automations:") {
 			if(cApps) {
 				cApps?.sort()?.each { chld ->
-					chld?.update()
-					paragraph "${chld?.label}\n\nUpdate() Completed Successfully!", state: "complete"
+					if(chld?.getAutomationType() != "storage") {
+						chld?.update()
+						paragraph "${chld?.label}\n\nUpdate() Completed Successfully!", state: "complete"
+					}
 				}
 			} else {
 				paragraph "No Automations Found"
@@ -1521,7 +1586,9 @@ def toggleAllAutomations(disable=false) {
 	def dis = disable == null ? false : disable
 	def cApps = getChildApps()
 	cApps.each { ca ->
-		ca?.setAutomationStatus(dis, true)
+		if(ca?.getAutomationType() != "storage") {
+			ca?.setAutomationStatus(dis, true)
+		}
 	}
 }
 
@@ -1887,12 +1954,12 @@ def getSafetyValuesDesc() {
 			str += (ts && (minTemp || maxTemp || maxDew)) ? "${dev?.displayName}" : ""
 
 			str += (ts && (minTemp || maxTemp)) ? "\nSafety Values:" : ""
-			str += minTemp ? "\n• Min. Temp: ${minTemp}°${getTemperatureScale()}" : ""
-			str += maxTemp ? "\n• Max. Temp: ${maxTemp}°${getTemperatureScale()}" : ""
+			str += minTemp ? "\n• Min. Temp: ${minTemp}\u00b0${getTemperatureScale()}" : ""
+			str += maxTemp ? "\n• Max. Temp: ${maxTemp}\u00b0${getTemperatureScale()}" : ""
 			//str += maxHum ? "\n• Max. Humidity: ${maxHum}%" : ""
 			//str += (ts && (minTemp || maxTemp) && (maxDew)) ? "\n" : ""
 			str += (ts && (maxDew)) ? "\nComfort Values:" : ""
-			str += maxDew ? "\n• Max. Dewpnt: ${maxDew}°${getTemperatureScale()}" : ""
+			str += maxDew ? "\n• Max. Dewpnt: ${maxDew}\u00b0${getTemperatureScale()}" : ""
 			str += (str != "" && siz > ctr) ? "\n\n" : ""
 			ctr = (str != "") ? ctr += 1 : ctr
 			siz = (str == "") ? siz -= 1 : siz
@@ -2178,7 +2245,7 @@ def initBuiltin(btype) {
 					addChildApp(appNamespace(), autoAppName(), getWatDogAppChildName(), [settings:[watchDogFlag:["type":"bool", "value":true]]])
 				}
 			} catch (ex) {
-				appUpdateNotify(true)
+				appUpdateNotify(true, "automation")
 			}
 		} else if(mynestApp?.size() >= 1) {
 			def cnt = 1
@@ -2252,28 +2319,36 @@ def finishInitManagerApp() {
 		if(app.label == "Nest Manager") { app.updateLabel("NST Manager") }
 		def badAutomation = false
 		def autoId = null
+		def storId = null
 		if(!isAppLiteMode()) {
 			getChildApps()?.sort()?.each { chld ->
-				if(autoId == null) {autoId = chld?.smartAppId}
-				chld?.update()
+				if(chld?.getAutomationType() == "storage") {
+					if(storId == null) { storId = chld?.smartAppId }
+				} else {
+					if(autoId == null) {autoId = chld?.smartAppId}
+					chld?.update()
+				}
 			}
 		} else {
 			badAutomation = true
 		}
 		if(autoId) { updAppCodeId("auto", autoId) }
+		if(storId) { updAppCodeId("storage", storId) }
 
 		def tstatAutoApp = getChildApps()?.find {
 			def aa = null
 			try {
 				aa = it?.getAutomationType()
-				def bb = it?.getCurrentSchedule()
-				def ai = it?.getAutomationsInstalled()
+				if(aa != "storage") {
+					def bb = it?.getCurrentSchedule()
+					def ai = it?.getAutomationsInstalled()
+				}
 			} catch (Exception e) {
 				LogAction("BAD Automation file ${it?.label?.toString()} (${it?.id}), please INSTALL proper automation file", "error", true)
 				badAutomation = true
-				appUpdateNotify(true)
+				appUpdateNotify(true, "automation")
 			}
-			if( !badAutomation && !(aa in ["nMode", "watchDog", "remDiag", "schMot"]) ) { badAutomation = true }
+			if( !badAutomation && !(aa in ["nMode", "watchDog", "remDiag", "schMot", "storage"]) ) { badAutomation = true }
 		}
 		if(!isAppLiteMode()) {
 			runIn(5, "reInitBuiltins", [overwrite: true])  // need to have watchdog/nestmode check if we created devices
@@ -2297,7 +2372,7 @@ def removeBadAutomations() {
 			LogAction("BAD Automation (${it?.id}) found", "warn", true)
 			bad = true
 		}
-		if( !bad && !(aa in ["nMode", "watchDog", "remDiag", "schMot"]) ) { bad = true }
+		if( !bad && !(aa in ["nMode", "watchDog", "remDiag", "schMot", "storage"]) ) { bad = true }
 		if(bad || isAppLiteMode()) {
 			try {
 				LogAction("Calling uninstall on Automation (${it?.id})", "warn", true)
@@ -2981,9 +3056,16 @@ def getInstAutoTypesDesc() {
 			sData.autoSaVer = updVer
 			atomicState?.swVer = sData
 		}
-		if(ver==null || (versionStr2Int(ver) < minVersions()?.automation?.val) || (versionStr2Int(ver) > minVersions()?.automation?.val && !getDevOpt() )) {
-			LogAction("NST AUTOMATIONS UPDATE REQUIRED: Automation ${a?.label} (v${ver}) | REQUIRED: (v${minVersions()?.automation?.desc}) | Please install the current NST Automations software in the IDE", "error", true)
-			appUpdateNotify(true)
+		if(type != "storage") {
+			if(ver == null || (versionStr2Int(ver) < minVersions()?.automation?.val) || (versionStr2Int(ver) > minVersions()?.automation?.val && !getDevOpt())) {
+				LogAction("NST AUTOMATIONS UPDATE REQUIRED: Automation ${a?.label} (v${ver}) | REQUIRED: (v${minVersions()?.automation?.desc}) | Please install the current NST Automations SmartApp Code in the IDE", "error", true)
+				appUpdateNotify(true, "automation")
+			}
+		} else {
+			if(ver == null || (versionStr2Int(ver) < minVersions()?.storage?.val) || (versionStr2Int(ver) > minVersions()?.storage?.val)) {
+				LogAction("NST STORAGE UPDATE REQUIRED: Automation ${a?.label} (v${ver}) | REQUIRED: (v${minVersions()?.storage?.desc}) | Please install the current NST Storage SmartApp Code in the IDE", "error", true)
+				appUpdateNotify(true, "storage")
+			}
 		}
 
 		if(dis) {
@@ -3008,7 +3090,7 @@ def getInstAutoTypesDesc() {
 					}
 					catch (Exception e) {
 						log.error "BAD Automation file ${a?.label?.toString()}, please RE-INSTALL automation file"
-						appUpdateNotify(true)
+						appUpdateNotify(true, "automation")
 					}
 					if(ai) {
 						ai?.each { aut ->
@@ -3041,6 +3123,9 @@ def getInstAutoTypesDesc() {
 						updTimestampMap("lastAnalyticUpdDt", null)
  					}
  					break
+				case "storage":
+					dat["storage"] = dat["storage"] ? dat["storage"]+1 : 1
+					break
  				default:
  					LogAction("Deleting Unknown Automation (${a?.id})", "warn", true)
  					deleteChildApp(a)
@@ -4259,7 +4344,7 @@ def getTimestampVal(val) {
 }
 
 def tUnitStr() {
-	return "°${getTemperatureScale()}"
+	return "\u00b0${getTemperatureScale()}"
 }
 
 def setDeviceLabel(devId, labelStr) {
@@ -4657,7 +4742,7 @@ def setTargetTemp(child, unit, temp, mode, virtual=false) {
 			if(pdevId) { pChild = getChildDevice(pdevId) }
 			def appId = atomicState?."vThermostatChildAppId${devId}"
 			def automationChildApp
-			if(appId) { automationChildApp = getChildApps().find{ it.id == appId } }
+			if(appId) { automationChildApp = getChildApps().find{ it?.id == appId } }
 			if(automationChildApp) {
 				def res = automationChildApp.remSenTempUpdate(temp,mode)
 				if(res) { return }
@@ -4693,7 +4778,7 @@ def setTargetTempLow(child, unit, temp, virtual=false) {
 
 			def appId = atomicState?."vThermostatChildAppId${devId}"
 			def automationChildApp
-			if(appId) { automationChildApp = getChildApps().find{ it.id == appId } }
+			if(appId) { automationChildApp = getChildApps().find{ it?.id == appId } }
 
 			if(automationChildApp) {
 				def res = automationChildApp.remSenTempUpdate(temp,"heat")
@@ -4727,7 +4812,7 @@ def setTargetTempHigh(child, unit, temp, virtual=false) {
 
 			def appId = atomicState?."vThermostatChildAppId${devId}"
 			def automationChildApp
-			if(appId) { automationChildApp = getChildApps().find{ it.id == appId } }
+			if(appId) { automationChildApp = getChildApps().find{ it?.id == appId } }
 
 			if(automationChildApp) {
 				def res = automationChildApp.remSenTempUpdate(temp,"cool")
@@ -5437,7 +5522,7 @@ def missPollNotify(on) {
 }
 
 def minVersionsOk() {
-	def files = [tDevVer:"thermostat", weatDevVer:"weather", vtDevVer:"thermostat", presDevVer:"presence", camDevVer:"camera", pDevVer:"protect", autoSaVer:"automation"]
+	def files = [tDevVer:"thermostat", weatDevVer:"weather", vtDevVer:"thermostat", presDevVer:"presence", camDevVer:"camera", pDevVer:"protect", autoSaVer:"automation", storVer:"storage"]
 	def swData = atomicState?.swVer
 	if(swData) {
 		files?.each { fi->
@@ -5447,13 +5532,14 @@ def minVersionsOk() {
 	return true
 }
 
-def appUpdateNotify(badAuto=false) {
+def appUpdateNotify(badFile=false, badType=null) {
 	def on = atomicState?.notificationPrefs?.app?.updates?.updMsg
 	def wait = atomicState?.notificationPrefs?.app?.updates?.updMsgWait
-	if(!badAuto && (!on || !wait || !minVersionsOk())) { return }
+	if(!badFile && (!on || !wait || !minVersionsOk())) { return }
 	if(getLastUpdMsgSec() > wait.toInteger()) {
 		def appUpd = isAppUpdateAvail() == true ? true : false
 		def autoappUpd = isAutoAppUpdateAvail() == true ? true : false
+		def storappUpd = isStorageAppUpdateAvail() == true ? true : false
 		def protUpd = atomicState?.protects ? isProtUpdateAvail() : false
 		def presUpd = atomicState?.presDevice ? isPresUpdateAvail() : false
 		def tstatUpd = atomicState?.thermostats ? isTstatUpdateAvail() : false
@@ -5461,13 +5547,16 @@ def appUpdateNotify(badAuto=false) {
 		def camUpd = atomicState?.cameras ? isCamUpdateAvail() : false
 		def streamUpd = atomicState?.restStreamingOn ? isStreamUpdateAvail() : false
 		def blackListed = (atomicState?.appData && !appDevType() && atomicState?.clientBlacklisted) ? true : false
-		//log.debug "appUpd: $appUpd || protUpd: $protUpd || presUpd: $presUpd || tstatUpd: $tstatUpd || weatherUpd: $weatherUpd || camUpd: $camUpd || blackListed: $blackListed || badAuto: $badAuto"
-		if(appUpd || autoappUpd || protUpd || presUpd || tstatUpd || weatherUpd || camUpd || streamUpd || blackListed || badAuto) {
+		//log.debug "appUpd: $appUpd || protUpd: $protUpd || presUpd: $presUpd || tstatUpd: $tstatUpd || weatherUpd: $weatherUpd || camUpd: $camUpd || blackListed: $blackListed || badFile: $badFile"
+		if(appUpd || autoappUpd || storappUpd || protUpd || presUpd || tstatUpd || weatherUpd || camUpd || streamUpd || blackListed || badFile) {
 			def str = ""
 			str += !blackListed ? "" : "\nBlack Listed, please ensure software is up to date then contact developer"
-			str += !badAuto ? "" : "\nInvalid or Missing Automation File, please Reinstall the correct automation file"
+			if(badFile && badType) {
+				str += !badType ? "" : "\nInvalid or Missing ${badType} Code, please Reinstall the correct ${badType} SmartApp Code"
+			}
 			str += !appUpd ? "" : "\nManager App: v${atomicState?.appData?.updater?.versions?.app?.ver?.toString()}${betaMarker() ? " Beta" : ""}"
-			str += (!autoappUpd && !badAuto) ? "" : "\nAutomation App: v${atomicState?.appData?.updater?.versions?.autoapp?.ver?.toString()}${betaMarker() ? " Beta" : ""}"
+			str += (!autoappUpd && !badFile) ? "" : "\nAutomation App: v${atomicState?.appData?.updater?.versions?.autoapp?.ver?.toString()}${betaMarker() ? " Beta" : ""}"
+			str += (!storappUpd && !badFile) ? "" : "\nStorage App: v${atomicState?.appData?.updater?.versions?.storapp?.ver?.toString()}${betaMarker() ? " Beta" : ""}"
 			str += !protUpd ? "" : "\nProtect: v${atomicState?.appData?.updater?.versions?.protect?.ver?.toString()}"
 			str += !camUpd ? "" : "\nCamera: v${atomicState?.appData?.updater?.versions?.camera?.ver?.toString()}"
 			str += !presUpd ? "" : "\nPresence: v${atomicState?.appData?.updater?.versions?.presence?.ver?.toString()}"
@@ -5475,7 +5564,7 @@ def appUpdateNotify(badAuto=false) {
 			// str += !vtstatUpd ? "" : "\nVirtual Thermostat: v${atomicState?.appData?.updater?.versions?.thermostat?.ver?.toString()}"
 			str += !weatherUpd ? "" : "\nWeather App: v${atomicState?.appData?.updater?.versions?.weather?.ver?.toString()}"
 			str += !streamUpd ? "" : "\nStream Service: v${atomicState?.appData?.eventStreaming?.minVersion?.toString()}"
-			def t0 = badAuto ? "Warn" : "Info"
+			def t0 = badFile ? "Warn" : "Info"
 			if(sendMsg(t0, "${appName()} Update(s) are Available:${str} \n\nPlease visit the IDE to Update code", true)) {
 				updTimestampMap("lastUpdMsgDt", getDtNow())
 			}
@@ -5960,6 +6049,12 @@ def isAutoAppUpdateAvail() {
 	return false
 }
 
+def isStorageAppUpdateAvail() {
+	if(isCodeUpdateAvailable(atomicState?.appData?.updater?.versions?.storapp?.ver, atomicState?.swVer?.storVer, "storage")) { return true }
+	if(atomicState?.swVer?.storVer != "" && (versionStr2Int(atomicState?.swVer?.storVer) > minVersions()?.storage?.val) && !getDevOpt()) { return true } // check if too high
+	return false
+}
+
 def isPresUpdateAvail() {
 	if(isCodeUpdateAvailable(atomicState?.appData?.updater?.versions?.presence?.ver, atomicState?.swVer?.presDevVer, "presence")) { return true }
 	return false
@@ -5998,7 +6093,7 @@ def reqSchedInfoRprt(child, report=true) {
 	if (tstat) {
 		def str = ""
 		def tstatAutoApp = getChildApps()?.find {
-			(it.getAutomationType() == "schMot" && it?.getTstatAutoDevId() == tstat?.deviceNetworkId)
+			(it?.getAutomationType() == "schMot" && it?.getTstatAutoDevId() == tstat?.deviceNetworkId)
 		}
 		//LogTrace("tstatAutoApp: ${tstatAutoApp}")
 		def actSchedNum
@@ -7866,110 +7961,27 @@ def getDevIds() {
 	return atomicState?.devCodeIdData ?: [:]
 }
 
-def updWebHeadHtml(title) {
-    return """
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <meta name="description" content="${title}">
-        <meta name="author" content="Anthony S.">
-        <meta http-equiv="cleartype" content="on">
-        <meta name="MobileOptimized" content="320">
-        <meta name="HandheldFriendly" content="True">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <title>${title}</title>
-        <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
-        <script src="https://use.fontawesome.com/a81eef09c0.js" defer></script>
-        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js" defer></script>
-		<link href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/nst_master.css" rel="stylesheet">
-        <link href="https://nst-manager.com/assets/css/st_updater.css" rel="stylesheet">
-    """
-/* "" */
-}
+def procDiagCmd() {
+	def status = [:]
+    def rData = request?.JSON
+	log.trace "procDiagCmd($rData)"
+	if(rData) {
+		status["code"] = 200
+		if(rData?.cmd) {
+			switch(rData?.cmd) {
+				case "stateCleanup":
+					LogAction("Web Diagnostic Command (${rData?.cmd} received... Running stateCleanup() in 3 seconds", "debug", true)
+					runIn(3, "stateCleanup", [overwrite: true])
+					break
+				case "runUpdated":
+					LogAction("Web Diagnostic Command (${rData?.cmd} received... Running update() Method in 3 seconds", "debug", true)
+					runIn(3, "updated", [overwrite: true])
+					break
+			}
+		}
+	}
 
-def updWebFooterHtml() {
-    return """
-        <footer class="page-footer center-on-small-only fixed-bottom">
-            <div class="footer-copyright">
-                <div class="containter-fluid">
-                    © 2018 Copyright<a href="https://www.nst-manager.com"> nst-manager.com</a>
-                </div>
-            </div>
-        </footer>
-        <script type="text/javascript" src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/popper.min.js" defer></script>
-        <script type="text/javascript" src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/bootstrap.min.js" defer></script>
-        <script type="text/javascript" src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/mdb.min.js" defer></script>
-    """
-}
-
-def getLoaderAnimation() {
-    return """
-        <svg id="loader" height="100%" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" class="lds-double-ring">
-            <circle cx="50" cy="50" ng-attr-r="{{config.radius}}" ng-attr-stroke-width="{{config.width}}" ng-attr-stroke="{{config.c1}}" ng-attr-stroke-dasharray="{{config.dasharray}}" fill="none" stroke-linecap="round" r="40" stroke-width="7" stroke="#18B9FF" stroke-dasharray="62.83185307179586 62.83185307179586" transform="rotate(139.357 50 50)">
-            <animateTransform attributeName="transform" type="rotate" calcMode="linear" values="0 50 50;360 50 50" keyTimes="0;1" dur="1.8s" begin="0s" repeatCount="indefinite"></animateTransform>
-            </circle>
-            <circle cx="50" cy="50" ng-attr-r="{{config.radius2}}" ng-attr-stroke-width="{{config.width}}" ng-attr-stroke="{{config.c2}}" ng-attr-stroke-dasharray="{{config.dasharray2}}" ng-attr-stroke-dashoffset="{{config.dashoffset2}}" fill="none" stroke-linecap="round" r="32" stroke-width="7" stroke="#FF7F27" stroke-dasharray="50.26548245743669 50.26548245743669" stroke-dashoffset="50.26548245743669" transform="rotate(-139.357 50 50)">
-            <animateTransform attributeName="transform" type="rotate" calcMode="linear" values="0 50 50;-360 50 50" keyTimes="0;1" dur="1.8s" begin="0s" repeatCount="indefinite"></animateTransform>
-            </circle>
-            <text id="loaderText1" fill="gray" stroke-width="0" x="50%" y="50%" text-anchor="middle" class="loaderText">Please</text>
-            <text id="loaderText2" fill="gray" stroke-width="0" x="50%" y="60%" text-anchor="middle" class="loaderText">Wait</text>
-        </svg>
-    """
-}
-
-def runStUpdateHtml() {
-    def html = """
-    <html lang="en">
-    <head>
-        ${updWebHeadHtml("NST Manager Updater")}
-        <script type="text/javascript">
-            var functionType = "updates";
-			var appIds = ${new JsonOutput().toJson(getAppIds())};
-            // console.log( "appIds", appIds);
-			var devIds = ${new groovy.json.JsonOutput().toJson(getDevIds())};
-	  	  	// console.log(devIds);
-            var serverUrl = '${apiServerUrl("")}';
-        </script>
-        <script src="https://nst-manager.com/assets/js/stupdater.js" async></script>
-    </head>
-    <body>
-        <header>
-            <nav class="navbar navbar-dark sticky-top navbar-expand-lg">
-                <a class="navbar-brand" href="#"><img src="${getAppImg("nst_manager_5%402x.png", true)}" height="30" class="d-inline-block align-top" alt=""> NST Manager</a>
-            </nav>
-        </header>
-        <main>
-            <div class="container">
-                <section id="stContent">
-                    <div style="width: 100%; height: 200px; text-align: center;">
-                        <h2 class="h2-responsive mb-2" style="font-weight: 400;">Software Updater</h2>
-                        <hr class="white">
-                        <div id="loaderDiv" class="row fadeIn fadeOut">
-                            <div class="col-lg-12 mb-r">
-                                ${getLoaderAnimation()}
-                            </div>
-                        </div>
-                        <div class="row fadeIn fadeOut">
-                            <div class="col-lg-12 mb-r">
-                                <div class="listDiv">
-                                    <div id="resultList">
-                                        <h3 id="resultsTitle" style="display: none;">Update Results</h3>
-                                        <ul id="resultUl"></ul>
-                                    </div>
-                                </div>
-                                <i id="finishedImg" class='fa fa-check' style="display: none;"></i>
-                                <div id="results"></div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
-        </main>
-        ${updWebFooterHtml()}
-    </body>
-    </html>"""
-/* """ */
-    render contentType: "text/html", data: html
+	return [contentType: 'application/json', gotData: (rData != null), status: status?.code]
 }
 
 def getDeviceMetricCnts() {
@@ -8152,6 +8164,10 @@ def getWebHeaderHtml(title, clipboard=true, vex=false, swiper=false, charts=fals
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.1/hamburgers.min.css">
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+		<script type="text/javascript">
+			const serverUrl = '${apiServerUrl('')}';
+			const cmdUrl = '${getAppEndpointUrl('processCmd')}';
+		</script>
 	"""
 	html += clipboard ? """<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>""" : ""
 	html += vex ? """<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/js/vex.combined.min.js"></script>""" : ""
@@ -8161,6 +8177,7 @@ def getWebHeaderHtml(title, clipboard=true, vex=false, swiper=false, charts=fals
 	html += swiper ? """<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/js/swiper.min.js"></script>""" : ""
 	html += charts ? """<script src="https://www.gstatic.com/charts/loader.js"></script>""" : ""
 	html += vex ? """<script>vex.defaultOptions.className = 'vex-theme-default'</script>""" : ""
+	
 	return html
 }
 
@@ -8308,6 +8325,18 @@ def renderDiagHome() {
 								</div>
 						   	</div>
 							<!--Third Panel Section -->
+					  		<div class="panel panel-warning">
+					   			<div class="panel-heading">
+									<h1 class="panel-title">Diagnostic Commands</h1>
+					   			</div>
+					   			<div class="panel-body">
+									<div class="col-xs-6 centerText">
+										<p><a class="btn btn-primary btn-md shortcutBtns" id="updateMethodBtn" role="button">Run Update()</a></p>
+									 	<p><a class="btn btn-primary btn-md shortcutBtns" id="stateCleanupBtn" role="button">Run stateCleanup()</a></p>
+									</div>
+								</div>
+						   	</div>
+							<!--Fourth Panel Section -->
 					  		<div class="panel panel-success">
 					   			<div class="panel-heading">
 									<h1 class="panel-title">Device Tiles</h1>
@@ -9794,6 +9823,7 @@ def appLabel()		{ return "Nest Manager" }
 def appAuthor()		{ return "Anthony S." }
 def appNamespace()	{ return "tonesto7" }
 def autoAppName()	{ return "NST Automations" }
+def storageAppName(){ return "NST Storage" }
 def gitRepo()		{ return "tonesto7/nest-manager"}
 def gitBranch()		{ return betaMarker() ? "beta" : "master" }
 def gitPath()		{ return "${gitRepo()}/${gitBranch()}"}
