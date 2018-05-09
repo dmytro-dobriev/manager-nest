@@ -4,7 +4,7 @@
  *  Co-Authors: Ben W. (@desertBlade)  Eric S. (@E_sch)
  *  Graphing Modeled on code from Andreas Amann (@ahndee)
  *
- *	Copyright (C) 2017 Anthony S., Ben W.
+ *	Copyright (C) 2017, 2018 Anthony S., Ben W.
  * 	Licensing Info: Located at https://raw.githubusercontent.com/tonesto7/nest-manager/master/LICENSE.md
  */
 

@@ -4,7 +4,7 @@
  *	Contributors: Ben W. (@desertblade), Eric S. (@E_Sch)
  *  A Huge thanks goes out to Greg (@ghesp) for all of your help getting this working.
  *
- *	Copyright (C) 2017 Anthony S.
+ *	Copyright (C) 2017, 2018 Anthony S.
  * 	Licensing Info: Located at https://raw.githubusercontent.com/tonesto7/nest-manager/master/LICENSE.md
  */
 
