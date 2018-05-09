@@ -27,7 +27,8 @@ definition(
 	iconX2Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_5%402x.png",
 	iconX3Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_5%403x.png",
 	singleInstance: true,
-	oauth: true )
+	usesThirdPartyAuthentication: true,
+	pausable: false)
 
 {
 	appSetting "clientId"
