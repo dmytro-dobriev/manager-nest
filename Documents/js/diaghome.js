@@ -1,6 +1,9 @@
 'use esversion: 6';
 
-function makeRequest(url, method, message, contentType = null, responseType = null) {
+var copyBtn = document.getElementById('copyUrlBtn');
+var clipboard = new Clipboard('.copyBtn');
+
+function makeRequest(url, method, message, contentType, responseType) {
     return new Promise(function(resolve, reject) {
         var xhr = new XMLHttpRequest();
         // url += appId || '';
@@ -53,34 +56,33 @@ $("#rfrshBtn").hover(function(e) {
 });
 
 $('#stateCleanupBtn').click(function(e) {
-    let cmd = JSON.stringify({
+    var data = JSON.stringify({
         cmd: "stateCleanup",
         value: null
     });
-    makeRequest(cmdUrl, 'POST', cmd)
+    makeRequest(cmdUrl, 'POST', data, null, null)
         .catch(function(err) {
             console.log(err, 'Diag Command Results!');
         })
         .then(function(resp) {
-            // console.log("install data to ST response: ", resp);
             if (JSON.parse(resp).data) {
-                console.log("diagCmd: " + cmd + " Sent Successfully!");
+                console.log("diagCmd: Sent Successfully!");
             }
         });
 });
+
 $('#updateMethodBtn').click(function(e) {
-    let cmd = JSON.stringify({
+    var data = JSON.stringify({
         cmd: "runUpdated",
         value: null
     });
-    makeRequest(cmdUrl, 'POST', cmd)
+    makeRequest(cmdUrl, 'POST', data, null, null)
         .catch(function(err) {
             console.log(err, 'Diag Command Results!');
         })
         .then(function(resp) {
-            // console.log("install data to ST response: ", resp);
-            if (JSON.parse(resp).data) {
-                console.log("diagCmd: " + cmd + " Sent Successfully!");
+            if (JSON.parse(resp).gotData) {
+                console.log("diagCmd: Sent Successfully!");
             }
         });
 });
@@ -101,9 +103,6 @@ $(window).scroll(function() {
 $(function() {
     $("#stateUseCirc").percircle();
 });
-
-var btn = document.getElementById('copyUrlBtn');
-var clipboard = new Clipboard('.btn');
 
 clipboard.on('success', function(e) {
     console.info('Text:', e.text);
