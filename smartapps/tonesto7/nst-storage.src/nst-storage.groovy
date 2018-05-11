@@ -18,8 +18,7 @@ definition(
     parent			: "tonesto7:Nest Manager",
 	iconUrl         : "https://echosistant.com/es5_content/images/es5_storage.png",
     iconX2Url       : "https://echosistant.com/es5_content/images/es5_storage.png",
-    iconX3Url       : "https://echosistant.com/es5_content/images/es5_storage.png",
-	pausable: false)
+    iconX3Url       : "https://echosistant.com/es5_content/images/es5_storage.png")
 /**********************************************************************************************************************************************/
 preferences { }
 
