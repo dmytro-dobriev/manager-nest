@@ -389,7 +389,7 @@ private checkStorageApp() {
 	try {
 		def setData = [:]
 		setData["childTypeFlag"] = [type:"text", value:"storage"]
-		storageApp = addChildApp(appNamespace(), name, app?.label, [settings:setData])
+		storageApp = addChildApp(appNamespace(), name, name, [settings:setData])
 	} catch (all) {
 		log.error "Please Make sure the NST Storage app is installed under the IDE"
 		return null
