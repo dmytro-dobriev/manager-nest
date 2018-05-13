@@ -37,7 +37,7 @@ definition(
 }
 
 def appVersion() { "5.3.7" }
-def appVerDate() { "05-09-2018" }
+def appVerDate() { "05-13-2018" }
 def minVersions() {
 	return [
 		"automation":["val":534, "desc":"5.3.4"],
@@ -144,7 +144,7 @@ def startPage() {
 def authPage() {
 	//LogTrace("authPage()")
 	def execTime = now()
-	def storageApp = getStorageApp()
+	def storageApp = checkStorageApp()
 	generateInstallId()
 	if(!atomicState?.accessToken) { getAccessToken() }
 	atomicState.ok2InstallAutoFlag = false
@@ -250,7 +250,7 @@ def authPage() {
 def mainPage() {
 	//LogTrace("mainPage")
 	def execTime = now()
-	def storageApp = getStorageApp()
+	def storageApp = checkStorageApp()
 	def isInstalled = atomicState?.isInstalled
 	def setupComplete = (!atomicState?.newSetupComplete || !isInstalled) ? false : true
 	return dynamicPage(name: "mainPage", title: "", nextPage: (!setupComplete ? "reviewSetupPage" : null), install: setupComplete, uninstall: false) {
@@ -338,50 +338,64 @@ def mainPage() {
 
 // NEW STORAGE SmartApp
 def storageInfoSect() {
-    def storApp = getStorageApp()
-    section("Storage App Info:") {
-        if(storApp) {
-            def str = ""
-            str += "Version: V${storApp?.appVersion()}"
-            str += "\nUsage: ${storApp?.getStateSizePerc()}%"
-            paragraph str, state: "complete"
-        } else {
-            paragraph "Error: Storage SmartApp Is Not Installed...", required: true, state: null
-        }
-    }
+	def storApp = checkStorageApp()
+	section("Storage App Info:") {
+		if(storApp) {
+			def str = ""
+			str += "Version: V${storApp?.appVersion()}"
+			str += "\nUsage: ${storApp?.getStateSizePerc()}%"
+			paragraph str, state: "complete"
+		} else {
+			paragraph "Error: Storage SmartApp Is Not Installed...", required: true, state: null
+		}
+	}
 }
 
 def getStorageStateVal(val) {
-    def storApp = getStorageApp()
-    if(val && storApp) {
-        return storApp?.getStateVal(val as String) ?: null
-    }
+	if(val) {
+		def storApp = getStorageApp()
+		if(storApp) {
+			return storApp?.getStateVal(val as String) ?: null
+		}
+	}
+	return null
 }
 
 def updStorageStateVal(sKey, sValue) {
-    def storApp = getStorageApp()
-    if(sKey && storApp) {
-        return storApp?.stateUpdate(sKey as String, sValue)
-    }
+	if(sKey) {
+		def storApp = getStorageApp()
+		if(storApp) {
+			return storApp?.stateUpdate(sKey as String, sValue)
+		}
+	}
 }
 
 private getStorageApp() {
-    def name = storageAppName()
-    def storageApp = findAllChildAppsByName(name)?.find{ it?.name == name }
-    if (storageApp) {
-        if (storageApp?.label != name) { storageApp.updateLabel(name) }
-        if(storageApp?.getSettingVal("childTypeFlag") != "storage") { storageApp?.settingUpdate("childTypeFlag", "storage", "text") }
-        return storageApp
-    }
-    try {
-        def setData = [:]
-        setData["childTypeFlag"] = [type:"text", value:"storage"]
-        storageApp = addChildApp(appNamespace(), name, app?.label, [settings:setData])
-    } catch (all) {
-        log.error "Please Make sure the NST Storage app is installed under the IDE"
-        return null
-    }
-    return storageApp
+	def name = storageAppName()
+	def storageApp = findAllChildAppsByName(name)?.find{ it?.name == name }
+	if(storageApp) {
+		return storageApp
+	}
+	return null
+}
+
+private checkStorageApp() {
+	def storageApp = getStorageApp()
+	def name = storageAppName()
+	if(storageApp) {
+		if (storageApp?.label != name) { storageApp.updateLabel(name) }
+		if(storageApp?.getSettingVal("childTypeFlag") != "storage") { storageApp?.settingUpdate("childTypeFlag", "storage", "text") }
+		return storageApp
+	}
+	try {
+		def setData = [:]
+		setData["childTypeFlag"] = [type:"text", value:"storage"]
+		storageApp = addChildApp(appNamespace(), name, app?.label, [settings:setData])
+	} catch (all) {
+		log.error "Please Make sure the NST Storage app is installed under the IDE"
+		return null
+	}
+	return storageApp
 }
 
 def donationPage() {
@@ -651,6 +665,7 @@ def codeUpdatesPage(){
 			def desc = "\bSmartApps:"
 			desc += atomicState?.swVer?.mgrVer != null ? "${desc != "" ? "\n":""}Manager Version: (${atomicState?.swVer?.mgrVer})" : ""
 			desc += atomicState?.swVer?.autoSaVer != null ? "${desc != "" ? "\n":""}Automations Version: (${atomicState?.swVer?.autoSaVer})" : ""
+			desc += atomicState?.swVer?.storVer != null ? "${desc != "" ? "\n":""}Storage App Version: (${atomicState?.swVer?.storVer})" : ""
 			desc += "\n\n\bDevices:"
 			desc += atomicState?.swVer?.tDevVer != null ? "${desc != "" ? "\n":""} • Thermostat Version: (${atomicState?.swVer?.tDevVer})" : ""
 			desc += atomicState?.swVer?.pDevVer != null ? "${desc != "" ? "\n":""} • Protect Version: (${atomicState?.swVer?.pDevVer})" : ""
@@ -1333,10 +1348,8 @@ def automationKickStartPage() {
 		section("Running Update All Automations:") {
 			if(cApps) {
 				cApps?.sort()?.each { chld ->
-					if(chld?.getAutomationType() != "storage") {
-						chld?.update()
-						paragraph "${chld?.label}\n\nUpdate() Completed Successfully!", state: "complete"
-					}
+					chld?.update()
+					paragraph "${chld?.label}\n\nUpdate() Completed Successfully!", state: "complete"
 				}
 			} else {
 				paragraph "No Automations Found"
@@ -2182,6 +2195,7 @@ def uninstalled() {
 def initialize() {
 	//LogTrace("initialize")
 	if(!atomicState?.tsMigration) { timestampMigration() }
+	def storageApp = checkStorageApp()
 	if(atomicState?.resetAllData || settings?.resetAllData) {
 		if(fixState()) { return }	// runIn of fixState will call initAutoApp() or initManagerApp()
 		settingUpdate("resetAllData", "false", "bool")
@@ -2340,10 +2354,8 @@ def finishInitManagerApp() {
 			def aa = null
 			try {
 				aa = it?.getAutomationType()
-				if(aa != "storage") {
-					def bb = it?.getCurrentSchedule()
-					def ai = it?.getAutomationsInstalled()
-				}
+				def bb = it?.getCurrentSchedule()
+				def ai = it?.getAutomationsInstalled()
 			} catch (Exception e) {
 				LogAction("BAD Automation file ${it?.label?.toString()} (${it?.id}), please INSTALL proper automation file", "error", true)
 				badAutomation = true
@@ -3027,13 +3039,14 @@ def isAutoAppInst() {
 }
 
 def getInstAutoTypesDesc() {
-	def dat = ["nestMode":0,"watchDog":0, "disabled":0, "remDiag":0, "schMot":["tSched":0, "remSen":0, "fanCtrl":0, "fanCirc":0, "conWat":0, "extTmp":0, "leakWat":0, "humCtrl":0 ]]
+	def dat = ["nestMode":0, "watchDog":0, "disabled":0, "remDiag":0, "storage":0, "schMot":["tSched":0, "remSen":0, "fanCtrl":0, "fanCirc":0, "conWat":0, "extTmp":0, "leakWat":0, "humCtrl":0 ]]
 	def disItems = []
 	def nItems = [:]
 	def schMotItems = []
 	//atomicState?.autoSaVer = minVersions()?.automation?.desc
 	def sData = atomicState?.swVer ?: [:]
 	sData["autoSaVer"] = null
+	sData["storVer"] = null
 	atomicState?.swVer = sData
 	childApps?.each { a ->
 		def type
@@ -3049,20 +3062,28 @@ def getInstAutoTypesDesc() {
 			ver = null
 			type = "old"
 		}
-		if(ver) {
-			def updVer = sData?.autoSaVer ?: ver
-			if(versionStr2Int(ver) < versionStr2Int(updVer)) {
-				updVer = ver
-			}
-			sData.autoSaVer = updVer
-			atomicState?.swVer = sData
-		}
 		if(type != "storage") {
+			if(ver) {
+				def updVer = sData?.autoSaVer ?: ver
+				if(versionStr2Int(ver) < versionStr2Int(updVer)) {
+					updVer = ver
+				}
+				sData.autoSaVer = updVer
+				atomicState?.swVer = sData
+			}
 			if(ver == null || (versionStr2Int(ver) < minVersions()?.automation?.val) || (versionStr2Int(ver) > minVersions()?.automation?.val && !getDevOpt())) {
 				LogAction("NST AUTOMATIONS UPDATE REQUIRED: Automation ${a?.label} (v${ver}) | REQUIRED: (v${minVersions()?.automation?.desc}) | Please install the current NST Automations SmartApp Code in the IDE", "error", true)
 				appUpdateNotify(true, "automation")
 			}
 		} else {
+			if(ver) {
+				def updVer = sData?.storVer ?: ver
+				if(versionStr2Int(ver) < versionStr2Int(updVer)) {
+					updVer = ver
+				}
+				sData.storVer = updVer
+				atomicState?.swVer = sData
+			}
 			if(ver == null || (versionStr2Int(ver) < minVersions()?.storage?.val) || (versionStr2Int(ver) > minVersions()?.storage?.val)) {
 				LogAction("NST STORAGE UPDATE REQUIRED: Automation ${a?.label} (v${ver}) | REQUIRED: (v${minVersions()?.storage?.desc}) | Please install the current NST Storage SmartApp Code in the IDE", "error", true)
 				appUpdateNotify(true, "storage")
@@ -3126,6 +3147,12 @@ def getInstAutoTypesDesc() {
  					break
 				case "storage":
 					dat["storage"] = dat["storage"] ? dat["storage"]+1 : 1
+ 					if(dat.storage > 1) {
+ 						dat.storage = dat.storage - 1
+ 						LogAction("Deleting Extra Storage Child (${a?.id})", "warn", true)
+ 						deleteChildApp(a)
+						updTimestampMap("lastAnalyticUpdDt", null)
+ 					}
 					break
  				default:
  					LogAction("Deleting Unknown Automation (${a?.id})", "warn", true)
@@ -3139,6 +3166,7 @@ def getInstAutoTypesDesc() {
 
 	def str = ""
 	str += (dat?.watchDog > 0 || dat?.nestMode > 0 || dat?.schMot || dat?.disabled > 0) ? "Installed Automations:" : ""
+	str += (dat?.storage > 0) ? "\n• Storage (Active)" : ""
 	str += (dat?.watchDog > 0) ? "\n• Watchdog (Active)" : ""
 	str += (dat?.remDiag > 0) ? "\n• Diagnostic (Active)" : ""
 	str += (dat?.nestMode > 0) ? ((dat?.nestMode > 1) ? "\n• Nest Home/Away (${dat?.nestMode})" : "\n• Nest Home/Away (Active)") : ""
@@ -7964,7 +7992,7 @@ def getDevIds() {
 
 def procDiagCmd() {
 	def status = [:]
-    def rData = request?.JSON
+	def rData = request?.JSON
 	log.trace "procDiagCmd($rData)"
 	if(rData) {
 		status["code"] = 200
@@ -8031,6 +8059,7 @@ def createInstallDataJson(returnMap=false) {
 		def wdVer = !atomicState?.swVer?.weatDevVer ? "Not Installed" : atomicState?.swVer?.weatDevVer
 		def vtsVer = !atomicState?.swVer?.vtDevVer ? "Not Installed" : atomicState?.swVer?.vtDevVer
 		def autoVer = !atomicState?.swVer?.autoSaVer ? "Not Installed" : atomicState?.swVer?.autoSaVer
+		def storVer = !atomicState?.swVer?.storVer ? "Not Installed" : atomicState?.swVer?.storVer
 		def restVer = !atomicState?.swVer?.streamDevVer ? "Not Installed" : atomicState?.swVer?.streamDevVer
 
 		def versions = [
@@ -9637,7 +9666,8 @@ def isSchMotConfigured() {
 }
 
 def getAutomationType() {
-	return atomicState?.automationType ?: null
+	//return atomicState?.automationType ?: null
+	return null
 }
 
 def getIsAutomationDisabled() {
@@ -9824,7 +9854,7 @@ def appLabel()		{ return "Nest Manager" }
 def appAuthor()		{ return "Anthony S." }
 def appNamespace()	{ return "tonesto7" }
 def autoAppName()	{ return "NST Automations" }
-def storageAppName(){ return "NST Storage" }
+def storageAppName()	{ return "NST Storage" }
 def gitRepo()		{ return "tonesto7/nest-manager"}
 def gitBranch()		{ return betaMarker() ? "beta" : "master" }
 def gitPath()		{ return "${gitRepo()}/${gitBranch()}"}

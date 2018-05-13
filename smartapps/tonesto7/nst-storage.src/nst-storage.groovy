@@ -1,6 +1,6 @@
 /********************************************************************************************
-|    Application Name: NST Storage                                                      |
-|    Copyright (C) 2017, 2018 Anthony S.                                                    |
+|    Application Name: NST Storage                                                          |
+|    Copyright (C) 2018 Anthony S.                                                          |
 |    Authors: Anthony S. (@tonesto7), Eric S. (@E_sch)                                      |
 |    Contributors: Ben W. (@desertblade)                                                    |
 |    A few code methods are modeled from those in CoRE by Adrian Caramaliu                  |
@@ -10,21 +10,21 @@
 import groovy.json.JsonSlurper
 
 definition(
-	name			: "NST Storage",
-    namespace		: "tonesto7",
-    author			: "Anthony S.",
-	description		: "NST Manger Storage Module Add-In\n\nDO NOT Install Through Marketplace\n\nThis app is Automatically installed when you open NST Manager SmartApp.",
-	category		: "My Apps",
-    parent			: "tonesto7:Nest Manager",
-	iconUrl         : "https://echosistant.com/es5_content/images/es5_storage.png",
-    iconX2Url       : "https://echosistant.com/es5_content/images/es5_storage.png",
-    iconX3Url       : "https://echosistant.com/es5_content/images/es5_storage.png",
+	name		: "NST Storage",
+	namespace	: "tonesto7",
+	author		: "Anthony S.",
+	description	: "NST Manger Storage Module Add-In\n\nDO NOT Install Through Marketplace\n\nThis app is Automatically installed when you open NST Manager SmartApp.",
+	category	: "My Apps",
+	parent		: "tonesto7:Nest Manager",
+	iconUrl		: "https://echosistant.com/es5_content/images/es5_storage.png",
+	iconX2Url	: "https://echosistant.com/es5_content/images/es5_storage.png",
+	iconX3Url	: "https://echosistant.com/es5_content/images/es5_storage.png",
 	pausable: false)
 /**********************************************************************************************************************************************/
 preferences { }
 
 def appVersion() { "5.4.0" }
-def appVerDate() { "05-09-2018" }
+def appVerDate() { "05-13-2018" }
 private moduleType() { return "storage" }
 
 private installed() {
@@ -42,11 +42,13 @@ private initialize() {
 }
 
 def getAutomationType() { return "storage" }
+def getCurrentSchedule() { return "storage" }
+def getAutomationsInstalled() { return "storage" }
 
 def getIsAutomationDisabled() { return false }
 
 def getStateSize()	{ return state?.toString().length() }
-def getStateSizePerc()  { return (int) ((state?.toString().length() / 100000)*100).toDouble().round(0) }
+def getStateSizePerc()	{ return (int) ((state?.toString().length() / 100000)*100).toDouble().round(0) }
 
 def getSettingsData() {
 	def sets = []
@@ -65,17 +67,17 @@ def getStateVal(var) {
 }
 
 void settingUpdate(name, value, type=null) {
-    log.trace("settingUpdate($name, $value, $type)...")
-    if(name && type) { app?.updateSetting("$name", [type: "$type", value: value]) }
-    else if (name && type == null) { app?.updateSetting(name.toString(), value) }
+	log.trace("settingUpdate($name, $value, $type)...")
+	if(name && type) { app?.updateSetting("$name", [type: "$type", value: value]) }
+	else if (name && type == null) { app?.updateSetting(name.toString(), value) }
 }
 
 def stateUpdate(sKey, sValue) {
-    if(sKey && sValue) {
+	if(sKey && sValue) {
 		log.info "Updating State Value (${sKey}) with | ${sValue}"
-        atomicState?."${sKey}" = sValue
-        return true
-    } else { return false }
+		atomicState?."${sKey}" = sValue
+		return true
+	} else { return false }
 }
 
 def stateCleanup() {
