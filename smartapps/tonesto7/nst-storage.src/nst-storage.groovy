@@ -88,13 +88,69 @@ def stateCleanup() {
 	}
 }
 
-def getRoomDataById(rmId) {
-	def rmData = atomicState?.stRoomMap
-	return rmData?.find {it?.id} ?: null
+/************************************************************************************************
+|										LOGGING FUNCTIONS										|
+*************************************************************************************************/
+def LogTrace(msg, logSrc=null) {
+	def trOn = (showDebug && advAppDebug) ? true : false
+	if(trOn) {
+		def theId = lastN(app?.getId().toString(),5)
+		def theLogSrc = (logSrc == null) ? (parent ? "Storage-${theId}" : "NestManager") : logSrc
+		Logger(msg, "trace", theLogSrc, atomicState?.enRemDiagLogging)
+	}
 }
 
-def getRoomNameById(rmId) {
-	def rmData = atomicState?.stRoomMap
-	def room = rmData?.find {it?.id}
-	return room?.id ?: null
+def LogAction(msg, type="debug", showAlways=false, logSrc=null) {
+	def isDbg = showDebug ? true : false
+	def theId = lastN(app?.getId().toString(),5)
+	def theLogSrc = (logSrc == null) ? (parent ? "Storage-${theId}" : "NestManager") : logSrc
+	if(showAlways) { Logger(msg, type, theLogSrc) }
+	else if(isDbg && !showAlways) { Logger(msg, type, theLogSrc) }
+}
+
+def Logger(msg, type, logSrc=null, noSTlogger=false) {
+	if(msg && type) {
+		def labelstr = ""
+		if(atomicState?.debugAppendAppName == null) {
+			def tval = parent ? parent?.settings?.debugAppendAppName : settings?.debugAppendAppName
+			atomicState?.debugAppendAppName = (tval || tval == null) ? true : false
+		}
+		if(atomicState?.debugAppendAppName) { labelstr = "${app.label} | " }
+		def themsg = "${labelstr}${msg}"
+		//log.debug "Logger remDiagTest: $msg | $type | $logSrc"
+		if(atomicState?.enRemDiagLogging == null) {
+			atomicState?.enRemDiagLogging = parent?.state?.enRemDiagLogging
+			if(atomicState?.enRemDiagLogging == null) {
+				atomicState?.enRemDiagLogging = false
+			}
+			//log.debug "set enRemDiagLogging to ${atomicState?.enRemDiagLogging}"
+		}
+		if(atomicState?.enRemDiagLogging) {
+			parent?.saveLogtoRemDiagStore(themsg, type, logSrc)
+		} else {
+			if(!noSTlogger) {
+				switch(type) {
+					case "debug":
+						log.debug "${themsg}"
+						break
+					case "info":
+						log.info "||| ${themsg}"
+						break
+					case "trace":
+						log.trace "| ${themsg}"
+						break
+					case "error":
+						log.error "| ${themsg}"
+						break
+					case "warn":
+						log.warn "|| ${themsg}"
+						break
+					default:
+						log.debug "${themsg}"
+						break
+				}
+			}
+		}
+	}
+	else { log.error "${labelstr}Logger Error - type: ${type} | msg: ${msg} | logSrc: ${logSrc}" }
 }

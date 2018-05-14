@@ -41,11 +41,11 @@ def minVersions() {
 	return [
 		"automation":["val":534, "desc":"5.3.4"],
 		"storage":["val":540, "desc":"5.4.0"],
-		"thermostat":["val":534, "desc":"5.3.4"],
-		"protect":["val":534, "desc":"5.3.4"],
-		"presence":["val":534, "desc":"5.3.4"],
+		"thermostat":["val":535, "desc":"5.3.5"],
+		"protect":["val":535, "desc":"5.3.5"],
+		"presence":["val":535, "desc":"5.3.5"],
 		"weather":["val":535, "desc":"5.3.5"],
-		"camera":["val":534, "desc":"5.3.4"],
+		"camera":["val":535, "desc":"5.3.5"],
 		"stream":["val":101, "desc":"1.0.1"]
 	]
 }
@@ -7205,7 +7205,7 @@ def tokenStrScrubber(str) {
 def Logger(msg, type, logSrc=null, noSTlogger=false) {
 	def labelstr = ""
 	def logOut = true
-	if(settings?.debugAppendAppName != false) { labelstr = "${app.label} | " }
+	if(settings?.debugAppendAppName != false) { labelstr = "${app.label} (v${appVersion()}) | " }
 	if(msg && type) {
 		def themsg = tokenStrScrubber("${labelstr}${msg}")
 
