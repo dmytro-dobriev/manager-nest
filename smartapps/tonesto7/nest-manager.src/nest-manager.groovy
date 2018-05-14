@@ -44,7 +44,7 @@ def minVersions() {
 		"thermostat":["val":534, "desc":"5.3.4"],
 		"protect":["val":534, "desc":"5.3.4"],
 		"presence":["val":534, "desc":"5.3.4"],
-		"weather":["val":534, "desc":"5.3.4"],
+		"weather":["val":535, "desc":"5.3.5"],
 		"camera":["val":534, "desc":"5.3.4"],
 		"stream":["val":101, "desc":"1.0.1"]
 	]
