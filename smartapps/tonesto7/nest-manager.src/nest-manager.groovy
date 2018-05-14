@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.7" }
-def appVerDate() { "05-13-2018" }
+def appVerDate() { "05-14-2018" }
 def minVersions() {
 	return [
 		"automation":["val":534, "desc":"5.3.4"],
@@ -3419,8 +3419,18 @@ def poll(force = false, type = null) {
 
 def finishPoll(str=null, dev=null) {
 	LogTrace("finishPoll($str, $dev) received")
-	if(atomicState?.pollBlocked) { LogAction("Polling BLOCKED | Reason: (${atomicState?.pollBlockedReason})", "trace", true); schedNextWorkQ(); return }
-	if(dev || str || atomicState?.forceChildUpd || atomicState?.needChildUpd) { updateChildData() }
+	def lastDevUpd = getLastChildUpdSec()
+	if(atomicState?.pollBlocked) {
+		LogAction("Polling BLOCKED | Reason: (${atomicState?.pollBlockedReason})", "warn", true);
+		if( (atomicState?.apiRateLimited && lastDevUpd > 35*60) || (lastDevUpd > 45*60 && atomicState?.needChildUpd) ) {
+			LogAction("ReRunning Updated() | Last device update ${lastDevUpd} | Rate Limited: ${atomicState?.apiRateLimited}", "warn", true);
+			runIn(5, "updated", [overwrite: false]) // ensure it does not keep delaying
+			return
+		}
+		schedNextWorkQ();
+		return
+	}
+	if(dev || str || atomicState?.forceChildUpd || atomicState?.needChildUpd || lastDevUpd > 30*60) { updateChildData() }
 	updateWebStuff()
 	notificationCheck() //Checks if a notification needs to be sent for a specific event
 	broadcastCheck()
