@@ -24,7 +24,7 @@ definition(
 preferences { }
 
 def appVersion() { "5.4.0" }
-def appVerDate() { "05-13-2018" }
+def appVerDate() { "05-15-2018" }
 private moduleType() { return "storage" }
 
 private installed() {
@@ -42,6 +42,7 @@ private initialize() {
 }
 
 def getAutomationType() { return "storage" }
+def getAutoType() { return "storage" }
 def getCurrentSchedule() { return "storage" }
 def getAutomationsInstalled() { return "storage" }
 

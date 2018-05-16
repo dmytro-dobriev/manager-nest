@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.7" }
-def appVerDate() { "05-14-2018" }
+def appVerDate() { "05-15-2018" }
 def minVersions() {
 	return [
 		"automation":["val":534, "desc":"5.3.4"],
@@ -1820,7 +1820,7 @@ def getRemDiagApp() {
 	def remDiagApp = null
 	def cApps = getChildApps()
 	cApps?.each { ca ->
-		if(ca?.getAutoType() == "remDiag") {
+		if(ca?.getAutomationType() == "remDiag") {
 			remDiagApp = ca
 		}
 	}
