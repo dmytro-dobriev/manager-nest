@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.3.4" }
-def appVerDate() { "05-09-2018" }
+def appVerDate() { "05-20-2018" }
 
 preferences {
 	//startPage
@@ -292,9 +292,10 @@ def selectAutoPage() {
 
 def mainAutoPage(params) {
 	//LogTrace("mainAutoPage()")
-	if(!atomicState?.tempUnit) { atomicState?.tempUnit = getTemperatureScale()?.toString() }
+	def t0 = getTemperatureScale()?.toString()
+	atomicState?.tempUnit = (t0 != null) ? t0 : atomicState?.tempUnit
 	if(!atomicState?.disableAutomation) { atomicState.disableAutomation = false }
-	def t0 = parent?.getShowHelp()
+	t0 = parent?.getShowHelp()
 	atomicState?.showHelp = (t0 != null) ? t0 : true
 	def autoType = null
 	//If params.autoType is not null then save to atomicState.
@@ -1561,14 +1562,15 @@ def getDeviceTempAvg(items) {
 def remSenShowTempsPage() {
 	dynamicPage(name: "remSenShowTempsPage", uninstall: false) {
 		if(settings?.remSensorDay) {
+			def t0 = "${tUnitStr()}"
 			section("Default Sensor Temps: (Schedules can override)") {
 				def cnt = 0
 				def rCnt = settings?.remSensorDay?.size()
 				def str = ""
-				str += "Sensor Temp (average): (${getDeviceTempAvg(settings?.remSensorDay)}\u00b0${getTemperatureScale()})\n│"
+				str += "Sensor Temp (average): (${getDeviceTempAvg(settings?.remSensorDay)}${t0})\n│"
 				settings?.remSensorDay?.each { t ->
 					cnt = cnt+1
-					str += "${(cnt >= 1) ? "${(cnt == rCnt) ? "\n└" : "\n├"}" : "\n└"} ${t?.label}: ${(t?.label?.toString()?.length() > 10) ? "\n${(rCnt == 1 || cnt == rCnt) ? "    " : "│"}└ " : ""}(${getDeviceTemp(t)}\u00b0${getTemperatureScale()})"
+					str += "${(cnt >= 1) ? "${(cnt == rCnt) ? "\n└" : "\n├"}" : "\n└"} ${t?.label}: ${(t?.label?.toString()?.length() > 10) ? "\n${(rCnt == 1 || cnt == rCnt) ? "    " : "│"}└ " : ""}(${getDeviceTemp(t)}${t0})"
 				}
 				paragraph "${str}", state: "complete", image: getAppImg("temperature_icon.png")
 			}
@@ -1589,24 +1591,27 @@ def remSendoSetCool(chgval, onTemp, offTemp) {
 
 		chgval = (chgval > (onTemp + maxTempChangeVal)) ? onTemp + maxTempChangeVal : chgval
 		chgval = (chgval < (offTemp - maxTempChangeVal)) ? offTemp - maxTempChangeVal : chgval
+
+		def t0 = "${tUnitStr()}"
+
 		if(chgval != curCoolSetpoint) {
 			scheduleAutomationEval(60)
 			def cHeat = null
 			if(hvacMode in ["auto"]) {
 				if(curHeatSetpoint >= (offTemp-tempChangeVal)) {
 					cHeat = offTemp - tempChangeVal
-					LogAction("Remote Sensor: HEAT - Adjusting HeatSetpoint to (${cHeat}\u00b0${getTemperatureScale()}) to allow COOL setting", "info", true)
+					LogAction("Remote Sensor: HEAT - Adjusting HeatSetpoint to (${cHeat}${t0}) to allow COOL setting", "info", true)
 					if(remSenTstatMir) { remSenTstatMir*.setHeatingSetpoint(cHeat) }
 				}
 			}
 			if(setTstatAutoTemps(remSenTstat, chgval, cHeat, "remSen")) {
-				//LogAction("Remote Sensor: COOL - Adjusting CoolSetpoint to (${chgval}\u00b0${getTemperatureScale()}) ", "info", true)
-				//storeLastAction("Adjusted Cool Setpoint to (${chgval}\u00b0${getTemperatureScale()}) Heat Setpoint to (${cHeat}\u00b0${getTemperatureScale()})", getDtNow(), "remSen")
+				//LogAction("Remote Sensor: COOL - Adjusting CoolSetpoint to (${chgval}${t0}) ", "info", true)
+				//storeLastAction("Adjusted Cool Setpoint to (${chgval}${t0}) Heat Setpoint to (${cHeat}${t0})", getDtNow(), "remSen")
 				if(remSenTstatMir) { remSenTstatMir*.setCoolingSetpoint(chgval) }
 			}
 			return true // let all this take effect
 		} else {
-			LogAction("Remote Sensor: COOL - CoolSetpoint is already (${chgval}\u00b0${getTemperatureScale()}) ", "info", true)
+			LogAction("Remote Sensor: COOL - CoolSetpoint is already (${chgval}${t0}) ", "info", true)
 		}
 
 	} catch (ex) {
@@ -1629,24 +1634,27 @@ def remSendoSetHeat(chgval, onTemp, offTemp) {
 
 		chgval = (chgval < (onTemp - maxTempChangeVal)) ? onTemp - maxTempChangeVal : chgval
 		chgval = (chgval > (offTemp + maxTempChangeVal)) ? offTemp + maxTempChangeVal : chgval
+
+		def t0 = "${tUnitStr()}"
+
 		if(chgval != curHeatSetpoint) {
 			scheduleAutomationEval(60)
 			def cCool = null
 			if(hvacMode in ["auto"]) {
 				if(curCoolSetpoint <= (offTemp+tempChangeVal)) {
 					cCool = offTemp + tempChangeVal
-					LogAction("Remote Sensor: COOL - Adjusting CoolSetpoint to (${cCool}\u00b0${getTemperatureScale()}) to allow HEAT setting", "info", true)
+					LogAction("Remote Sensor: COOL - Adjusting CoolSetpoint to (${cCool}${t0}) to allow HEAT setting", "info", true)
 					if(remSenTstatMir) { remSenTstatMir*.setCoolingSetpoint(cCool) }
 				}
 			}
 			if(setTstatAutoTemps(remSenTstat, cCool, chgval, "remSen")) {
-				//LogAction("Remote Sensor: HEAT - Adjusting HeatSetpoint to (${chgval}\u00b0${getTemperatureScale()})", "info", true)
-				//storeLastAction("Adjusted Heat Setpoint to (${chgval}\u00b0${getTemperatureScale()}) Cool Setpoint to (${cCool}\u00b0${getTemperatureScale()})", getDtNow(), "remSen")
+				//LogAction("Remote Sensor: HEAT - Adjusting HeatSetpoint to (${chgval}${t0})", "info", true)
+				//storeLastAction("Adjusted Heat Setpoint to (${chgval}${t0}) Cool Setpoint to (${cCool}${t0})", getDtNow(), "remSen")
 				if(remSenTstatMir) { remSenTstatMir*.setHeatingSetpoint(chgval) }
 			}
 			return true // let all this take effect
 		} else {
-			LogAction("Remote Sensor: HEAT - HeatSetpoint is already (${chgval}\u00b0${getTemperatureScale()})", "info", true)
+			LogAction("Remote Sensor: HEAT - HeatSetpoint is already (${chgval}${t0})", "info", true)
 		}
 
 	} catch (ex) {
@@ -1827,7 +1835,7 @@ private remSenCheck() {
 						}
 
 					} else {
-						LogAction("Remote Sensor: NO CHANGE TO COOL - CoolSetpoint is (${curCoolSetpoint}\u00b0${getTemperatureScale()}) ", "info", false)
+						LogAction("Remote Sensor: NO CHANGE TO COOL - CoolSetpoint is (${curCoolSetpoint}${tUnitStr()}) ", "info", false)
 					}
 				}
 			}
@@ -1886,7 +1894,7 @@ private remSenCheck() {
 							return // let all this take effect
 						}
 					} else {
-						LogAction("Remote Sensor: NO CHANGE TO HEAT - HeatSetpoint is already (${curHeatSetpoint}\u00b0${getTemperatureScale()})", "info", false)
+						LogAction("Remote Sensor: NO CHANGE TO HEAT - HeatSetpoint is already (${curHeatSetpoint}${tUnitStr()})", "info", false)
 					}
 				}
 			}
@@ -1918,9 +1926,10 @@ def getRemSenTempsToList() {
 	}
 	if(!sensors) { sensors = settings?.remSensorDay }
 	if(sensors?.size() >= 1) {
+		def t0 = "${tUnitStr()}"
 		def info = []
 		sensors?.sort().each {
-			info.push("${it?.displayName}": " ${it?.currentTemperature.toString()}\u00b0${getTemperatureScale()}")
+			info.push("${it?.displayName}": " ${it?.currentTemperature.toString()}${t0}")
 		}
 		return info
 	}
@@ -2197,10 +2206,6 @@ def isFanCircConfigured() {
 	return (settings?.schMotOperateFan && settings?.schMotCirculateTstatFan && settings?.schMotFanRuleType) ? true : false
 }
 
-def getTempScaleStr() {
-	return "\u00b0${getTemperatureScale()}"
-}
-
 def getFanSwitchDesc(showOpt = true) {
 	def swDesc = ""
 	def swCnt = 0
@@ -2226,7 +2231,7 @@ def getFanSwitchDesc(showOpt = true) {
 
 	swDesc += (settings?.schMotCirculateTstatFan) ? "\n • Fan Circulation Enabled" : ""
 	swDesc += (settings?.schMotCirculateTstatFan) ? "\n • Fan Circulation Rule:\n   └(${getEnumValue(remSenRuleEnum("fan"), settings?.schMotFanRuleType)})" : ""
-	swDesc += (settings?.schMotCirculateTstatFan && settings?.fanCtrlTempDiffDegrees) ? ("\n • Threshold: (${settings?.fanCtrlTempDiffDegrees}${getTempScaleStr()})") : ""
+	swDesc += (settings?.schMotCirculateTstatFan && settings?.fanCtrlTempDiffDegrees) ? ("\n • Threshold: (${settings?.fanCtrlTempDiffDegrees}${tUnitStr()})") : ""
 	swDesc += (settings?.schMotCirculateTstatFan && settings?.fanCtrlOnTime) ? ("\n • Circulate Time: (${getEnumValue(fanTimeSecEnum(), settings?.fanCtrlOnTime)})") : ""
 	swDesc += (settings?.schMotCirculateTstatFan && settings?.fanCtrlTimeBetweenRuns) ? ("\n • Time Between Cycles:\n   └ (${getEnumValue(longTimeSecEnum(), settings?.fanCtrlTimeBetweenRuns)})") : ""
 
@@ -2435,21 +2440,21 @@ def doFanOperation(tempDiff, curTstatTemp, curHeatSetpoint, curCoolSetpoint) {
 						if(tempDiff < settings?."${pName}FanSwitchMedSpeed".toDouble()) {
 							if(speed != "LOW") {
 								sw.lowSpeed()
-								LogAction("doFanOperation: Temp Difference (${tempDiff}\u00b0${getTemperatureScale()}) is BELOW the Medium Speed Threshold of (${settings?."${pName}FanSwitchMedSpeed"}) | Turning '${sw}' Fan Switch on (LOW SPEED)", "info", true)
+								LogAction("doFanOperation: Temp Difference (${tempDiff}${tUnitStr()}) is BELOW the Medium Speed Threshold of (${settings?."${pName}FanSwitchMedSpeed"}) | Turning '${sw}' Fan Switch on (LOW SPEED)", "info", true)
 								storeLastAction("Set Fan $sw to Low Speed", getDtNow(), pName)
 							}
 						}
 						else if(tempDiff >= settings?."${pName}FanSwitchMedSpeed".toDouble() && tempDiff < settings?."${pName}FanSwitchHighSpeed".toDouble()) {
 							if(speed != "MED") {
 								sw.medSpeed()
-								LogAction("doFanOperation: Temp Difference (${tempDiff}\u00b0${getTemperatureScale()}) is ABOVE the Medium Speed Threshold of (${settings?."${pName}FanSwitchMedSpeed"}) | Turning '${sw}' Fan Switch on (MEDIUM SPEED)", "info", true)
+								LogAction("doFanOperation: Temp Difference (${tempDiff}${tUnitStr()}) is ABOVE the Medium Speed Threshold of (${settings?."${pName}FanSwitchMedSpeed"}) | Turning '${sw}' Fan Switch on (MEDIUM SPEED)", "info", true)
 								storeLastAction("Set Fan $sw to Medium Speed", getDtNow(), pName)
 							}
 						}
 						else if(tempDiff >= settings?."${pName}FanSwitchHighSpeed".toDouble()) {
 							if(speed != "HIGH") {
 								sw.highSpeed()
-								LogAction("doFanOperation: Temp Difference (${tempDiff}\u00b0${getTemperatureScale()}) is ABOVE the High Speed Threshold of (${settings?."${pName}FanSwitchHighSpeed"}) | Turning '${sw}' Fan Switch on (HIGH SPEED)", "info", true)
+								LogAction("doFanOperation: Temp Difference (${tempDiff}${tUnitStr()}) is ABOVE the High Speed Threshold of (${settings?."${pName}FanSwitchHighSpeed"}) | Turning '${sw}' Fan Switch on (HIGH SPEED)", "info", true)
 								storeLastAction("Set Fan $sw to High Speed", getDtNow(), pName)
 							}
 						}
@@ -2597,11 +2602,11 @@ def getCirculateFanTempOk(Double senTemp, Double reqsetTemp, Double threshold, B
 		return false
 	}
 
-	LogAction(" ├ adjust: ${adjust}}\u00b0${getTemperatureScale()}", "debug", false)
+	LogAction(" ├ adjust: ${adjust}}${tUnitStr()}", "debug", false)
 */
 
-	LogAction(" ├ operType: (${strCapitalize(operType)}) | Temp Threshold: ${threshold}\u00b0${getTemperatureScale()} |  FanAlreadyOn: (${strCapitalize(fanOn)})", "debug", false)
-	LogAction(" ├ Sensor Temp: ${senTemp}\u00b0${getTemperatureScale()} | Requested Setpoint Temp: ${reqsetTemp}\u00b0${getTemperatureScale()}", "debug", false)
+	LogAction(" ├ operType: (${strCapitalize(operType)}) | Temp Threshold: ${threshold}${tUnitStr()} |  FanAlreadyOn: (${strCapitalize(fanOn)})", "debug", false)
+	LogAction(" ├ Sensor Temp: ${senTemp}${tUnitStr()} | Requested Setpoint Temp: ${reqsetTemp}${tUnitStr()}", "debug", false)
 
 	if(!reqsetTemp) {
 		LogAction("getCirculateFanTempOk: Bad reqsetTemp ${reqsetTemp}", "warn", false)
@@ -2625,8 +2630,8 @@ def getCirculateFanTempOk(Double senTemp, Double reqsetTemp, Double threshold, B
 //		if((senTemp < offtemp) && (senTemp >= (ontemp + adjust))) { turnOn = true }
 	}
 
-//	LogAction(" ├ onTemp: ${ontemp} | offTemp: ${offtemp}}\u00b0${getTemperatureScale()}", "debug", false)
-	LogAction(" ├ offTemp: ${offtemp}\u00b0${getTemperatureScale()} | Temp Threshold: ${threshold}\u00b0${getTemperatureScale()}", "debug", false)
+//	LogAction(" ├ onTemp: ${ontemp} | offTemp: ${offtemp}}${tUnitStr()}", "debug", false)
+	LogAction(" ├ offTemp: ${offtemp}${tUnitStr()} | Temp Threshold: ${threshold}${tUnitStr()}", "debug", false)
 	LogAction(" ┌ Final Result: (${strCapitalize(turnOn)})", "debug", false)
 //	LogAction("getCirculateFanTempOk: ", "debug", false)
 
@@ -3113,12 +3118,12 @@ def extTmpTempOk(disp=false, last=false) {
 		}
 		def showRes = disp ? (retval != last ? true : false) : false
 		if(!dpOk) {
-			LogAction("extTmpTempOk: ${retval} Dewpoint: (${curDp}\u00b0${getTemperatureScale()}) is ${dpOk ? "ok" : "TOO HIGH"}", "info", showRes)
+			LogAction("extTmpTempOk: ${retval} Dewpoint: (${curDp}${tUnitStr()}) is ${dpOk ? "ok" : "TOO HIGH"}", "info", showRes)
 		} else {
 			if(!modeAuto) {
-				LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${desiredTemp}\u00b0${getTemperatureScale()}) is ${tempOk ? "" : "Not"} ${str} $diffThresh\u00b0 of Outside Temp: (${extTemp}\u00b0${getTemperatureScale()}) or Inside Temp: (${intTemp}) is ${tempOk ? "" : "Not"} within Inside Threshold: ${insideThresh} of desired (${desiredTemp})", "info", showRes)
+				LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${desiredTemp}${tUnitStr()}) is ${tempOk ? "" : "Not"} ${str} $diffThresh\u00b0 of Outside Temp: (${extTemp}${tUnitStr()}) or Inside Temp: (${intTemp}) is ${tempOk ? "" : "Not"} within Inside Threshold: ${insideThresh} of desired (${desiredTemp})", "info", showRes)
 			} else {
-				LogAction("extTmpTempOk: ${retval} Exterior Temperature (${extTemp}\u00b0${getTemperatureScale()}) is ${tempOk ? "" : "Not"} ${str} using $diffThresh\u00b0 offset |  Inside Temp: (${intTemp})", "info", showRes)
+				LogAction("extTmpTempOk: ${retval} Exterior Temperature (${extTemp}${tUnitStr()}) is ${tempOk ? "" : "Not"} ${str} using $diffThresh\u00b0 offset |  Inside Temp: (${intTemp}${tUnitStr()})", "info", showRes)
 
 			}
 		}
@@ -4860,7 +4865,7 @@ def schMotModePage() {
 		def dupTstat3
 		def tStatPhys
 		def tempScale = getTemperatureScale()
-		def tempScaleStr = "\u00b0${tempScale}"
+		def tempScaleStr = "${tUnitStr()}"
 		section("Configure Thermostat") {
 			input name: "schMotTstat", type: "capability.thermostat", title: "Select Thermostat?", multiple: false, submitOnChange: true, required: true, image: getAppImg("thermostat_icon.png")
 			//log.debug "schMotTstat: ${schMotTstat}"
@@ -4879,11 +4884,11 @@ def schMotModePage() {
 				def tempSrcStr = (getCurrentSchedule() && atomicState?.remoteTempSourceStr == "Schedule") ? "Schedule ${getCurrentSchedule()} (${"${getSchedLbl(getCurrentSchedule())}" ?: "Not Found"})" : "(${atomicState?.remoteTempSourceStr})"
 
 				str += tempSrcStr ? "Zone Status:\n• Temp Source:${tempSrcStr?.toString().length() > 15 ? "\n  └" : ""} ${tempSrcStr}" : ""
-				str += curZoneTemp ? "\n• Temperature: (${curZoneTemp}\u00b0${getTemperatureScale()})" : ""
+				str += curZoneTemp ? "\n• Temperature: (${curZoneTemp}${tempScaleStr})" : ""
 
-				def hstr = canHeat ? "H: ${reqSenHeatSetPoint}\u00b0${getTemperatureScale()}" : ""
+				def hstr = canHeat ? "H: ${reqSenHeatSetPoint}${tempScaleStr}" : ""
 				def cstr = canHeat && canCool ? "/" : ""
-				cstr += canCool ? "C: ${reqSenCoolSetPoint}\u00b0${getTemperatureScale()}" : ""
+				cstr += canCool ? "C: ${reqSenCoolSetPoint}${tempScaleStr}" : ""
 				str += "\n• Setpoints: (${hstr}${cstr})\n"
 
 				str += "\nThermostat Status:\n• Temperature: (${getDeviceTemp(tstat)}${tempScaleStr})"
@@ -4896,7 +4901,7 @@ def schMotModePage() {
 				str += (atomicState?.schMotTstatHasFan) ? "\n• FanMode: (${strCapitalize(tstat?.currentThermostatFanMode)})" : "\n• No Fan on HVAC system"
 				str += "\n• Presence: (${strCapitalize(getTstatPresence(tstat))})"
 				def safetyTemps = getSafetyTemps(tstat)
-					str += safetyTemps ? "\n• Safety Temps:\n  └ Min: ${safetyTemps.min}\u00b0${getTemperatureScale()}/Max: ${safetyTemps.max}${tempScaleStr}" : ""
+					str += safetyTemps ? "\n• Safety Temps:\n  └ Min: ${safetyTemps.min}${tempScaleStr}/Max: ${safetyTemps.max}${tempScaleStr}" : ""
 					str += "\n• Virtual: (${tstat?.currentNestType.toString() == "virtual" ? "True" : "False"})"
 				paragraph "${str}", title: "${tstat.displayName} Zone Status", state: (str != "" ? "complete" : null), image: getAppImg("info_icon2.png")
 
@@ -5212,7 +5217,7 @@ def tstatConfigAutoPage(params) {
 		def tstat = settings?.schMotTstat
 		if (tstat) {
 			def tempScale = getTemperatureScale()
-			def tempScaleStr = "\u00b0${tempScale}"
+			def tempScaleStr = "${tUnitStr}"
 			def tStatName = tstat?.displayName.toString()
 			def tStatHeatSp = getTstatSetpoint(tstat, "heat")
 			def tStatCoolSp = getTstatSetpoint(tstat, "cool")
@@ -5650,18 +5655,19 @@ def scheduleConfigPage(params) {
 			def reqSenCoolSetPoint = getRemSenCoolSetTemp()
 			def curZoneTemp = getRemoteSenTemp()
 			def tempSrcStr = atomicState?.remoteTempSourceStr
+			def tempScaleStr = "${tUnitStr}"
 			section {
-				str += "Zone Status:\n• Temp Source: (${tempSrcStr})\n• Temperature: (${curZoneTemp}\u00b0${getTemperatureScale()})"
+				str += "Zone Status:\n• Temp Source: (${tempSrcStr})\n• Temperature: (${curZoneTemp}${tempScaleStr})"
 
-				def hstr = canHeat ? "H: ${reqSenHeatSetPoint}\u00b0${getTemperatureScale()}" : ""
+				def hstr = canHeat ? "H: ${reqSenHeatSetPoint}${tempScaleStr}" : ""
 				def cstr = canHeat && canCool ? "/" : ""
-				cstr += canCool ? "C: ${reqSenCoolSetPoint}\u00b0${getTemperatureScale()}" : ""
+				cstr += canCool ? "C: ${reqSenCoolSetPoint}${tempScaleStr}" : ""
 				str += "\n• Setpoints: (${hstr}${cstr})\n"
 
-				str += "\nThermostat Status:\n• Temperature: (${getDeviceTemp(tstat)}\u00b0${getTemperatureScale()})"
-				hstr = canHeat ? "H: ${getTstatSetpoint(tstat, "heat")}\u00b0${getTemperatureScale()}" : ""
+				str += "\nThermostat Status:\n• Temperature: (${getDeviceTemp(tstat)}${tempScaleStr})"
+				hstr = canHeat ? "H: ${getTstatSetpoint(tstat, "heat")}${tempScaleStr}" : ""
 				cstr = canHeat && canCool ? "/" : ""
-				cstr += canCool ? "C: ${getTstatSetpoint(tstat, "cool")}\u00b0${getTemperatureScale()}" : ""
+				cstr += canCool ? "C: ${getTstatSetpoint(tstat, "cool")}${tempScaleStr}" : ""
 				str += "\n• Setpoints: (${hstr}${cstr})"
 
 				str += "\n• Mode: (${tstat ? ("${strCapitalize(tstat?.currentThermostatOperatingState)}/${strCapitalize(tstat?.currentThermostatMode)}") : "unknown"})"
@@ -5737,7 +5743,7 @@ def editSchedule(schedData) {
 	def sLbl = "schMot_${cnt}_"
 	def canHeat = atomicState?.schMotTstatCanHeat
 	def canCool = atomicState?.schMotTstatCanCool
-	def tempScaleStr = "\u00b0${getTemperatureScale()}"
+	def tempScaleStr = "${tUnitStr()}"
 	def act = settings["${sLbl}SchedActive"]
 	def actIcon = act ? "active" : "inactive"
 	def sectStr = schedData?.secData?.schName ? (act ? "Enabled" : "Disabled") : "Tap to Enable"
@@ -5830,7 +5836,7 @@ def getScheduleDesc(num = null) {
 	def result = [:]
 	def schedData = atomicState?.activeSchedData
 	def actSchedNum = getCurrentSchedule()
-	def tempScaleStr = "\u00b0${getTemperatureScale()}"
+	def tempScaleStr = "${tUnitStr()}"
 	def schNum
 	def schData
 
@@ -5932,7 +5938,7 @@ def getScheduleDesc(num = null) {
 			str += isRemSen && schData?.sen0 ?	"${isRemSen || isRestrict ? "\n │\n" : "\n"} └ Alternate Remote Sensor:" : ""
 			//str += isRemSen && schData?.sen0 ? 	"\n      ├ Temp Sensors: (${schData?.sen0.size()})" : ""
 			settings["${sLbl}remSensor"]?.each { t ->
-				str += "\n      ├ ${t?.label}: ${(t?.label?.toString()?.length() > 10) ? "\n      │ └ " : ""}(${getDeviceTemp(t)}\u00b0${getTemperatureScale()})"
+				str += "\n      ├ ${t?.label}: ${(t?.label?.toString()?.length() > 10) ? "\n      │ └ " : ""}(${getDeviceTemp(t)}${tUnitStr()})"
 			}
 			str += isRemSen && schData?.sen0 ? 	"\n      └ Temp${(settings["${sLbl}remSensor"]?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings["${sLbl}remSensor"])}${tempScaleStr})" : ""
 			str += isRemSen && schData?.thres ? 	"\n  └ Threshold: (${settings["${sLbl}remSenThreshold"]}${tempScaleStr})" : ""
@@ -6423,7 +6429,7 @@ def voiceNotifString(phrase, pName) {
 		if(pName == "conWat" && phrase?.toLowerCase().contains("%opencontact%")) {
 			phrase = phrase?.toLowerCase().replace('%opencontact%', (getOpenContacts(conWatContacts) ? getOpenContacts(conWatContacts)?.join(", ").toString() : "a selected contact")) }
 		if(pName == "extTmp" && phrase?.toLowerCase().contains("%tempthreshold%")) {
-			phrase = phrase?.toLowerCase().replace('%tempthreshold%', "${extTmpDiffVal.toString()}(\u00b0${getTemperatureScale()})") }
+			phrase = phrase?.toLowerCase().replace('%tempthreshold%', "${extTmpDiffVal.toString()}(${tUnitStr()})") }
 		if(phrase?.toLowerCase().contains("%offdelay%")) { phrase = phrase?.toLowerCase().replace('%offdelay%', getEnumValue(longTimeSecEnum(), settings?."${pName}OffDelay").toString()) }
 		if(phrase?.toLowerCase().contains("%ondelay%")) { phrase = phrase?.toLowerCase().replace('%ondelay%', getEnumValue(longTimeSecEnum(), settings?."${pName}OnDelay").toString()) }
 	} catch (ex) {
@@ -7822,7 +7828,7 @@ def formatDt(dt) {
 }
 
 def getGlobTitleStr(typ) {
-	return "Desired Default ${typ} Temp (\u00b0${getTemperatureScale()})"
+	return "Desired Default ${typ} Temp (${tUnitStr()})"
 }
 
 def formatDt2(tm) {
