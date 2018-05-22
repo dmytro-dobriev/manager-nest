@@ -13,7 +13,7 @@ import groovy.time.TimeCategory
 
 preferences { }
 
-def devVer() { return "5.3.5" }
+def devVer() { return "5.3.6" }
 
 metadata {
 	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
@@ -912,10 +912,11 @@ private takePicture(String url) {
 					}
 				}
 			} else {
-				Logger("takePicture: non-standard url received ($url), public share enabled: (${state?.publicShareEnabled})", "error")
+				def sUrl = url ? "${url}" : "null"
+				Logger("takePicture: non-standard url received (${sUrl}), public share enabled: (${state?.publicShareEnabled})", "error")
 			}
 		} else {
-      		Logger("takePicture: Camera is not online (${!state?.isOnline}) or not streaming (${!state?.isStreaming})", "error")
+	      		Logger("takePicture: Camera is not online (${!state?.isOnline}) or not streaming (${!state?.isStreaming})", "error")
 		}
 	} catch (ex) {
 		log.error "takePicture Exception: ${ex?.message}", ex
