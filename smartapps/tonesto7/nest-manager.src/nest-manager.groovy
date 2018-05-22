@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.7" }
-def appVerDate() { "05-20-2018" }
+def appVerDate() { "05-21-2018" }
 def minVersions() {
 	return [
 		"automation":["val":534, "desc":"5.3.4"],
@@ -45,8 +45,8 @@ def minVersions() {
 		"protect":["val":535, "desc":"5.3.5"],
 		"presence":["val":535, "desc":"5.3.5"],
 		"weather":["val":535, "desc":"5.3.5"],
-		"camera":["val":535, "desc":"5.3.5"],
-		"stream":["val":101, "desc":"1.0.1"]
+		"camera":["val":536, "desc":"5.3.6"],
+		"stream":["val":103, "desc":"1.0.3"]
 	]
 }
 
