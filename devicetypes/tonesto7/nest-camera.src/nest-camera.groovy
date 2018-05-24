@@ -313,9 +313,9 @@ def processEvent() {
 			state.nestTimeZone = eventData?.tz ?: null
 
 			state?.devBannerData = eventData?.devBannerData ?: null
-			publicShareUrlEvent(results?.public_share_url)
 			onlineStatusEvent(results?.is_online?.toString())
 			isStreamingEvent(results?.is_streaming)
+			publicShareUrlEvent(results?.public_share_url)
 			securityStateEvent(eventData?.secState)
 			publicShareEnabledEvent(results?.is_public_share_enabled?.toString())
 			videoHistEnabledEvent(results?.is_video_history_enabled?.toString())
@@ -584,7 +584,7 @@ def lastEventDataEvent(data) {
 		sendEvent(name: 'lastEventEnd', value: newEndDt, descriptionText: "Last Event End is ${newEndDt}", displayed: false)
 		sendEvent(name: 'lastEventType', value: evtType, descriptionText: "Last Event Type was ${evtType}", displayed: false)
 		sendEvent(name: 'lastEventZones', value: evtZoneNames.toString(), descriptionText: "Last Event Zones: ${evtZoneNames}", displayed: false)
-		state.lastCamEvtData = ["startDt":newStartDt, "endDt":newEndDt, "hasMotion":hasMotion, "hasSound":hasSound, "hasPerson":hasPerson, "motionOnPersonOnly":(settings?.motionOnPersonOnly == true), "actZones":(data?.activity_zone_ids ?: null)]
+		state.lastCamEvtData = ["startDt":newStartDt, "endDt":newEndDt, "hasMotion":hasMotion, "hasSound":hasSound, "hasPerson":hasPerson, "motionOnPersonOnly":(settings?.motionOnPersonOnly == true), "actZones":(data?.activity_zone_ids ?: null), "sentMUpd":false, "sentSUpd":false ]
 		tryPic = evtSnapShotOk()
 		Logger(state?.enRemDiagLogging ? "└──────────────" : "└────────────────────────────")
 		//Logger("│	URL: ${state?.animation_url ?: "None"}")
@@ -614,29 +614,33 @@ def motionSoundEvtHandler() {
 	def data = state?.lastCamEvtData
 	if(data) {
 		motionEvtHandler(data)
+		data = state?.lastCamEvtData
 		soundEvtHandler(data)
 	}
 }
 
 void motionEvtHandler(data) {
-	def tf = new SimpleDateFormat("E MMM dd HH:mm:ss z yyyy")
-	tf.setTimeZone(getTimeZone())
-	def dtNow = new Date()
 	def curMotion = device.currentState("motion")?.stringValue
 	def motionStat = "inactive"
 	def motionPerStat = "inactive"
 	if(state?.restStreaming == true && data) {
-		if(data?.endDt && data?.hasMotion) {
-			def newEndDt = null
-			use( TimeCategory ) {
-				newEndDt = Date.parse("E MMM dd HH:mm:ss z yyyy", data?.endDt.toString())+1.minutes
-			}
-			if(newEndDt) {
+		if(data?.endDt && data?.hasMotion && !data?.sentMUpd) {
+			def t0 = getTimeDiffSeconds(data?.startDt, data?.endDt)
+			def newDur = Math.min( Math.max(3, t0) , state?.motionSndChgWaitVal)
+
+			t0 = getTimeDiffSeconds(data?.endDt)
+			def howRecent = Math.max(1, t0)
+			//Logger("MOTION NewDur: ${newDur}    howRecent: ${howRecent}")
+
+			t0 = state?.lastCamEvtData
+			t0.sentMUpd = true
+			state.lastCamEvtData = t0
+			if(howRecent <= 60) {
 				def motGo = (data?.motionOnPersonOnly == true && data?.hasPerson != true) ? false : true
-				if(newEndDt > dtNow && motGo) {
+				if(motGo) {
 					motionStat = "active"
 					if(data?.hasPerson) { motionPerStat = "active" }
-					runIn(state?.motionSndChgWaitVal.toInteger()+6, "motionSoundEvtHandler", [overwrite: true])
+					runIn(newDur.toInteger(), "motionSoundEvtHandler", [overwrite: true])
 				}
 			}
 		}
@@ -650,22 +654,23 @@ void motionEvtHandler(data) {
 }
 
 void soundEvtHandler(data) {
-	def tf = new SimpleDateFormat("E MMM dd HH:mm:ss z yyyy")
-		tf.setTimeZone(getTimeZone())
-	def dtNow = new Date()
 	def curSound = device.currentState("sound")?.stringValue
 	def sndStat = "not detected"
 	if(state?.restStreaming == true && data) {
-		if(data?.endDt && data?.hasSound) {
-			def newEndDt = null
-			use( TimeCategory ) {
-				newEndDt = Date.parse("E MMM dd HH:mm:ss z yyyy", data?.endDt.toString())+1.minutes
-			}
-			if(newEndDt) {
-				if(newEndDt > dtNow) {
-					sndStat = "detected"
-					runIn(state?.motionSndChgWaitVal.toInteger()+6, "motionSoundEvtHandler", [overwrite: true])
-				}
+		if(data?.endDt && data?.hasSound && !data?.sentSUpd) {
+			def t0 = getTimeDiffSeconds(data?.startDt, data?.endDt)
+			def newDur = Math.min( Math.max(3, t0) , state?.motionSndChgWaitVal)
+
+			t0 = getTimeDiffSeconds(data?.endDt)
+			def howRecent = Math.max(1, t0)
+			//Logger("SOUND NewDur: ${newDur}    howRecent: ${howRecent}")
+
+			t0 = state?.lastCamEvtData
+			t0.sentSUpd = true
+			state.lastCamEvtData = t0
+			if(howRecent <= 60) {
+				sndStat = "detected"
+				runIn(newDur.toInteger(), "motionSoundEvtHandler", [overwrite: true])
 			}
 		}
 	}
@@ -988,20 +993,25 @@ def exceptionDataHandler(String msg, String methodName) {
 
 def getTimeDiffSeconds(strtDate, stpDate=null, methName=null) {
 	//LogTrace("[GetTimeDiffSeconds] StartDate: $strtDate | StopDate: ${stpDate ?: "Not Sent"} | MethodName: ${methName ?: "Not Sent"})")
-	try {
+//	try {
 		if((strtDate && !stpDate) || (strtDate && stpDate)) {
 			def now = new Date()
 			def stopVal = stpDate ? stpDate.toString() : formatDt(now)
+/*
 			def startDt = Date.parse("E MMM dd HH:mm:ss z yyyy", strtDate)
 			def stopDt = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal)
 			def start = Date.parse("E MMM dd HH:mm:ss z yyyy", formatDt(startDt)).getTime()
+*/
+			def start = Date.parse("E MMM dd HH:mm:ss z yyyy", strtDate).getTime()
 			def stop = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal).getTime()
 			def diff = (int) (long) (stop - start) / 1000 //
 			return diff
 		} else { return null }
+/*
 	} catch (ex) {
 		log.warn "getTimeDiffSeconds error: Unable to parse datetime..."
 	}
+*/
 }
 
 def incHtmlLoadCnt() 		{ state?.htmlLoadCnt = (state?.htmlLoadCnt ? state?.htmlLoadCnt.toInteger()+1 : 1) }
