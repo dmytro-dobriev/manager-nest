@@ -118,7 +118,7 @@ metadata {
 			state("default", label: 'Firmware:\nv${currentValue}')
 		}
 		valueTile("lastConnection", "device.lastConnection", inactiveLabel: false, width: 3, height: 1, decoration: "flat", wordWrap: true) {
-			state("default", label: 'Protect Last Checked-In:\n${currentValue}')
+			state("default", label: 'Camera Last Checked-In:\n${currentValue}')
 		}
 		valueTile("onlineStatus", "device.onlineStatus", width: 2, height: 1, wordWrap: true, decoration: "flat") {
 			state("default", label: 'Network Status:\n${currentValue}')
