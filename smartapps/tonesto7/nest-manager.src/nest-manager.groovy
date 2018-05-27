@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.7" }
-def appVerDate() { "05-21-2018" }
+def appVerDate() { "05-27-2018" }
 def minVersions() {
 	return [
 		"automation":["val":534, "desc":"5.3.4"],
@@ -449,13 +449,67 @@ def devicesPage() {
 		def statDesc = stats.size() ? "Found (${stats.size()}) Thermostats" : "No Thermostats"
 		//LogAction("${statDesc} (${stats})", "info", false)
 
+		def str = "devicePage"
+		def dData = atomicState?.deviceData
+
+		def t0 = [:]
+		t0 = dData?.thermostats?.findAll { it?.key?.toString() in settings?.thermostats }
+		def t1 = []
+		t0?.each { devItem ->
+			LogAction("${str}: Found (${devItem?.value?.name})", "info", false)
+			if(devItem?.key && devItem?.value?.name) {
+				t1 << "${devItem.key.toString()}"
+			}
+		}
+		LogAction("${str} | Thermostats(${t0?.size()}): ${t1}", "info", true)
+
+		def t3 = settings?.thermostats?.size() ?: 0
+		if(t1?.size() != t3) {
+			LogAction("Thermostat Counts Wrong! | Current: (${t1?.size()}) | Expected: (${t3})", "error", true);
+			settingUpdate("thermostats", t1, "enum")
+		}
+
 		def coSmokes = getNestProtects()
 		def coDesc = coSmokes.size() ? "Found (${coSmokes.size()}) Protects" : "No Protects"
 		//LogAction("${coDesc} (${coSmokes})", "info", false)
 
+		t0 = [:]
+		t0 = dData?.smoke_co_alarms?.findAll { it?.key?.toString() in settings?.protects }
+		t1 = []
+		t0?.each { devItem ->
+			LogAction("${str}: Found (${devItem?.value?.name})", "info", false)
+			if(devItem?.key && devItem?.value?.name) {
+				t1 << "${devItem.key.toString()}"
+			}
+		}
+		LogAction("${str} | Protects(${t0?.size()}): ${t1}", "info", true)
+
+		t3 = settings?.protects?.size() ?: 0
+		if(t1?.size() != t3) {
+			LogAction("Protects Counts Wrong! | Current: (${t1?.size()}) | Expected: (${t3})", "error", true);
+			settingUpdate("protects", t1, "enum")
+		}
+
 		def cams = getNestCameras()
 		def camDesc = cams.size() ? "Found (${cams.size()}) Cameras" : "No Cameras"
 		//LogAction("${camDesc} (${cams})", "info", false)
+
+		t0 = [:]
+		t0 = dData?.cameras?.findAll { it?.key?.toString() in settings?.cameras }
+		t1 = []
+		t0?.each { devItem ->
+			LogAction("${str}: Found (${devItem?.value?.name})", "info", false)
+			if(devItem?.key && devItem?.value?.name) {
+				t1 << "${devItem.key.toString()}"
+			}
+		}
+		LogAction("${str} | Cameras(${t0?.size()}): ${t1}", "info", true)
+
+		t3 = settings?.cameras?.size() ?: 0
+		if(t1?.size() != t3) {
+			LogAction("Cameras Counts Wrong! | Current: (${t1?.size()}) | Expected: (${t3})", "error", true);
+			settingUpdate("cameras", t1, "enum")
+		}
 
 		section("Select Devices:") {
 			if(!stats?.size() && !coSmokes.size() && !cams?.size()) { paragraph "No Devices were found" }
