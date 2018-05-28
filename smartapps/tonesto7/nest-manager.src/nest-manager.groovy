@@ -5778,6 +5778,7 @@ def getWeatherConditions(force = false) {
 			def curAstronomy = ""
 			def curAlerts = ""
 			def err = false
+			def chgd = false
 			def custLoc = getCustWeatherLoc()
 			if(custLoc) {
 				loc = custLoc
@@ -5799,6 +5800,7 @@ def getWeatherConditions(force = false) {
 				if(curForecast && curAstronomy) {
 					atomicState?.curForecast = curForecast
 					atomicState?.curAstronomy = curAstronomy
+					chgd = true
 					updTimestampMap("lastForecastUpdDt", getDtNow())
 				} else {
 					LogAction("Could Not Retrieve Local Forecast or astronomy Conditions", "warn", true)
@@ -5807,13 +5809,25 @@ def getWeatherConditions(force = false) {
 			}
 			if(curWeather && curAlerts) {
 				atomicState?.curWeather = curWeather
+				chgd = true
+/*
+	Try to reduce size of alerts if they are big to save state space
+*/
+				def alrt = curAlerts?.alerts
+				def cntr = 0
+				alrt.each { al ->
+					if(al?.message) {
+						curAlerts.alerts[cntr].message = al.message.take(800)
+					}
+					cntr++
+				}
 				atomicState?.curAlerts = curAlerts
 				if(!err) { updTimestampMap("lastWeatherUpdDt", getDtNow()) }
 			} else {
 				LogAction("Could Not Retrieve Local Weather Conditions or alerts", "warn", true)
 				return false
 			}
-			if(curWeather || curAstronomy || curForecast || curAlerts) {
+			if(chgd) {
 				atomicState.needChildUpd = true
 				if(!force) { runIn(21, "finishPoll", [overwrite: true]) }
 				return true
