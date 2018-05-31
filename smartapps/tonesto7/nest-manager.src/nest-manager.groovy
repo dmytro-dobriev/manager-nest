@@ -5798,7 +5798,6 @@ def getWeatherConditions(force = false) {
 					curForecast = getWeatherFeature("forecast")
 					curAstronomy = getWeatherFeature("astronomy")
 				}
-				log.debug "curForecast: $curForecast"
 				if(curForecast && curAstronomy) {
 					atomicState?.curForecast = curForecast
 					atomicState?.curAstronomy = curAstronomy
