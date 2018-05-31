@@ -1,7 +1,8 @@
-V5.3.7 (May 8th, 2018):
+V5.3.7 (May 31st, 2018):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
  • ADDED: New Storage App to help eliminate State Size issues
+ 
  • FIXED: Converted degree symbols to unicode
  • FIXED: Few minor bugs
 

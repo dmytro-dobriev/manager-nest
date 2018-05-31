@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.7" }
-def appVerDate() { "05-27-2018" }
+def appVerDate() { "05-31-2018" }
 def minVersions() {
 	return [
 		"automation":["val":534, "desc":"5.3.4"],
@@ -46,7 +46,7 @@ def minVersions() {
 		"presence":["val":535, "desc":"5.3.5"],
 		"weather":["val":535, "desc":"5.3.5"],
 		"camera":["val":536, "desc":"5.3.6"],
-		"stream":["val":103, "desc":"1.0.3"]
+		"stream":["val":104, "desc":"1.0.4"]
 	]
 }
 
@@ -913,7 +913,8 @@ def pollPrefPage() {
 			section("Rest Streaming (Experimental):") {
 				input(name: "restStreaming", title:"Enable Rest Streaming?", type: "bool", defaultValue: false, required: false, submitOnChange: true, image: getAppImg("two_way_icon.png"))
 				if(!settings?.restStreaming) {
-					paragraph title: "Streaming is an Experimental Feature", "It requires the install of our local NodeJS streaming service running on your home network. \n\n(This is a donation only feature)\nPlease send me a PM in the Community Forum if you have already donated and are interested"
+					paragraph title: "Streaming is an Experimental Feature (Even though it's Stable)", "It requires the install of our local NodeJS streaming service running on your home network."
+					href url: streamLink(), style:"external", required: false, title:"Setup Instructions", description:"Tap to open in browser", state: "complete", image: getAppImg("web_icon.png")
 				}
 			}
 			if(settings?.restStreaming) {
@@ -9953,7 +9954,8 @@ def textModified()	{ return "Updated: ${appVerDate()}" }
 def textVerInfo()	{ return "${appVerInfo()}" }
 def appVerInfo()	{ return getWebData([uri: "https://raw.githubusercontent.com/${gitPath()}/Data/changelog.txt", contentType: "text/plain; charset=UTF-8"], "changelog") }
 def textLicense()	{ return getWebData([uri: "https://raw.githubusercontent.com/${gitPath()}/app_license.txt", contentType: "text/plain; charset=UTF-8"], "license") }
-def textDonateLink()	{ return "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2CJEVN439EAWS" }
+def textDonateLink(){ return "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2CJEVN439EAWS" }
+def streamLink() 	{ return "https://community.smartthings.com/t/nst-manager-real-time-events/89198" }
 def stIdeLink()		{ return "https://graph.api.smartthings.com" }
-def textCopyright()	{ return "Copyright© 2017 - Anthony S." }
+def textCopyright()	{ return "Copyright© 2017, 2018 - Anthony S." }
 def textDesc()		{ return "This SmartApp is used to integrate your Nest devices with SmartThings and to enable built-in automations" }
