@@ -5825,7 +5825,7 @@ def getWeatherConditions(force = false) {
 				atomicState?.curAlerts = curAlerts
 				if(!err) { updTimestampMap("lastWeatherUpdDt", getDtNow()) }
 			} else {
-				LogAction("Could Not Retrieve Local Weather Conditions or alerts", "warn", true)
+				LogAction("Could Not Retrieve Local Weather Conditions or alerts... This issue is likely caused by Weather Underground API issues...", "warn", true)
 				return false
 			}
 			if(chgd) {
