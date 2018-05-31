@@ -5798,13 +5798,14 @@ def getWeatherConditions(force = false) {
 					curForecast = getWeatherFeature("forecast")
 					curAstronomy = getWeatherFeature("astronomy")
 				}
+				log.debug "curForecast: $curForecast"
 				if(curForecast && curAstronomy) {
 					atomicState?.curForecast = curForecast
 					atomicState?.curAstronomy = curAstronomy
 					chgd = true
 					updTimestampMap("lastForecastUpdDt", getDtNow())
 				} else {
-					LogAction("Could Not Retrieve Local Forecast or astronomy Conditions", "warn", true)
+					LogAction("Could Not Retrieve Local Forecast or astronomy Conditions... This issue is likely caused by Weather Underground API issues...", "warn", true)
 					err = true
 				}
 			}
