@@ -13,7 +13,7 @@
 import java.text.SimpleDateFormat
 import groovy.time.*
 
-def devVer() { return "5.3.5" }
+def devVer() { return "5.3.6" }
 
 // for the UI
 metadata {
@@ -1077,11 +1077,13 @@ def ecoDescEvent(val, updChk=false) {
 def hvacModeEvent(mode) {
 	def hvacMode = !state?.hvac_mode ? device.currentState("thermostatMode")?.stringValue : state.hvac_mode
 	def newMode = (mode == "heat-cool") ? "auto" : mode
+/*
 	if(mode == "eco") {
 		if(state?.can_cool && state?.can_heat) { newMode = "auto" }
 		else if(state?.can_heat) { newMode = "heat" }
 		else if(state?.can_cool) { newMode = "cool" }
 	}
+*/
 	state?.hvac_mode = newMode
 	if(!hvacMode.equals(newMode)) {
 		Logger("UPDATED | Hvac Mode is (${newMode.toString().capitalize()}) | Original State: (${hvacMode.toString().capitalize()})")
@@ -1733,11 +1735,14 @@ void changeSetpoint() {
 
 // Nest Only allows F temperatures as #.0  and C temperatures as either #.0 or #.5
 void setHeatingSetpoint(temp, manChg=false) {
-	setHeatingSetpoint(temp.toDouble(), manChg)
+	if(temp != null) {
+		setHeatingSetpoint(temp.toDouble(), manChg)
+	}
 }
 
 void setHeatingSetpoint(Double reqtemp, manChg=false) {
 	LogAction("setHeatingSetpoint()... ($reqtemp)", "trace")
+	if(reqtemp == null) { return }
 	def hvacMode = getHvacMode()
 	def tempUnit = state?.tempUnit
 	def temp = 0.0
@@ -1808,11 +1813,14 @@ void setHeatingSetpoint(Double reqtemp, manChg=false) {
 }
 
 void setCoolingSetpoint(temp, manChg=false) {
-	setCoolingSetpoint( temp.toDouble(), manChg)
+	if(temp != null) {
+		setCoolingSetpoint( temp.toDouble(), manChg)
+	}
 }
 
 void setCoolingSetpoint(Double reqtemp, manChg=false) {
 	LogAction("setCoolingSetpoint()... ($reqtemp)", "trace")
+	if(reqtemp == null) { return }
 	def hvacMode = getHvacMode()
 	def temp = 0.0
 	def tempUnit = state?.tempUnit
