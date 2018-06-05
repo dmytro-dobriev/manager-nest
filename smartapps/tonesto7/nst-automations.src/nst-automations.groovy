@@ -26,8 +26,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.4" }
-def appVerDate() { "05-20-2018" }
+def appVersion() { "5.3.5" }
+def appVerDate() { "06-05-2018" }
 
 preferences {
 	//startPage
@@ -5217,7 +5217,7 @@ def tstatConfigAutoPage(params) {
 		def tstat = settings?.schMotTstat
 		if (tstat) {
 			def tempScale = getTemperatureScale()
-			def tempScaleStr = "${tUnitStr}"
+			def tempScaleStr = "${tUnitStr()}"
 			def tStatName = tstat?.displayName.toString()
 			def tStatHeatSp = getTstatSetpoint(tstat, "heat")
 			def tStatCoolSp = getTstatSetpoint(tstat, "cool")
@@ -5655,7 +5655,7 @@ def scheduleConfigPage(params) {
 			def reqSenCoolSetPoint = getRemSenCoolSetTemp()
 			def curZoneTemp = getRemoteSenTemp()
 			def tempSrcStr = atomicState?.remoteTempSourceStr
-			def tempScaleStr = "${tUnitStr}"
+			def tempScaleStr = "${tUnitStr()}"
 			section {
 				str += "Zone Status:\n• Temp Source: (${tempSrcStr})\n• Temperature: (${curZoneTemp}${tempScaleStr})"
 
