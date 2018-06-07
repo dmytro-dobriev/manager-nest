@@ -5789,7 +5789,7 @@ def getWeatherConditions(force = false) {
 				curWeather = getWeatherFeature("conditions")
 				curAlerts = getWeatherFeature("alerts")
 			}
-			if(getLastForecastUpdSec() > (1800)) {
+			if(getLastForecastUpdSec() > (1800) || !atomicState?.curForecast || !atomicState?.curAstronomy) {
 				if(custLoc) {
 					loc = custLoc
 					curForecast = getWeatherFeature("forecast", loc)
