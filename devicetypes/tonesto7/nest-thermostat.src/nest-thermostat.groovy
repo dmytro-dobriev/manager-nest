@@ -395,7 +395,7 @@ def useTrackedHealth() { return state?.useTrackedHealth ?: false }
 
 def getHcTimeout() {
 	def to = state?.hcTimeout
-	return ((to instanceof Integer) ? to.toInteger() : 35)*60
+	return ((to instanceof Integer) ? to.toInteger() : 45)*60
 }
 
 void verifyHC() {

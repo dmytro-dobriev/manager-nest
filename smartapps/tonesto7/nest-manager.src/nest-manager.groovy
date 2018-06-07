@@ -35,13 +35,13 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.7" }
-def appVerDate() { "05-31-2018" }
+def appVersion() { "5.3.8" }
+def appVerDate() { "06-07-2018" }
 def minVersions() {
 	return [
-		"automation":["val":534, "desc":"5.3.4"],
+		"automation":["val":535, "desc":"5.3.5"],
 		"storage":["val":540, "desc":"5.4.0"],
-		"thermostat":["val":535, "desc":"5.3.5"],
+		"thermostat":["val":536, "desc":"5.3.6"],
 		"protect":["val":535, "desc":"5.3.5"],
 		"presence":["val":535, "desc":"5.3.5"],
 		"weather":["val":535, "desc":"5.3.5"],
@@ -4088,7 +4088,7 @@ def updateChildData(force = false) {
 		def hcCamTimeout = atomicState?.appData?.healthcheck?.camTimeout ?: 120
 		def hcProtWireTimeout = atomicState?.appData?.healthcheck?.protWireTimeout ?: 35
 		def hcProtBattTimeout = atomicState?.appData?.healthcheck?.protBattTimeout ?: 1500
-		def hcTstatTimeout = atomicState?.appData?.healthcheck?.tstatTimeout ?: 35
+		def hcTstatTimeout = atomicState?.appData?.healthcheck?.tstatTimeout ?: 45
 		def hcLongTimeout = atomicState?.appData?.healthcheck?.longTimeout ?: 120
 		def hcRepairEnabled = atomicState?.appData?.healthcheck?.repairEnabled != false ? true : false
 		def locPresence = getLocationPresence()
@@ -5805,6 +5805,7 @@ def getWeatherConditions(force = false) {
 					updTimestampMap("lastForecastUpdDt", getDtNow())
 				} else {
 					LogAction("Could Not Retrieve Local Forecast or astronomy Conditions... This issue is likely caused by Weather Underground API issues...", "warn", true)
+					atomicState.forceChildUpd = true
 					err = true
 				}
 			}
@@ -5826,6 +5827,7 @@ def getWeatherConditions(force = false) {
 				if(!err) { updTimestampMap("lastWeatherUpdDt", getDtNow()) }
 			} else {
 				LogAction("Could Not Retrieve Local Weather Conditions or alerts... This issue is likely caused by Weather Underground API issues...", "warn", true)
+				atomicState.forceChildUpd = true
 				return false
 			}
 			if(chgd) {

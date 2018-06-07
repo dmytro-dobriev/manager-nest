@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "5.3.5" }
+def devVer() { return "5.3.6" }
 
 metadata {
 	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
@@ -33,6 +33,7 @@ metadata {
 		attribute "debugOn", "string"
 		attribute "devTypeVer", "string"
 		attribute "lastUpdatedDt", "string"
+		attribute "onlineStatus", "string"
 
 // from original smartweather tile
 		attribute "localSunrise", "string"
@@ -101,6 +102,9 @@ metadata {
 		valueTile("apiStatus", "device.apiStatus", width: 2, height: 1, decoration: "flat", wordWrap: true) {
 			state "ok", label: "API Status:\nOK"
 			state "issue", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
+		}
+		valueTile("onlineStatus", "device.onlineStatus", width: 2, height: 1, wordWrap: true, decoration: "flat") {
+			state("default", label: 'Network Status:\n${currentValue}')
 		}
 		standardTile("refresh", "device.refresh", width:2, height:2, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/refresh_icon.png"
@@ -219,6 +223,14 @@ def modifyDeviceStatus(status) {
 		sendEvent(name: "DeviceWatch-DeviceStatus", value: val.toString(), displayed: false, isStateChange: true)
 		Logger("UPDATED: DeviceStatus Event: '$val'")
 	}
+
+	def prevOnlineStat = device.currentState("onlineStatus")?.value
+	def onlineStat = val
+	state?.onlineStatus = onlineStat
+	if(isStateChange(device, "onlineStatus", onlineStat?.toString())) {
+		Logger("UPDATED | Online Status is: (${onlineStat}) | Original State: (${prevOnlineStat})")
+		sendEvent(name: "onlineStatus", value: onlineStat, descriptionText: "Online Status is: ${onlineStat}", displayed: true, isStateChange: true, state: onlineStat)
+	} else { LogAction("Online Status is: (${onlineStat}) | Original State: (${prevOnlineStat})") }
 }
 
 def ping() {
@@ -651,15 +663,19 @@ def getWeatherConditions(weatData) {
 				def obsrDt = cur?.current_observation?.observation_time_rfc822
 				if(obsrDt) {
 					def newDt = formatDt(Date.parse("EEE, dd MMM yyyy HH:mm:ss Z", obsrDt?.toString()))
+					if(isStateChange(device, "weatherObservedDt", newDt.toString())) {
+						sendEvent(name: "weatherObservedDt", value: newDt)
+					}
 					//log.debug "newDt: $newDt"
 					def curDt = Date.parse("E MMM dd HH:mm:ss z yyyy", getDtNow())
 					def lastDt = Date.parse("E MMM dd HH:mm:ss z yyyy", newDt?.toString())
 					if((lastDt + 60*60*1000) < curDt) {
 						modifyDeviceStatus("offline")
-					} else if(isStateChange(device, "weatherObservedDt", newDt.toString())) {
-						sendEvent(name: "weatherObservedDt", value: newDt)
+					} else {
 						modifyDeviceStatus("online")
 					}
+				} else {
+					modifyDeviceStatus("offline")
 				}
 
 				LogAction("${state?.curWeatherLoc} Weather | humidity: ${state?.curWeatherHum} | temp_f: ${state?.curWeatherTemp_f} | temp_c: ${state?.curWeatherTemp_c} | Current Conditions: ${state?.curWeatherCond}")
