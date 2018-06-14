@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
 
 preferences { }
 
-def devVer() { return "5.3.5" }
+def devVer() { return "5.3.6" }
 
 metadata {
 	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
@@ -178,7 +178,7 @@ def useTrackedHealth() { return state?.useTrackedHealth ?: false }
 def getHcTimeout() {
 	def toBatt = state?.hcBattTimeout
 	def toWire = state?.hcWireTimeout
-	return ((device.currentValue("powerSourceNest") == "wired") ? (toWire instanceof Integer ? toWire : 35) : (toBatt instanceof Integer ? toBatt : 1500))*60
+	return ((device.currentValue("powerSourceNest") == "wired") ? (toWire instanceof Integer ? toWire : 45) : (toBatt instanceof Integer ? toBatt : 1500))*60
 }
 
 void verifyHC() {

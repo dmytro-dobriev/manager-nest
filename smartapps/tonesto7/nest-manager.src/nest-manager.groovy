@@ -36,13 +36,13 @@ definition(
 }
 
 def appVersion() { "5.3.8" }
-def appVerDate() { "06-07-2018" }
+def appVerDate() { "06-14-2018" }
 def minVersions() {
 	return [
 		"automation":["val":535, "desc":"5.3.5"],
 		"storage":["val":540, "desc":"5.4.0"],
 		"thermostat":["val":536, "desc":"5.3.6"],
-		"protect":["val":535, "desc":"5.3.5"],
+		"protect":["val":536, "desc":"5.3.6"],
 		"presence":["val":535, "desc":"5.3.5"],
 		"weather":["val":535, "desc":"5.3.5"],
 		"camera":["val":536, "desc":"5.3.6"],
@@ -4086,7 +4086,7 @@ def updateChildData(force = false) {
 		def vRprtPrefs = getVoiceRprtPrefs()
 		def clientBl = atomicState?.clientBlacklisted == true ? true : false
 		def hcCamTimeout = atomicState?.appData?.healthcheck?.camTimeout ?: 120
-		def hcProtWireTimeout = atomicState?.appData?.healthcheck?.protWireTimeout ?: 35
+		def hcProtWireTimeout = atomicState?.appData?.healthcheck?.protWireTimeout ?: 45
 		def hcProtBattTimeout = atomicState?.appData?.healthcheck?.protBattTimeout ?: 1500
 		def hcTstatTimeout = atomicState?.appData?.healthcheck?.tstatTimeout ?: 45
 		def hcLongTimeout = atomicState?.appData?.healthcheck?.longTimeout ?: 120
