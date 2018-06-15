@@ -2358,6 +2358,7 @@ def initManagerApp() {
 
 	atomicState.pollingOn = false
 	updTimestampMap("lastChildUpdDt", null) // force child update on next poll
+	updTimestampMap("lastChildForceUpdDt", null)
 	updTimestampMap("lastForcePoll", null)
 	def sData = atomicState?.swVer ?: [:]
 	sData["mgrVer"] = appVersion()
@@ -3485,7 +3486,7 @@ def finishPoll(str=null, dev=null) {
 		schedNextWorkQ();
 		return
 	}
-	if(lastDevUpd > 15*60) {   // if nest goes silent (no changes coming back)
+	if(getLastChildForceUpdSec() > (15*60)-2) {   // if nest goes silent (no changes coming back)
 		atomicState.forceChildUpd = true
 	}
 	if(dev || str || atomicState?.forceChildUpd || atomicState?.needChildUpd) { updateChildData() }
@@ -4078,6 +4079,9 @@ def updateChildData(force = false) {
 	atomicState.forceChildUpd = true
 	try {
 		updTimestampMap("lastChildUpdDt", getDtNow())
+		if(force || nforce) {
+			updTimestampMap("lastChildForceUpdDt", getDtNow())
+		}
 		def useMt = !useMilitaryTime ? false : true
 		def dbg = !childDebug ? false : true
 		def logNamePrefix = (settings?.debugAppendAppName || settings?.debugAppendAppName == null) ? true : false
@@ -4416,6 +4420,7 @@ def updateChildData(force = false) {
 		log.error "updateChildData Exception:", ex
 		sendExceptionData(ex, "updateChildData")
 		updTimestampMap("lastChildUpdDt", null)
+		updTimestampMap("lastChildForceUpdDt", null)
 		return
 	}
 	if(atomicState?.pollBlocked) { return }
@@ -4583,6 +4588,7 @@ def getLastDevicePollSec() { return !getTimestampVal("lastDevDataUpd") ? 840 : G
 def getLastStructPollSec() { return !getTimestampVal("lastStrucDataUpd") ? 1000 : GetTimeDiffSeconds(getTimestampVal("lastStrucDataUpd"), null, "getLastStructPollSec").toInteger() }
 def getLastForcedPollSec() { return !getTimestampVal("lastForcePoll") ? 1000 : GetTimeDiffSeconds(getTimestampVal("lastForcePoll"), null, "getLastForcedPollSec").toInteger() }
 def getLastChildUpdSec() { return !getTimestampVal("lastChildUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastChildUpdDt"), null, "getLastChildUpdSec").toInteger() }
+def getLastChildForceUpdSec() { return !getTimestampVal("lastChildForceUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastChildForceUpdDt"), null, "getLastChildForceUpdSec").toInteger() }
 def getLastHeardFromNestSec() { return !getTimestampVal("lastHeardFromNestDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastHeardFromNestDt"), null, "getLastHeardFromNestSec").toInteger() }
 
 /************************************************************************************************
