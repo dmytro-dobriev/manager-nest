@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.8" }
-def appVerDate() { "06-15-2018" }
+def appVerDate() { "06-17-2018" }
 def minVersions() {
 	return [
 		"automation":["val":535, "desc":"5.3.5"],
@@ -2526,10 +2526,15 @@ def createSavedNest() {
 			def t0 = atomicState?.savedNestSettings ?: null
 			def t1 = t0 ? new groovy.json.JsonOutput().toJson(t0) : null
 			def t2 = bbb != [:] ? new groovy.json.JsonOutput().toJson(bbb) : null
-			atomicState.savedNestSettingslastbuild = bbb
-			if(!bad && t2 && (!t0 || t1 != t2)) {
+			if(bad) {
 				atomicState.savedNestSettingsprev = atomicState?.savedNestSettings
+				atomicState.savedNestSettingslastbuild = bbb
+				state.remove("savedNestSettings")
+			}
+			if(!bad && t2 && (!t0 || t1 != t2)) {
 				atomicState.savedNestSettings = bbb
+				state.remove("savedNestSettingsprev")
+				state.remove("savedNestSettingslastbuild")
 				return true
 			}
 		} else { LogAction("${str}: No Structure Settings", "warn", true) }
@@ -7511,7 +7516,7 @@ def stateCleanup() {
 		"appApiIssuesWaitVal", "misPollNotifyWaitVal", "misPollNotifyMsgWaitVal", "devHealthMsgWaitVal", "nestLocAway", "heardFromRestDt", "autoSaVer", "lastAnalyticUpdDt", "lastHeardFromRestDt",
 		"remDiagApp", "remDiagClientId", "restorationInProgress", "diagManagAppStateFilters", "diagChildAppStateFilters", "lastFinishedPoll",
 		"curAlerts", "curAstronomy", "curForecast", "curWeather", "detailEventHistory", "detailExecutionHistory", "evalExecutionHistory", "lastForecastUpdDt", "lastWeatherUpdDt",
-		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName", "ReallyChanged", "savedNestSettings", "savedNestSettingslastbuild", "savedNestSettingsprev", "tsMigrationDone"
+		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName", "ReallyChanged", /* "savedNestSettings", "savedNestSettingslastbuild", "savedNestSettingsprev", */ "tsMigrationDone"
  	]
 
 	["oldTstatData", "oldCamData", "oldProtData", "oldPresData", "oldWeatherData", "lastCmdSentDt"]?.each { oi->
