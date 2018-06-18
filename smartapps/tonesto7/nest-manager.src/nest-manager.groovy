@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.8" }
-def appVerDate() { "06-17-2018" }
+def appVerDate() { "06-18-2018" }
 def minVersions() {
 	return [
 		"automation":["val":535, "desc":"5.3.5"],
@@ -5619,6 +5619,10 @@ def missPollNotify(on) {
 	} else {
 		def msg = "\nThe app has not refreshed data in the last (${getLastDevicePollSec()}) seconds.\nPlease try refreshing data using device refresh button."
 		LogAction(msg, "error", true)
+		if(settings?.restStreaming && atomicState?.restStreamingOn) {
+			restStreamHandler(true)   // close the stream if we have not heard from it in a while
+			atomicState?.restStreamingOn = false
+		}
 		def msgWait = atomicState?.notificationPrefs?.msgDefaultWait ?: 900
 		if(on && getLastMissPollMsgSec() > msgWait.toInteger()) {
 			if(sendMsg("${app.name} Nest Data update Issue", msg)) {
