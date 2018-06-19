@@ -663,7 +663,7 @@ void processEvent(data) {
 	}
 	catch (ex) {
 		log.error "generateEvent Exception:", ex
-		exceptionDataHandler(ex.message, "generateEvent")
+		exceptionDataHandler(ex?.message, "generateEvent")
 	}
 }
 
@@ -2130,7 +2130,7 @@ void fanOn() {
 	}
 	catch (ex) {
 		log.error "fanOn Exception:", ex
-		exceptionDataHandler(ex.message, "fanOn")
+		exceptionDataHandler(ex?.message, "fanOn")
 	}
 }
 
@@ -2154,7 +2154,7 @@ void fanAuto() {
 	}
 	catch (ex) {
 		log.error "fanAuto Exception:", ex
-		exceptionDataHandler(ex.message, "fanAuto")
+		exceptionDataHandler(ex?.message, "fanAuto")
 	}
 }
 
@@ -2274,7 +2274,7 @@ def getFileBase64(url, preType, fileType) {
 	}
 	catch (ex) {
 		log.error "getFileBase64 Exception:", ex
-		exceptionDataHandler(ex.message, "getFileBase64")
+		exceptionDataHandler(ex?.message, "getFileBase64")
 	}
 }
 
@@ -3592,11 +3592,12 @@ def getGraphHTML() {
 			</body>
 		</html>
 		"""
+/* """ */
 		incHtmlLoadCnt()
 		render contentType: "text/html", data: html, status: 200
 	} catch (ex) {
 		log.error "graphHTML Exception:", ex
-		exceptionDataHandler(ex.message, "graphHTML")
+		exceptionDataHandler(ex?.message, "graphHTML")
 	}
 }
 
@@ -3841,10 +3842,11 @@ def getDeviceTile(devNum) {
 				}
 			</script>
 		"""
+/* """ */
 		render contentType: "text/html", data: html, status: 200
 	} catch (ex) {
 		log.error "getDeviceTile Exception:", ex
-		exceptionDataHandler(ex.message, "getDeviceTile")
+		exceptionDataHandler(ex?.message, "getDeviceTile")
 	}
 }
 

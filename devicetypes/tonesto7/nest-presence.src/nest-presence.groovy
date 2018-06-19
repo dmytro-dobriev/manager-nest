@@ -237,7 +237,7 @@ def processEvent(data) {
 	}
 	catch (ex) {
 		log.error "generateEvent Exception:", ex
-		exceptionDataHandler(ex.message, "generateEvent")
+		exceptionDataHandler(ex?.message, "generateEvent")
 	}
 }
 
@@ -395,7 +395,7 @@ void setPresence() {
 	}
 	catch (ex) {
 		log.error "setPresence Exception:", ex
-		exceptionDataHandler(ex.message, "setPresence")
+		exceptionDataHandler(ex?.message, "setPresence")
 	}
 }
 
@@ -407,7 +407,7 @@ void setAway() {
 	}
 	catch (ex) {
 		log.error "setAway Exception:", ex
-		exceptionDataHandler(ex.message, "setAway")
+		exceptionDataHandler(ex?.message, "setAway")
 	}
 }
 
@@ -419,7 +419,7 @@ void setHome() {
 	}
 	catch (ex) {
 		log.error "setHome Exception:", ex
-		exceptionDataHandler(ex.message, "setHome")
+		exceptionDataHandler(ex?.message, "setHome")
 	}
 }
 
@@ -586,7 +586,7 @@ def getHtml() {
 	}
 	catch (ex) {
 		log.error "getHtml Exception:", ex
-		exceptionDataHandler(ex.message, "getHtml")
+		exceptionDataHandler(ex?.message, "getHtml")
 	}
 }
 

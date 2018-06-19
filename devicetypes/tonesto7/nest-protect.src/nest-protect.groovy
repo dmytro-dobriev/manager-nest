@@ -257,7 +257,7 @@ void runSmokeTest() {
 		schedEndTest()
 	} catch (ex) {
 		log.error "runSmokeTest Exception:", ex
-		exceptionDataHandler(ex.message, "runSmokeTest")
+		exceptionDataHandler(ex?.message, "runSmokeTest")
 	}
 }
 
@@ -270,7 +270,7 @@ void runCoTest() {
 		schedEndTest()
 	} catch (ex) {
 		log.error "runCoTest Exception:", ex
-		exceptionDataHandler(ex.message, "runCoTest")
+		exceptionDataHandler(ex?.message, "runCoTest")
 	}
 }
 
@@ -283,7 +283,7 @@ void runBatteryTest() {
 		schedEndTest()
 	} catch (ex) {
 		log.error "runBatteryTest Exception:", ex
-		exceptionDataHandler(ex.message, "runBatteryTest")
+		exceptionDataHandler(ex?.message, "runBatteryTest")
 	}
 }
 
@@ -293,7 +293,7 @@ void schedEndTest() {
 		refresh()  // this typically takes more than 5 seconds to complete
 	} catch (ex) {
 		log.error "schedEndTest Exception:", ex
-		exceptionDataHandler(ex.message, "schedEndTest")
+		exceptionDataHandler(ex?.message, "schedEndTest")
 	}
 }
 
@@ -305,7 +305,7 @@ void endTest() {
 		refresh()
 	} catch (ex) {
 		log.error "endTest Exception:", ex
-		exceptionDataHandler(ex.message, "endTest")
+		exceptionDataHandler(ex?.message, "endTest")
 	}
 }
 
@@ -375,7 +375,7 @@ def processEvent(data) {
 	}
 	catch (ex) {
 		log.error "generateEvent Exception:", ex
-		exceptionDataHandler(ex.message, "generateEvent")
+		exceptionDataHandler(ex?.message, "generateEvent")
 	}
 }
 
@@ -871,7 +871,7 @@ def getFileBase64(url, preType, fileType) {
 	}
 	catch (ex) {
 		log.error "getFileBase64 Exception:", ex
-		exceptionDataHandler(ex.message, "getFileBase64")
+		exceptionDataHandler(ex?.message, "getFileBase64")
 	}
 }
 
@@ -1079,7 +1079,7 @@ def getInfoHtml() {
 	}
 	catch (ex) {
 		log.error "getInfoHtml Exception:", ex
-		exceptionDataHandler(ex.message, "getInfoHtml")
+		exceptionDataHandler(ex?.message, "getInfoHtml")
 	}
 }
 
@@ -1183,7 +1183,7 @@ def getDeviceTile(devNum) {
 	}
 	catch (ex) {
 		log.error "getDeviceTile Exception:", ex
-		exceptionDataHandler(ex.message, "getInfoHtml")
+		exceptionDataHandler(ex?.message, "getInfoHtml")
 	}
 }
 

@@ -1198,8 +1198,9 @@ def getCamApiServerData(camUUID) {
 		} else { Logger("getCamApiServerData camUUID is missing....", "warn") }
 	}
 	catch (ex) {
-		log.error "getCamApiServerData Exception: ${ex?.message}", ex
-		exceptionDataHandler(ex?.message, "getCamApiServerData")
+		def s = ex?.message?.toString()
+		log.error "getCamApiServerData Exception: ${s}", ex
+		exceptionDataHandler(s, "getCamApiServerData")
 	}
 	return null
 }
