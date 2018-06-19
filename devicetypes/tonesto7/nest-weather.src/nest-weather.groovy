@@ -1076,28 +1076,46 @@ def getFileBase64(url, preType, fileType) {
 	try {
 		def params = [
 			uri: url,
-			contentType: '$preType/$fileType'
+			contentType: "$preType/$fileType"
 		]
+		//log.warn "Params: ${params}"
 		httpGet(params) { resp ->
-			if(resp.data) {
-				def respData = resp?.data
-				ByteArrayOutputStream bos = new ByteArrayOutputStream()
-				int len
-				int size = 4096
-				byte[] buf = new byte[size]
-				while ((len = respData.read(buf, 0, size)) != -1)
-					bos.write(buf, 0, len)
-				buf = bos.toByteArray()
-				//LogAction("buf: $buf")
-				String s = buf?.encodeBase64()
-				//LogAction("resp: ${s}")
-				return s ? "data:${preType}/${fileType};base64,${s.toString()}" : null
+			if(resp?.status == 200) {
+				if(resp.data) {
+					def respData = resp?.data
+					ByteArrayOutputStream bos = new ByteArrayOutputStream()
+					int len
+					int size = 4096
+					byte[] buf = new byte[size]
+					while ((len = respData.read(buf, 0, size)) != -1)
+						bos.write(buf, 0, len)
+					buf = bos.toByteArray()
+					//LogAction("buf: $buf")
+					String s = buf?.encodeBase64()
+					//LogAction("resp: ${s}")
+					return s ? "data:${preType}/${fileType};base64,${s.toString()}" : null
+				}
+			} else {
+				LogAction("getFileBase64 Resp: ${resp?.status} ${url}", "error")
+				exceptionDataHandler("resp ${ex?.response?.status} ${url}", "getFileBase64")
+				return null
 			}
 		}
 	}
 	catch (ex) {
-		log.error "getFileBase64 Exception:", ex
-		exceptionDataHandler(ex?.message, "getFileBase64")
+		if(ex instanceof groovyx.net.http.ResponseParseException) {
+			if(ex?.statusCode != 200) {
+				LogAction("getFileBase64 Resp: ${ex?.statusCode} ${url}", "error")
+				log.error "getFileBase64 Exception:", ex
+			}
+		} else if(ex instanceof groovyx.net.http.HttpResponseException && ex?.response) {
+			LogAction("getFileBase64 Resp: ${ex?.response?.status} ${url}", "error")
+			exceptionDataHandler("${ex?.response?.status} ${url}", "getFileBase64")
+		} else {
+			log.error "getFileBase64 Exception:", ex
+			exceptionDataHandler(ex, "getFileBase64")
+		}
+		return null
 	}
 }
 

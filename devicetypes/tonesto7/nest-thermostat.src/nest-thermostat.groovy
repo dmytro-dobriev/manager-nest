@@ -2253,7 +2253,7 @@ def getFileBase64(url, preType, fileType) {
 	try {
 		def params = [
 			uri: url,
-			contentType: '$preType/$fileType'
+			contentType: "$preType/$fileType"
 		]
 		httpGet(params) { resp ->
 			if(resp.data) {

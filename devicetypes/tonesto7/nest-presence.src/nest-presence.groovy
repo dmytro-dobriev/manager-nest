@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "5.3.5" }
+def devVer() { return "5.3.6" }
 
 // for the UI
 metadata {
@@ -521,7 +521,7 @@ def getTimeDiffSeconds(strtDate, stpDate=null, methName=null) {
 def getFileBase64(url,preType,fileType) {
 	def params = [
 		uri: url,
-		contentType: '$preType/$fileType'
+		contentType: "$preType/$fileType"
 	]
 	httpGet(params) { resp ->
 		if(resp.data) {

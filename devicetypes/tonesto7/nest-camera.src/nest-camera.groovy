@@ -1081,7 +1081,7 @@ def isTimeBetween(start, end, now, tz) {
 def getFileBase64(url, preType, fileType) {
 	def params = [
 		uri: url,
-		contentType: '$preType/$fileType'
+		contentType: "$preType/$fileType"
 	]
 	httpGet(params) { resp ->
 		if(resp.data) {
