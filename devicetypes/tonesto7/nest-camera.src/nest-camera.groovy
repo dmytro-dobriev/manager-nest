@@ -462,12 +462,17 @@ def lastOnlineEvent(dt) {
 }
 
 def onlineStatusEvent(isOnline) {
-	//Logger("onlineStatusEvent($isOnline)")
-	def prevOnlineStat = device.currentState("onlineStatus")?.value
+	LogAction("onlineStatusEvent($isOnline)")
+	if(state?.camApiServerData && (state?.camApiServerData?.items[0]?.is_online != isOnline) ) {
+		LogAction("onlineStatusEvent: ${isOnline} | CamData: ${state?.camApiServerData?.items[0]?.is_online}")
+		//isOnline = state?.camApiServerData?.items[0]?.is_online
+		state.camApiServerData = null
+	}
 	def onlineStat = isOnline.toString() == "true" ? "online" : "offline"
-	state?.onlineStatus = onlineStat.toString().capitalize()
 	state?.isOnline = (onlineStat == "online")
 	modifyDeviceStatus(onlineStat)
+	def prevOnlineStat = device.currentState("onlineStatus")?.value
+	state?.onlineStatus = onlineStat.toString().capitalize()
 	if(isStateChange(device, "onlineStatus", onlineStat.toString())) {
 		Logger("UPDATED | Online Status is: (${onlineStat}) | Original State: (${prevOnlineStat})")
 		sendEvent(name: "onlineStatus", value: onlineStat.toString(), descriptionText: "Online Status is: ${onlineStat}", displayed: true, isStateChange: true, state: onlineStat)
