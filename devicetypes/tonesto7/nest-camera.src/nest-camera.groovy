@@ -766,7 +766,7 @@ def publicShareUrlEvent(url) {
 		} else {
 			def camData
 			def ldtSec = getTimeDiffSeconds(state?.lastGetCamApiServerData)
-			if(state?.camUUID && (state?.camApiServerData == null || ldtSec > (30*60)) ) {
+			if(state?.camUUID && (state?.camApiServerData == null || ldtSec > (60*60)) ) {
 				camData = getCamApiServerData(state?.camUUID) 
 			}
 			if(camData && state?.lastCamApiServerData != camData) {
