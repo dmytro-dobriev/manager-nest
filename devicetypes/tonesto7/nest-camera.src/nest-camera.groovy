@@ -254,6 +254,7 @@ void poll() {
 }
 
 void refresh() {
+	state?.camApiServerData = null
 	poll()
 }
 
@@ -273,7 +274,7 @@ void cltLiveStreamStart() {
 def generateEvent(Map eventData) {
 	//log.trace("generateEvent Parsing data ${eventData}")
 	state.eventData = eventData
-	runIn(3, "processEvent", [overwrite: true] )
+	runIn(1, "processEvent", [overwrite: true] )
 }
 
 def processEvent() {
@@ -348,8 +349,12 @@ def processEvent() {
 		return null
 	}
 	catch (ex) {
-		log.error "generateEvent Exception: ${ex?.message}", ex
-		exceptionDataHandler(ex?.message, "generateEvent")
+		def s = ""
+		if(ex && ex?.message) {
+			s = ex?.message?.toString()
+		}
+		log.error "processEvent Exception: ${s}", ex
+		exceptionDataHandler(s, "processEvent")
 	}
 }
 
@@ -481,13 +486,19 @@ def securityStateEvent(sec) {
 }
 
 def isStreamingEvent(isStreaming, override=false) {
-	//log.trace "isStreamingEvent($isStreaming)..."
+	LogAction("isStreamingEvent($isStreaming, $override)...")
 	def isOn = device.currentState("isStreaming")?.value
 	def isOnline = device.currentState("onlineStatus")?.value
-	//log.debug "isStreamingEvent: ${isStreaming} | CamData: ${state?.camApiServerData?.items?.is_streaming[0]}"
 	if(override) { state?.camApiServerData = null }
-	else { if(state?.camApiServerData && state?.camApiServerData?.items?.is_streaming[0]) { isStreaming = state?.camApiServerData?.items?.is_streaming[0] } }
-	def val = (isStreaming.toString() == "true") ? "on" : (isOnline.toString() != "online" ? "offline" : "off")
+	else {
+		if(state?.camApiServerData && (state?.camApiServerData?.items[0]?.is_streaming != isStreaming) ) {
+			LogAction("isStreamingEvent: ${isStreaming} | CamData: ${state?.camApiServerData?.items[0]?.is_streaming}")
+			//isStreaming = state?.camApiServerData?.items[0]?.is_streaming
+			state.camApiServerData = null
+		}
+	}
+	def val = (isOnline.toString() != "online" ? "offline" : (isStreaming.toString() == "true") ? "on" : "off")
+	//def val = (isStreaming.toString() == "true") ? "on" : (isOnline.toString() != "online" ? "offline" : "off")
 	state?.isStreaming = (val == "on") ? true : false
 	if(isStateChange(device, "isStreaming", val.toString())) {
 		Logger("UPDATED | Camera Live Video Streaming is: (${val}) | Original State: (${isOn})")
@@ -722,8 +733,8 @@ def lastUpdatedEvent(sendEvt=false) {
 def vidHistoryTimeEvent() {
 	if(!state?.camApiServerData) { return }
 	def camData = state?.camApiServerData
-	def newMin = (camData?.items?.hours_of_free_tier_history[0] > 3 ? camData?.items?.hours_of_free_tier_history[0] : 3)
-	def newMax = (camData?.items?.hours_of_recording_max[0] > 3 ? camData?.items?.hours_of_recording_max[0] : 3)
+	def newMin = (camData?.items[0]?.hours_of_free_tier_history > 3 ? camData?.items[0]?.hours_of_free_tier_history : 3)
+	def newMax = (camData?.items[0]?.hours_of_recording_max > 3 ? camData?.items[0]?.hours_of_recording_max : 3)
 	def curMin = device.currentState("minVideoHistoryHours")?.value
 	def curMax = device.currentState("maxVideoHistoryHours")?.value
 	state?.minVideoHistoryHours = newMin
@@ -739,19 +750,29 @@ def vidHistoryTimeEvent() {
 def publicShareUrlEvent(url) {
 	//log.trace "publicShareUrlEvent($url)"
 	if(url) {
-		if(!state?.public_share_url || state?.public_share_url != url) { state?.public_share_url = url }
+		if(!state?.public_share_url || state?.public_share_url != url) {
+			state?.public_share_url = url
+			state.camApiServerData = null
+		}
 		def pubVidId = getPublicVidID()
 		def lastVidId = state?.lastPubVidId
 		//log.debug "Url: $url | Url(state): ${state?.public_share_url} | pubVidId: $pubVidId | lastVidId: $lastVidId | camUUID: ${state?.camUUID}"
 		if(lastVidId == null || lastVidId.toString() != pubVidId.toString()) {
-			state?.public_share_url = url
+			//state?.public_share_url = url
 			state?.lastPubVidId = pubVidId
 		}
 		if(!state?.camUUID) {
 			getCamUUID(pubVidId)
 		} else {
-			def camData = getCamApiServerData(state?.camUUID)
-			if(camData && state?.lastCamApiServerData != camData) { state?.lastCamApiServerData = camData }
+			def camData
+			def ldtSec = getTimeDiffSeconds(state?.lastGetCamApiServerData)
+			if(state?.camUUID && (state?.camApiServerData == null || ldtSec > (30*60)) ) {
+				camData = getCamApiServerData(state?.camUUID) 
+			}
+			if(camData && state?.lastCamApiServerData != camData) {
+				state?.lastCamApiServerData = camData
+				log.trace "publicShareUrlEvent($url) camData Changed"
+			}
 		}
 	} else {
 		//Logger("Url: $url | Url(state): ${state?.public_share_url} | pubVidId: ${state.pubVidId} | lastVidId: ${state.lastPubVidId} | camUUID: ${state?.camUUID} | camApiServerData ${state?.camApiServerData} | animation_url ${state?.animation_url} | snapshot_url ${state?.snapshot_url}", "warn")
@@ -1079,26 +1100,50 @@ def isTimeBetween(start, end, now, tz) {
 }
 
 def getFileBase64(url, preType, fileType) {
-	def params = [
-		uri: url,
-		contentType: "$preType/$fileType"
-	]
-	httpGet(params) { resp ->
-		if(resp.data) {
-			def respData = resp?.data
-			ByteArrayOutputStream bos = new ByteArrayOutputStream()
-			int len
-			int size = 4096
-			byte[] buf = new byte[size]
-			while ((len = respData.read(buf, 0, size)) != -1)
-				bos.write(buf, 0, len)
-			buf = bos.toByteArray()
-			//log.debug "buf: $buf"
-			String s = buf?.encodeBase64()
-			//log.debug "resp: ${s}"
-			return s ? "data:${preType}/${fileType};base64,${s.toString()}" : null
+	try {
+		def params = [
+			uri: url,
+			contentType: "$preType/$fileType"
+		]
+		//log.warn "Params: ${params}"
+		httpGet(params) { resp ->
+			if(resp?.status == 200) {
+				if(resp.data) {
+					def respData = resp?.data
+					ByteArrayOutputStream bos = new ByteArrayOutputStream()
+					int len
+					int size = 4096
+					byte[] buf = new byte[size]
+					while ((len = respData.read(buf, 0, size)) != -1)
+						bos.write(buf, 0, len)
+					buf = bos.toByteArray()
+					//LogAction("buf: $buf")
+					String s = buf?.encodeBase64()
+					//LogAction("resp: ${s}")
+					return s ? "data:${preType}/${fileType};base64,${s.toString()}" : null
+				}
+			} else {
+				LogAction("getFileBase64 Resp: ${resp?.status} ${url}", "error")
+				exceptionDataHandler("resp ${ex?.response?.status} ${url}", "getFileBase64")
+				return null
+			}
 		}
 	}
+	catch (ex) {
+		if(ex instanceof groovyx.net.http.ResponseParseException) {
+			if(ex?.statusCode != 200) {
+				LogAction("getFileBase64 Resp: ${ex?.statusCode} ${url}", "error")
+				log.error "getFileBase64 Exception:", ex
+			}
+		} else if(ex instanceof groovyx.net.http.HttpResponseException && ex?.response) {
+			LogAction("getFileBase64 Resp: ${ex?.response?.status} ${url}", "error")
+			exceptionDataHandler("${ex?.response?.status} ${url}", "getFileBase64")
+                } else {
+                        log.error "getFileBase64 Exception:", ex
+                        exceptionDataHandler(ex, "getFileBase64")
+                }
+                return null
+        }
 }
 
 def getImg(imgName) {
@@ -1175,7 +1220,7 @@ def camPageHtmlRespMethod(response, data) {
 	//log.debug "camPageHtmlRespMethod: ${response?.status}, ${response.getData()}"
 	if(response?.status != 408) {
 		def rData = response.getData()
-		log.debug
+		//log.debug
 		def url = (rData =~ /<meta.*property="og:image".*content="(.*)".*/)[0][1]
 		// log.debug "url: $url"
 		def uuid = (url =~ /(\?|\&)([^=]+)\=([^&]+)/)[0][3]
@@ -1185,15 +1230,21 @@ def camPageHtmlRespMethod(response, data) {
 }
 
 def getCamApiServerData(camUUID) {
+	Logger("getCamApiServerData($camUUID)")
 	try {
 		if(camUUID) {
 			def params = [
 				uri: "https://www.dropcam.com/api/v1/cameras.get?id=${camUUID}"
 			]
 			httpGet(params)  { resp ->
-				//log.debug "resp: (status: ${resp?.status}) | data: ${resp?.data}"
-				state?.camApiServerData = resp?.data
-				return resp?.data ?: null
+				if(resp?.status == 200) {
+					LogAction("getCamApiServerData resp: (status: ${resp?.status}) | data: ${resp?.data}")
+					if(resp?.data) {
+						state?.camApiServerData = resp?.data
+						state.lastGetCamApiServerData = getDtNow()
+						return resp?.data
+					}
+				} else { Logger("getCamApiServerData Resp: ${resp?.status}....", "warn") }
 			}
 		} else { Logger("getCamApiServerData camUUID is missing....", "warn") }
 	}
@@ -1207,7 +1258,7 @@ def getCamApiServerData(camUUID) {
 
 def getStreamHostUrl() {
 	if(!state?.camApiServerData) { return null }
-	def res = state?.camApiServerData?.items?.live_stream_host
+	def res = state?.camApiServerData?.items[0]?.live_stream_host
 	def data = res.toString().replaceAll("\\[|\\]", "")
 	//log.debug "getStreamHostUrl: $data"
 	return data ?: null
@@ -1221,7 +1272,7 @@ def getCamPlaylistURL() {
 
 def getCamApiServer() {
 	if(!state?.camApiServerData) { return null }
-	def res = state?.camApiServerData?.items?.nexus_api_http_server
+	def res = state?.camApiServerData?.items[0]?.nexus_api_http_server
 	def data = res.toString().replaceAll("\\[|\\]", "")
 	//log.debug "getCamApiServer: $data"
 	return data ?: null
