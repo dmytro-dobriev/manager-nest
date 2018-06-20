@@ -463,8 +463,8 @@ def lastOnlineEvent(dt) {
 
 def onlineStatusEvent(isOnline) {
 	LogAction("onlineStatusEvent($isOnline)")
-	if(state?.camApiServerData && (state?.camApiServerData?.items[0]?.is_online != isOnline) ) {
-		LogAction("onlineStatusEvent: ${isOnline} | CamData: ${state?.camApiServerData?.items[0]?.is_online}")
+	if(state?.camApiServerData && (state?.camApiServerData?.items[0]?.is_online != isOnline.toBoolean() ) ) {
+		Logger("onlineStatusEvent: ${isOnline.toBoolean()} | CamData: ${state?.camApiServerData?.items[0]?.is_online}")
 		//isOnline = state?.camApiServerData?.items[0]?.is_online
 		state.camApiServerData = null
 	}
@@ -497,7 +497,7 @@ def isStreamingEvent(isStreaming, override=false) {
 	if(override) { state?.camApiServerData = null }
 	else {
 		if(state?.camApiServerData && (state?.camApiServerData?.items[0]?.is_streaming != isStreaming) ) {
-			LogAction("isStreamingEvent: ${isStreaming} | CamData: ${state?.camApiServerData?.items[0]?.is_streaming}")
+			Logger("isStreamingEvent: ${isStreaming} | CamData: ${state?.camApiServerData?.items[0]?.is_streaming}")
 			//isStreaming = state?.camApiServerData?.items[0]?.is_streaming
 			state.camApiServerData = null
 		}
@@ -757,6 +757,7 @@ def publicShareUrlEvent(url) {
 	if(url) {
 		if(!state?.public_share_url || state?.public_share_url != url) {
 			state?.public_share_url = url
+			Logger("publicShareUrlEvent url changed ${url}")
 			state.camApiServerData = null
 		}
 		def pubVidId = getPublicVidID()
