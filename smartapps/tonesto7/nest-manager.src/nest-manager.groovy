@@ -45,7 +45,7 @@ def minVersions() {
 		"protect":["val":536, "desc":"5.3.6"],
 		"presence":["val":536, "desc":"5.3.6"],
 		"weather":["val":536, "desc":"5.3.6"],
-		"camera":["val":536, "desc":"5.3.6"],
+		"camera":["val":537, "desc":"5.3.7"],
 		"stream":["val":104, "desc":"1.0.4"]
 	]
 }
