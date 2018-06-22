@@ -285,30 +285,24 @@ def compileForC() {
 
 def getTempColors() {
 	def colorMap
-//getTemperatureScale() == "C"   wantMetric()
-	if(compileForC()) {
 		colorMap = [
 			// Celsius Color Range
 			[value: 0, color: "#153591"],
 			[value: 7, color: "#1e9cbb"],
 			[value: 15, color: "#90d2a7"],
 			[value: 23, color: "#44b621"],
-			[value: 29, color: "#f1d801"],
-			[value: 33, color: "#d04e00"],
-			[value: 36, color: "#bc2323"]
-			]
-	} else {
-		colorMap = [
+			[value: 28, color: "#f1d801"],
+			[value: 35, color: "#d04e00"],
+			[value: 37, color: "#bc2323"],
 			// Fahrenheit Color Range
 			[value: 40, color: "#153591"],
 			[value: 44, color: "#1e9cbb"],
 			[value: 59, color: "#90d2a7"],
 			[value: 74, color: "#44b621"],
 			[value: 84, color: "#f1d801"],
-			[value: 92, color: "#d04e00"],
+			[value: 95, color: "#d04e00"],
 			[value: 96, color: "#bc2323"]
 		]
-	}
 }
 
 def lowRange() { return compileForC() ? 9 : 50 }
