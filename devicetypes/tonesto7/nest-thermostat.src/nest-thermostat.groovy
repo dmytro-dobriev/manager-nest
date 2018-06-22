@@ -1087,7 +1087,7 @@ def hvacModeEvent(mode) {
 	state?.hvac_mode = newMode
 	if(!hvacMode.equals(newMode)) {
 		Logger("UPDATED | Hvac Mode is (${newMode.toString().capitalize()}) | Original State: (${hvacMode.toString().capitalize()})")
-		sendEvent(name: "thermostatMode", value: newMode, descriptionText: "HVAC mode is ${newMode} mode", displayed: true, isStateChange: true)
+		sendEvent(name: "thermostatMode", value: newMode, data:[supportedThermostatModes: device.currentValue("supportedThermostatModes")], descriptionText: "HVAC mode is ${newMode} mode", displayed: true, isStateChange: true)
 	}
 
 	def oldnestmode = state?.nestHvac_mode
@@ -1283,7 +1283,7 @@ def autoSchedDataEvent(schedData) {
 }
 
 def canHeatCool(canHeat, canCool) {
-	def supportedThermostatModes = ["off"]
+	def supportedThermostatModes = ["off", "eco"]
 	state?.can_heat = !canHeat ? false : true
 	if(state.can_heat) { supportedThermostatModes << "heat" }
 	state?.can_cool = !canCool ? false : true
@@ -1305,7 +1305,7 @@ def canHeatCool(canHeat, canCool) {
 	}
 
 	def nestSupportedThermostatModes = supportedThermostatModes.collect()
-	nestSupportedThermostatModes << "eco"
+	//nestSupportedThermostatModes << "eco"
 	if(state?.supportedNestThermostatModes != nestSupportedThermostatModes) {
 		sendEvent(name: "supportedNestThermostatModes", value: nestSupportedThermostatModes)
 		state.supportedNestThermostatModes = nestSupportedThermostatModes.collect()
