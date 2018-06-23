@@ -4009,16 +4009,19 @@ def getChanges(mapA, mapB, headstr, objType=null) {
 		String[] leftKeys = left.keySet()
 		String[] rightKeys = right.keySet()
 		leftKeys.each {
-			// if ( (left[it] instanceof List) || (left[it] instanceof ArrayList) || (left[it] instanceof Map)) {
-			// 	// May detect matching items here if sort of objects is problem
-			// 	//whatChanged( left[it], right[it], "${headstr}/${it}" )
-			// } else {
+			//if ( (left[it] instanceof List) || (left[it] instanceof ArrayList) || (left[it] instanceof Map)) {
+			if ( left[it] instanceof Map ) {
+				def chgs = getChanges( left[it], right[it], "${headstr}/${it}", objType )
+				if(chgs && objType) {
+					itemsChgd += chgs
+				}
+			} else {
 				if (left[it].toString() != right[it].toString()) {
 					if(objType) {
 						itemsChgd.push(it.toString())
 					}
 				}
-			// }
+			}
 		}
 		if(itemsChgd.size()) { return itemsChgd }
 	}
