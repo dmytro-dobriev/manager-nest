@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.8" }
-def appVerDate() { "06-19-2018" }
+def appVerDate() { "06-23-2018" }
 def minVersions() {
 	return [
 		"automation":["val":535, "desc":"5.3.5"],
@@ -46,7 +46,7 @@ def minVersions() {
 		"presence":["val":536, "desc":"5.3.6"],
 		"weather":["val":536, "desc":"5.3.6"],
 		"camera":["val":537, "desc":"5.3.7"],
-		"stream":["val":104, "desc":"1.0.4"]
+		"stream":["val":105, "desc":"1.0.5"]
 	]
 }
 
@@ -8159,7 +8159,7 @@ def createInstallDataJson(returnMap=false) {
 		def restVer = !atomicState?.swVer?.streamDevVer ? "Not Installed" : atomicState?.swVer?.streamDevVer
 
 		def versions = [
-			"apps":["manager":appVersion()?.toString(), "automation":autoVer, "service":restVer],
+			"apps":["manager":appVersion()?.toString(), "automation":autoVer, "service":restVer, "storage":storVer],
 			"devices":["thermostat":tsVer, "vthermostat":vtsVer, "protect":ptVer, "camera":cdVer, "presence":pdVer, "weather":wdVer]
 		]
 
