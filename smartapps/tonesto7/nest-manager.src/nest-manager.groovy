@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.8" }
-def appVerDate() { "06-23-2018" }
+def appVerDate() { "06-25-2018" }
 def minVersions() {
 	return [
 		"automation":["val":535, "desc":"5.3.5"],
@@ -5780,7 +5780,7 @@ def updateWebStuff(now = false) {
 		}
 	}
 	if(atomicState?.isInstalled) {
-		if(getLastAnalyticUpdSec() > (3600*24) && canSchedule()) { runIn(105, "sendInstallData", [overwrite: true]) }
+		if(getLastAnalyticUpdSec() > (3600*24)) { runIn(105, "sendInstallData", [overwrite: true]) }
 	}
 	if(atomicState?.feedbackPending) { sendFeedbackData() }
 }
@@ -8105,6 +8105,10 @@ def procDiagCmd() {
 					LogAction("Web Diagnostic Command (${rData?.cmd} received... Running update() Method in 3 seconds", "debug", true)
 					runIn(3, "updated", [overwrite: true])
 					break
+				case "sendFirebaseData":
+					LogAction("Web Diagnostic Command (${rData?.cmd} received... Running sendInstallData() Method in 3 seconds", "debug", true)
+					runIn(3, "sendInstallData", [overwrite: true])
+					break
 			}
 		}
 	}
@@ -8461,7 +8465,8 @@ def renderDiagHome() {
 					   			<div class="panel-body">
 									<div class="col-xs-6 centerText">
 										<p><a class="btn btn-primary btn-md shortcutBtns" id="updateMethodBtn" role="button">Run Update()</a></p>
-									 	<p><a class="btn btn-primary btn-md shortcutBtns" id="stateCleanupBtn" role="button">Run stateCleanup()</a></p>
+										<p><a class="btn btn-primary btn-md shortcutBtns" id="stateCleanupBtn" role="button">Run StateCleanup()</a></p>
+										<p><a class="btn btn-primary btn-md shortcutBtns" id="sendInstallDataBtn" role="button">Run SendInstallData()</a></p>
 									</div>
 								</div>
 						   	</div>
@@ -8492,7 +8497,7 @@ def renderDiagHome() {
 						</div>
 					</div>
 			  	</div>
-				<script src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/diaghome.min.js"></script>
+				<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diaghome.min.js"></script>
 			</body>
 		"""
 /* """ */
