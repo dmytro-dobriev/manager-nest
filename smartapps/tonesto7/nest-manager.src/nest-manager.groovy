@@ -8497,7 +8497,7 @@ def renderDiagHome() {
 						</div>
 					</div>
 			  	</div>
-				<script src="https://rawgit.com/tonesto7/nest-manager/master/Documents/js/diaghome.min.js"></script>
+				<script src="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/js/diaghome.min.js"></script>
 			</body>
 		"""
 /* """ */
