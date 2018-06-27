@@ -39,8 +39,7 @@ def appVersion() { "5.3.8" }
 def appVerDate() { "06-26-2018" }
 def minVersions() {
 	return [
-		"automation":["val":535, "desc":"5.3.5"],
-		"storage":["val":540, "desc":"5.4.0"],
+		"automation":["val":536, "desc":"5.3.6"],
 		"thermostat":["val":536, "desc":"5.3.6"],
 		"protect":["val":536, "desc":"5.3.6"],
 		"presence":["val":536, "desc":"5.3.6"],
@@ -217,33 +216,27 @@ def authPage() {
 		oauthTokenProvided = true
 	} else { description = "Click to enter Nest Credentials" }
 
-	if(!storageApp) {
-		section("Required Module Missing") {
-			paragraph "Please install the ES-Storage smartapp from the IDE and reload this page", required: true, state: null
-		}
-	} else {
-		if(!oauthTokenProvided && atomicState?.accessToken) {
-			def redirectUrl = buildRedirectUrl
-			//LogTrace("RedirectUrl = ${redirectUrl}")
+	if(!oauthTokenProvided && atomicState?.accessToken) {
+		def redirectUrl = buildRedirectUrl
+		//LogTrace("RedirectUrl = ${redirectUrl}")
 
-			LogAction("AuthToken not found: Directing to Login Page", "info", true)
-			return dynamicPage(name: "authPage", title: "Login Page", nextPage: "mainPage", install: false, uninstall: false) {
-				section("") {
-					paragraph appInfoDesc(), image: getAppImg("nst_manager_5%402x.png", true)
-				}
-				section(""){
-					paragraph "Tap 'Login to Nest' below to authorize SmartThings to your Nest Account.\n\nAfter login you will be taken to the 'Works with Nest' page. Read the info and if you 'Agree' press the 'Accept' button."
-					paragraph "❖ FYI: Please use the parent Nest account, Nest Family member accounts will not work correctly", state: "complete"
-					href url: redirectUrl, style:"embedded", required: true, title: "Login to Nest", description: description
-				}
-				devPageFooter("authLoadCnt", execTime)
+		LogAction("AuthToken not found: Directing to Login Page", "info", true)
+		return dynamicPage(name: "authPage", title: "Login Page", nextPage: "mainPage", install: false, uninstall: false) {
+			section("") {
+				paragraph appInfoDesc(), image: getAppImg("nst_manager_5%402x.png", true)
 			}
+			section(""){
+				paragraph "Tap 'Login to Nest' below to authorize SmartThings to your Nest Account.\n\nAfter login you will be taken to the 'Works with Nest' page. Read the info and if you 'Agree' press the 'Accept' button."
+				paragraph "❖ FYI: Please use the parent Nest account, Nest Family member accounts will not work correctly", state: "complete"
+				href url: redirectUrl, style:"embedded", required: true, title: "Login to Nest", description: description
+			}
+			devPageFooter("authLoadCnt", execTime)
 		}
-		
-		else if(showChgLogOk()) { return changeLogPage() }
-		else if(showDonationOk()) { return donationPage() }
-		else { return mainPage() }
 	}
+	
+	else if(showChgLogOk()) { return changeLogPage() }
+	else if(showDonationOk()) { return donationPage() }
+	else { return mainPage() }
 }
 
 def mainPage() {
@@ -371,7 +364,7 @@ def updStorageStateVal(sKey, sValue) {
 
 private getStorageApp() {
 	def name = storageAppName()
-	def storageApp = findAllChildAppsByName(name)?.find{ it?.name == name }
+	def storageApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name != storageAppName() }
 	if(storageApp) {
 		return storageApp
 	}
@@ -389,7 +382,8 @@ private checkStorageApp() {
 	try {
 		def setData = [:]
 		setData["childTypeFlag"] = [type:"text", value:"storage"]
-		storageApp = addChildApp(appNamespace(), name, name, [settings:setData])
+		setData["storageFlag"] = [type:"bool", value:true]
+		storageApp = addChildApp(appNamespace(), autoAppName(), name, [settings:setData])
 	} catch (all) {
 		log.error "Please Make sure the NST Storage app is installed under the IDE"
 		return null
@@ -718,7 +712,6 @@ def codeUpdatesPage(){
 			def desc = "\bSmartApps:"
 			desc += atomicState?.swVer?.mgrVer != null ? "${desc != "" ? "\n":""}Manager Version: (${atomicState?.swVer?.mgrVer})" : ""
 			desc += atomicState?.swVer?.autoSaVer != null ? "${desc != "" ? "\n":""}Automations Version: (${atomicState?.swVer?.autoSaVer})" : ""
-			desc += atomicState?.swVer?.storVer != null ? "${desc != "" ? "\n":""}Storage App Version: (${atomicState?.swVer?.storVer})" : ""
 			desc += "\n\n\bDevices:"
 			desc += atomicState?.swVer?.tDevVer != null ? "${desc != "" ? "\n":""} • Thermostat Version: (${atomicState?.swVer?.tDevVer})" : ""
 			desc += atomicState?.swVer?.pDevVer != null ? "${desc != "" ? "\n":""} • Protect Version: (${atomicState?.swVer?.pDevVer})" : ""
@@ -2335,15 +2328,15 @@ def initBuiltin(btype) {
 }
 
 def initNestModeApp() {
-	initBuiltin("initNestModeApp");
+	initBuiltin("initNestModeApp")
 }
 
 def initWatchdogApp() {
-	initBuiltin("initWatchdogApp");
+	initBuiltin("initWatchdogApp")
 }
 
 def initRemDiagApp() {
-	initBuiltin("initRemDiagApp");
+	initBuiltin("initRemDiagApp")
 }
 
 def initManagerApp() {
@@ -2392,18 +2385,13 @@ def finishInitManagerApp() {
 		def storId = null
 		if(!isAppLiteMode()) {
 			getChildApps()?.sort()?.each { chld ->
-				if(chld?.getAutomationType() == "storage") {
-					if(storId == null) { storId = chld?.smartAppId }
-				} else {
-					if(autoId == null) {autoId = chld?.smartAppId}
-					chld?.update()
-				}
+				if(autoId == null) {autoId = chld?.smartAppId}
+				chld?.update()
 			}
 		} else {
 			badAutomation = true
 		}
 		//if(autoId) { updAppCodeId("auto", autoId) }
-		//if(storId) { updAppCodeId("storage", storId) }
 
 		def tstatAutoApp = getChildApps()?.find {
 			def aa = null
@@ -3122,32 +3110,17 @@ def getInstAutoTypesDesc() {
 			ver = null
 			type = "old"
 		}
-		if(type != "storage") {
-			if(ver) {
-				def updVer = sData?.autoSaVer ?: ver
-				if(versionStr2Int(ver) < versionStr2Int(updVer)) {
-					updVer = ver
-				}
-				sData.autoSaVer = updVer
-				atomicState?.swVer = sData
+		if(ver) {
+			def updVer = sData?.autoSaVer ?: ver
+			if(versionStr2Int(ver) < versionStr2Int(updVer)) {
+				updVer = ver
 			}
-			if(ver == null || (versionStr2Int(ver) < minVersions()?.automation?.val) || (versionStr2Int(ver) > minVersions()?.automation?.val && !getDevOpt())) {
-				LogAction("NST AUTOMATIONS UPDATE REQUIRED: Automation ${a?.label} (v${ver}) | REQUIRED: (v${minVersions()?.automation?.desc}) | Please install the current NST Automations SmartApp Code in the IDE", "error", true)
-				appUpdateNotify(true, "automation")
-			}
-		} else {
-			if(ver) {
-				def updVer = sData?.storVer ?: ver
-				if(versionStr2Int(ver) < versionStr2Int(updVer)) {
-					updVer = ver
-				}
-				sData.storVer = updVer
-				atomicState?.swVer = sData
-			}
-			if(ver == null || (versionStr2Int(ver) < minVersions()?.storage?.val) || (versionStr2Int(ver) > minVersions()?.storage?.val)) {
-				LogAction("NST STORAGE UPDATE REQUIRED: Automation ${a?.label} (v${ver}) | REQUIRED: (v${minVersions()?.storage?.desc}) | Please install the current NST Storage SmartApp Code in the IDE", "error", true)
-				appUpdateNotify(true, "storage")
-			}
+			sData.autoSaVer = updVer
+			atomicState?.swVer = sData
+		}
+		if(ver == null || (versionStr2Int(ver) < minVersions()?.automation?.val) || (versionStr2Int(ver) > minVersions()?.automation?.val && !getDevOpt())) {
+			LogAction("NST AUTOMATIONS UPDATE REQUIRED: Automation ${a?.label} (v${ver}) | REQUIRED: (v${minVersions()?.automation?.desc}) | Please install the current NST Automations SmartApp Code in the IDE", "error", true)
+			appUpdateNotify(true, "automation")
 		}
 
 		if(dis) {
@@ -3212,7 +3185,12 @@ def getInstAutoTypesDesc() {
  						LogAction("Deleting Extra Storage Child (${a?.id})", "warn", true)
  						deleteChildApp(a)
 						updTimestampMap("lastAnalyticUpdDt", null)
- 					}
+ 					} else if(a?.name == "NST Storage") {
+						LogAction("Deleting Old Storage Child (${a?.id})", "warn", true)
+ 						deleteChildApp(a)
+						updTimestampMap("lastAnalyticUpdDt", null)
+						def test = checkStorageApp()
+					 }
 					break
  				default:
  					LogAction("Deleting Unknown Automation (${a?.id})", "warn", true)
@@ -5632,7 +5610,7 @@ def missPollNotify(on) {
 }
 
 def minVersionsOk() {
-	def files = [tDevVer:"thermostat", weatDevVer:"weather", vtDevVer:"thermostat", presDevVer:"presence", camDevVer:"camera", pDevVer:"protect", autoSaVer:"automation", storVer:"storage"]
+	def files = [tDevVer:"thermostat", weatDevVer:"weather", vtDevVer:"thermostat", presDevVer:"presence", camDevVer:"camera", pDevVer:"protect", autoSaVer:"automation"]
 	def swData = atomicState?.swVer
 	if(swData) {
 		files?.each { fi->
@@ -5649,7 +5627,6 @@ def appUpdateNotify(badFile=false, badType=null) {
 	if(getLastUpdMsgSec() > wait.toInteger()) {
 		def appUpd = isAppUpdateAvail() == true ? true : false
 		def autoappUpd = isAutoAppUpdateAvail() == true ? true : false
-		def storappUpd = isStorageAppUpdateAvail() == true ? true : false
 		def protUpd = atomicState?.protects ? isProtUpdateAvail() : false
 		def presUpd = atomicState?.presDevice ? isPresUpdateAvail() : false
 		def tstatUpd = atomicState?.thermostats ? isTstatUpdateAvail() : false
@@ -5658,7 +5635,7 @@ def appUpdateNotify(badFile=false, badType=null) {
 		def streamUpd = atomicState?.restStreamingOn ? isStreamUpdateAvail() : false
 		def blackListed = (atomicState?.appData && !appDevType() && atomicState?.clientBlacklisted) ? true : false
 		//log.debug "appUpd: $appUpd || protUpd: $protUpd || presUpd: $presUpd || tstatUpd: $tstatUpd || weatherUpd: $weatherUpd || camUpd: $camUpd || blackListed: $blackListed || badFile: $badFile"
-		if(appUpd || autoappUpd || storappUpd || protUpd || presUpd || tstatUpd || weatherUpd || camUpd || streamUpd || blackListed || badFile) {
+		if(appUpd || autoappUpd || protUpd || presUpd || tstatUpd || weatherUpd || camUpd || streamUpd || blackListed || badFile) {
 			def str = ""
 			str += !blackListed ? "" : "\nBlack Listed, please ensure software is up to date then contact developer"
 			if(badFile && badType) {
@@ -5666,7 +5643,6 @@ def appUpdateNotify(badFile=false, badType=null) {
 			}
 			str += !appUpd ? "" : "\nManager App: v${atomicState?.appData?.updater?.versions?.app?.ver?.toString()}${betaMarker() ? " Beta" : ""}"
 			str += (!autoappUpd && !badFile) ? "" : "\nAutomation App: v${atomicState?.appData?.updater?.versions?.autoapp?.ver?.toString()}${betaMarker() ? " Beta" : ""}"
-			str += (!storappUpd && !badFile) ? "" : "\nStorage App: v${atomicState?.appData?.updater?.versions?.storapp?.ver?.toString()}${betaMarker() ? " Beta" : ""}"
 			str += !protUpd ? "" : "\nProtect: v${atomicState?.appData?.updater?.versions?.protect?.ver?.toString()}"
 			str += !camUpd ? "" : "\nCamera: v${atomicState?.appData?.updater?.versions?.camera?.ver?.toString()}"
 			str += !presUpd ? "" : "\nPresence: v${atomicState?.appData?.updater?.versions?.presence?.ver?.toString()}"
@@ -6172,12 +6148,6 @@ def isAppUpdateAvail() {
 def isAutoAppUpdateAvail() {
 	if(isCodeUpdateAvailable(atomicState?.appData?.updater?.versions?.autoapp?.ver, atomicState?.swVer?.autoSaVer, "automation")) { return true }
 	if(atomicState?.swVer?.autoSaVer != "" && (versionStr2Int(atomicState?.swVer?.autoSaVer) > minVersions()?.automation?.val) && !getDevOpt()) { return true } // check if too high
-	return false
-}
-
-def isStorageAppUpdateAvail() {
-	if(isCodeUpdateAvailable(atomicState?.appData?.updater?.versions?.storapp?.ver, atomicState?.swVer?.storVer, "storage")) { return true }
-	if(atomicState?.swVer?.storVer != "" && (versionStr2Int(atomicState?.swVer?.storVer) > minVersions()?.storage?.val) && !getDevOpt()) { return true } // check if too high
 	return false
 }
 
@@ -8162,11 +8132,10 @@ def createInstallDataJson(returnMap=false) {
 		def wdVer = !atomicState?.swVer?.weatDevVer ? "Not Installed" : atomicState?.swVer?.weatDevVer
 		def vtsVer = !atomicState?.swVer?.vtDevVer ? "Not Installed" : atomicState?.swVer?.vtDevVer
 		def autoVer = !atomicState?.swVer?.autoSaVer ? "Not Installed" : atomicState?.swVer?.autoSaVer
-		def storVer = !atomicState?.swVer?.storVer ? "Not Installed" : atomicState?.swVer?.storVer
 		def restVer = !atomicState?.swVer?.streamDevVer ? "Not Installed" : atomicState?.swVer?.streamDevVer
 
 		def versions = [
-			"apps":["manager":appVersion()?.toString(), "automation":autoVer, "service":restVer, "storage":storVer],
+			"apps":["manager":appVersion()?.toString(), "automation":autoVer, "service":restVer],
 			"devices":["thermostat":tsVer, "vthermostat":vtsVer, "protect":ptVer, "camera":cdVer, "presence":pdVer, "weather":wdVer]
 		]
 
@@ -9743,6 +9712,9 @@ def getAutoIcon(type) {
 			case "watchDog":
 				return getAppImg("watchdog_icon.png")
 				break
+			case "storage":
+				return getAppImg("storage_icon.png")
+				break
 			case "remDiag":
 				return getAppImg("diag_icon.png")
 				break
@@ -9953,7 +9925,7 @@ def appLabel()		{ return "Nest Manager" }
 def appAuthor()		{ return "Anthony S." }
 def appNamespace()	{ return "tonesto7" }
 def autoAppName()	{ return "NST Automations" }
-def storageAppName()	{ return "NST Storage" }
+def storageAppName(){ return "NST Storage" }
 def gitRepo()		{ return "tonesto7/nest-manager"}
 def gitBranch()		{ return betaMarker() ? "beta" : "master" }
 def gitPath()		{ return "${gitRepo()}/${gitBranch()}"}

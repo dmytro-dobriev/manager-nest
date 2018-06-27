@@ -47,6 +47,7 @@ preferences {
 	page(name: "schMotModePage")
 	page(name: "setDayModeTimePage")
 	page(name: "watchDogPage")
+	page(name: "storagePage")
 	page(name: "diagnosticsPage")
 	page(name: "schMotSchedulePage")
 	page(name: "scheduleConfigPage")
@@ -305,8 +306,9 @@ def mainAutoPage(params) {
 	// If the selected automation has not been configured take directly to the config page.  Else show main page
 	if(autoType == "nMode" && !isNestModesConfigured())		{ return nestModePresPage() }
 	else if(autoType == "watchDog" && !isWatchdogConfigured())	{ return watchDogPage() }
-	else if(autoType == "remDiag" && !isDiagnosticsConfigured())	{ return diagnosticsPage() }
-	else if(autoType == "schMot" && !isSchMotConfigured())		{ return schMotModePage() }
+	else if(autoType == "storage")	{ return storagePage() }
+	else if(autoType == "remDiag" && !isDiagnosticsConfigured()) { return diagnosticsPage() }
+	else if(autoType == "schMot" && !isSchMotConfigured()) { return schMotModePage() }
 
 	else {
 		// Main Page Entries
@@ -361,10 +363,14 @@ def mainAutoPage(params) {
 						href "watchDogPage", title: "Nest Location Watchdog", description: watDogDesc ?: "Tap to configure", state: (watDogDesc ? "complete" : null), image: getAppImg("watchdog_icon.png")
 					}
 					if(autoType == "remDiag") {
-						//paragraph title:"Watch your Nest Location for Events:", ""
 						def diagDesc = ""
 						def remDiagDesc = isDiagnosticsConfigured() ? "${diagDesc}" : null
 						href "diagnosticsPage", title: "NST Diagnostics", description: remDiagDesc ?: "Tap to configure", state: (remDiagDesc ? "complete" : null), image: getAppImg("diag_icon.png")
+					}
+					if(autoType == "storage") {
+						def storDesc = ""
+						def storageDesc = isStorageConfigured() ? "${storDesc}" : null
+						href "storagePage", title: "NST Storage", description: storageDesc ?: "Tap to configure", state: (storageDesc ? "complete" : null), image: getAppImg("storage_icon.png")
 					}
 				}
 			}
@@ -382,15 +388,11 @@ def mainAutoPage(params) {
 				}
 			}
 			section("Automation Name:") {
-//				if(autoType == "watchDog") {
-//					paragraph "${app?.label}"
-//				} else {
-					def newName = getAutoTypeLabel()
-					label title: "Label this Automation:", description: "Suggested Name: ${newName}", defaultValue: newName, required: true, wordWrap: true, image: getAppImg("name_tag_icon.png")
-					if(!atomicState?.isInstalled) {
-						paragraph "Make sure to name it something that you can easily recgonize."
-					}
-//				}
+				def newName = getAutoTypeLabel()
+				label title: "Label this Automation:", description: "Suggested Name: ${newName}", defaultValue: newName, required: true, wordWrap: true, image: getAppImg("name_tag_icon.png")
+				if(!atomicState?.isInstalled) {
+					paragraph "Make sure to name it something that you can easily recgonize."
+				}
 			}
 			remove("Remove this Automation!", "WARNING!!!", "Last Chance to Stop!!!\nThis action is not reversible\n\nThis Automation will be removed completely")
 		}
@@ -496,20 +498,14 @@ def backupConfigToFirebase() {
 void settingUpdate(name, value, type=null) {
 	LogTrace("settingUpdate($name, $value, $type)...")
 	try {
-		//if(name && value && type) {
-		if(name && type) {
-			app?.updateSetting("$name", [type: "$type", value: value])
-		}
-		//else if (name && value && type == null) { app?.updateSetting(name.toString(), value) }
+		if(name && type) { app?.updateSetting("$name", [type: "$type", value: value]) }
 		else if (name && type == null) { app?.updateSetting(name.toString(), value) }
-	} catch(e) {
-		log.error "settingUpdate Exception:", ex
-	}
+	} catch(e) { log.error "settingUpdate Exception:", ex }
 }
 
 def stateUpdate(key, value) {
-	if(key) { atomicState?."${key}" = value }
-	else { LogAction("stateUpdate: null key $key $value", "error", true) }
+	if(key) { atomicState?."${key}" = value; return true }
+	else { LogAction("stateUpdate: null key $key $value", "error", true); return false }
 }
 
 def initAutoApp() {
@@ -518,6 +514,8 @@ def initAutoApp() {
 	//def restoreComplete = settings["restoreCompleted"] == true ? true : false
 	if(settings["watchDogFlag"]) {
 		atomicState?.automationType = "watchDog"
+	} else if(settings["storageFlag"]) {
+		atomicState?.automationType = "storage"
 	} else if(settings["remDiagFlag"]) {
 		atomicState?.automationType = "remDiag"
 		parent?.remDiagAppAvail(true)
@@ -691,6 +689,7 @@ def getAutoTypeLabel() {
 
 	if(type == "nMode")		{ typeLabel = "${newName} (NestMode)" }
 	else if(type == "watchDog")	{ typeLabel = "Nest Location ${location.name} Watchdog"}
+	else if(type == "storage")	{ typeLabel = "NST Storage"}
 	else if(type == "remDiag")	{ typeLabel = "NST Diagnostics"}
 	else if(type == "schMot")	{ typeLabel = "${newName} (${schMotTstat?.label})" }
 
@@ -727,9 +726,10 @@ def getStateVal(var) {
 }
 
 def automationsInst() {
-	atomicState.isNestModesConfigured = 	isNestModesConfigured() ? true : false
+	atomicState.isNestModesConfigured = isNestModesConfigured() ? true : false
 	atomicState.isWatchdogConfigured = 	isWatchdogConfigured() ? true : false
-	atomicState.isDiagnosticsConfigured = 	isDiagnosticsConfigured() ? true : false
+	atomicState.isDiagnosticsConfigured = isDiagnosticsConfigured() ? true : false
+	atomicState.isStorageConfigured = isStorageConfigured() ? true : false
 	atomicState.isSchMotConfigured = 	isSchMotConfigured() ? true : false
 
 	atomicState.isLeakWatConfigured = 	isLeakWatConfigured() ? true : false
@@ -767,6 +767,9 @@ def getAutomationsInstalled() {
 			list.push(aType)
 			break
 		case "remDiag":
+			list.push(aType)
+			break
+		case "storage":
 			list.push(aType)
 			break
 	}
@@ -1185,11 +1188,6 @@ def runAutomationEval() {
 				watchDogCheck()
 			}
 			break
-		case "remDiag":
-			if(isDiagnosticsConfigured()) {
-				//remDiagCheck()
-			}
-			break
 		default:
 			LogAction("runAutomationEval: Invalid Option Received ${autoType}", "warn", true)
 			break
@@ -1410,6 +1408,27 @@ def diagnosticsPage() {
 			paragraph "There is nothing to show yet"
 		}
 	}
+}
+
+def storagePrefix() { return "storage" }
+def storagePage() {
+	def pName = storagePrefix()
+	dynamicPage(name: "storagePage", title: "NST Storage", uninstall: false, install: true) {
+		storageInfoSect()
+	}
+}
+
+def storageInfoSect() {
+	section("Storage App Info:") {
+		def str = ""
+		str += "Version: V${appVersion()}"
+		str += "\nUsage: ${getStateSizePerc()}%"
+		paragraph str, state: "complete"
+	}
+}
+
+def isStorageConfigured() {
+	return (atomicState?.automationType == "storage") ? true : false
 }
 
 def isDiagnosticsConfigured() {
@@ -7770,7 +7789,6 @@ def getUse24Time()			{ return useMilitaryTime ? true : false }
 def getStateSize() {
 	def resultJson = new groovy.json.JsonOutput().toJson(state)
 	return resultJson?.toString().length()
-        //return state?.toString().length()
 }
 def getStateSizePerc()		{ return (int) ((stateSize / 100000)*100).toDouble().round(0) }
 
