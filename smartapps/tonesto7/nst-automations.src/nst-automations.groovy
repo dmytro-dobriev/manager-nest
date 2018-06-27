@@ -508,6 +508,11 @@ def stateUpdate(key, value) {
 	else { LogAction("stateUpdate: null key $key $value", "error", true); return false }
 }
 
+def stateRemove(key) {
+	if(state?.containsKey(key)) { state.remove(key?.toString()) }
+	return true
+}
+
 def initAutoApp() {
 	//log.debug "${app.label} initAutoApp..."			// Must be log.debug
 	//def restoreId = settings["restoreId"]
@@ -1186,6 +1191,16 @@ def runAutomationEval() {
 		case "watchDog":
 			if(isWatchdogConfigured()) {
 				watchDogCheck()
+			}
+			break
+		case "remDiag":
+			if(isDiagnosticsConfigured()) {
+				// remDiagCheck()
+			}
+			break
+		case "storage":
+			if(isStorageConfigured()) {
+				// storageCheck()
 			}
 			break
 		default:

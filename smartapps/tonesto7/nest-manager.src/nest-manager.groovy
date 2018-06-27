@@ -36,7 +36,7 @@ definition(
 }
 
 def appVersion() { "5.3.8" }
-def appVerDate() { "06-26-2018" }
+def appVerDate() { "06-27-2018" }
 def minVersions() {
 	return [
 		"automation":["val":536, "desc":"5.3.6"],
@@ -343,31 +343,42 @@ def storageInfoSect() {
 	}
 }
 
-def getStorageStateVal(val) {
+def getStorageVal(val) {
 	if(val) {
 		def storApp = getStorageApp()
-		if(storApp) {
-			return storApp?.getStateVal(val as String) ?: null
-		}
+		if(storApp) { return storApp?.getStateVal(val as String) ?: null }
 	}
 	return null
 }
 
-def updStorageStateVal(sKey, sValue) {
+def updStorageVal(sKey, sValue) {
 	if(sKey) {
 		def storApp = getStorageApp()
-		if(storApp) {
-			return storApp?.stateUpdate(sKey as String, sValue)
-		}
+		if(storApp) { return storApp?.stateUpdate(sKey as String, sValue) }
 	}
+}
+
+def remStorageVal(sKey) {
+	if(sKey) {
+		def storApp = getStorageApp()
+		if(storApp) { return storApp?.stateRemove(sKey as String) }
+	}
+}
+
+def findStateStorageVal(val) {
+	def storVal = getStorageVal(val)
+	def stateVal = atomicState?."$val"
+	if(storVal) {
+		if(stateVal) { state.remove(val) }
+		return storVal
+	} else if(stateVal) { return stateVal }
+	return null
 }
 
 private getStorageApp() {
 	def name = storageAppName()
 	def storageApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name != storageAppName() }
-	if(storageApp) {
-		return storageApp
-	}
+	if(storageApp) { return storageApp }
 	return null
 }
 
@@ -375,13 +386,11 @@ private checkStorageApp() {
 	def storageApp = getStorageApp()
 	def name = storageAppName()
 	if(storageApp) {
-		if (storageApp?.label != name) { storageApp.updateLabel(name) }
-		if(storageApp?.getSettingVal("childTypeFlag") != "storage") { storageApp?.settingUpdate("childTypeFlag", "storage", "text") }
+		if(storageApp?.label != name) { storageApp.updateLabel(name) }
 		return storageApp
 	}
 	try {
 		def setData = [:]
-		setData["childTypeFlag"] = [type:"text", value:"storage"]
 		setData["storageFlag"] = [type:"bool", value:true]
 		storageApp = addChildApp(appNamespace(), autoAppName(), name, [settings:setData])
 	} catch (all) {
@@ -4097,7 +4106,7 @@ def updateChildData(force = false) {
 
 		def curWeatherData = [:]
 		if(atomicState?.thermostats && getWeatherDeviceInst()) {
-			def cur = getWData()
+			def cur = getWeatherData("curWeather")
 			if(cur) {
 				curWeatherData["temp"] = getTemperatureScale() == "C" ? (cur?.current_observation?.temp_c ? Math.round(cur?.current_observation?.temp_c.toDouble()) : null) : (cur?.current_observation?.temp_f ? Math.round(cur?.current_observation?.temp_f).toInteger() : null)
 				curWeatherData["hum"] = cur?.current_observation?.relative_humidity ?: 0
@@ -4255,7 +4264,7 @@ def updateChildData(force = false) {
 			}
 			else if(devId && atomicState?.weatherDevice && devId == getNestWeatherId()) {
 				//devCodeIds["weather"] = it?.getDevTypeId()
-				def wData1 = ["weatCond":getWData(), "weatForecast":getWForecastData(), "weatAstronomy":getWAstronomyData(), "weatAlerts":getWAlertsData()]
+				def wData1 = ["weatCond":getWeatherData("curWeather"), "weatForecast":getWeatherData("curForecast"), "weatAstronomy":getWeatherData("curAstronomy"), "weatAlerts":getWeatherData("curAlerts")]
 				def wData = ["data":wData1, "tz":nestTz, "mt":useMt, "debug":dbg, "logPrefix":logNamePrefix, "apiIssues":api, "htmlInfo":htmlInfo,
 							"allowDbException":allowDbException, "weathAlertNotif":settings?.weathAlertNotif, "latestVer":latestWeathVer()?.ver?.toString(),
 							"clientBl":clientBl, "hcTimeout":hcLongTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "hcRepairEnabled":hcRepairEnabled,
@@ -5764,6 +5773,7 @@ def updateWebStuff(now = false) {
 def getWeatherConditions(force = false) {
 	LogTrace("getWeatherConditions")
 	if(atomicState?.weatherDevice) {
+		def storageApp = checkStorageApp()
 		try {
 			LogAction("Retrieving Local Weather Conditions", "info", false)
 			def loc = ""
@@ -5782,7 +5792,7 @@ def getWeatherConditions(force = false) {
 				curWeather = getWeatherFeature("conditions")
 				curAlerts = getWeatherFeature("alerts")
 			}
-			if(getLastForecastUpdSec() > (1800) || !atomicState?.curForecast || !atomicState?.curAstronomy) {
+			if(getLastForecastUpdSec() > (1800) || (storageApp && (!getStorageVal("curForecast") || !getStorageVal("curAstronomy"))) || (!storageApp && (!atomicState?.curForecast || !atomicState?.curAstronomy))) {
 				if(custLoc) {
 					loc = custLoc
 					curForecast = getWeatherFeature("forecast", loc)
@@ -5792,8 +5802,13 @@ def getWeatherConditions(force = false) {
 					curAstronomy = getWeatherFeature("astronomy")
 				}
 				if(curForecast && curAstronomy) {
-					atomicState?.curForecast = curForecast
-					atomicState?.curAstronomy = curAstronomy
+					if(storageApp) {
+						updStorageVal("curForecast", curForecast)
+						updStorageVal("curAstronomy", curAstronomy)
+					} else {
+						atomicState?.curForecast = curForecast
+						atomicState?.curAstronomy = curAstronomy
+					}
 					chgd = true
 					updTimestampMap("lastForecastUpdDt", getDtNow())
 				} else {
@@ -5803,7 +5818,11 @@ def getWeatherConditions(force = false) {
 				}
 			}
 			if(curWeather && curAlerts) {
-				atomicState?.curWeather = curWeather
+				if(storageApp) {
+					updStorageVal("curWeather", curWeather)
+				} else {
+					atomicState?.curWeather = curWeather
+				}
 				chgd = true
 /*
 	Try to reduce size of alerts if they are big to save state space
@@ -5816,7 +5835,12 @@ def getWeatherConditions(force = false) {
 					}
 					cntr++
 				}
-				atomicState?.curAlerts = curAlerts
+				if(storageApp) {
+					updStorageVal("curAlerts", curAlerts)
+				} else { 
+					atomicState?.curAlerts = curAlerts
+				}
+				
 				if(!err) { updTimestampMap("lastWeatherUpdDt", getDtNow()) }
 			} else {
 				LogAction("Could Not Retrieve Local Weather Conditions or alerts... This issue is likely caused by Weather Underground API issues...", "warn", true)
@@ -5837,48 +5861,34 @@ def getWeatherConditions(force = false) {
 	} else { return false }
 }
 
-def getWData() {
-	if(atomicState?.curWeather) {
-		return atomicState?.curWeather
+def getWeatherData(dataName) {
+	def storageApp = checkStorageApp()
+	if(storageApp) {
+		if(getStorageVal(dataName)) {
+			return getStorageVal(dataName)
+		} else { if(getWeatherConditions(true)) { return getStorageVal(dataName) } }
 	} else {
-		if(getWeatherConditions(true)) {
-			return atomicState?.curWeather
-		}
+		if(atomicState?."$dataName") {
+			return atomicState?."$dataName"
+		} else { if(getWeatherConditions(true)) { return atomicState?."$dataName" }	}
 	}
 	return null
+}
+
+def getWData() {
+	return getWeatherData("curWeather")
 }
 
 def getWForecastData() {
-	if(atomicState?.curForecast) {
-		return atomicState?.curForecast
-	} else {
-		if(getWeatherConditions(true)) {
-			return atomicState?.curForecast
-		}
-	}
-	return null
+	return getWeatherData("curForecast")
 }
 
 def getWAstronomyData() {
-	if(atomicState?.curAstronomy) {
-		return atomicState?.curAstronomy
-	} else {
-		if(getWeatherConditions(true)) {
-			return atomicState?.curAstronomy
-		}
-	}
-	return null
+	return getWeatherData("curAstronomy")
 }
 
 def getWAlertsData() {
-	if(atomicState?.curAlerts) {
-		return atomicState?.curAlerts
-	} else {
-		if(getWeatherConditions(true)) {
-			return atomicState?.curAlerts
-		}
-	}
-	return null
+	return getWeatherData("curAlerts")
 }
 
 def getWeatherDeviceInst() {
@@ -7487,9 +7497,9 @@ def stateCleanup() {
 		"swVersion", "dashSetup", "dashboardUrl", "apiIssues", "stateSize", "haveRun", "lastStMode", "lastPresSenAway", "devCodeIdData", "appCodeIdData",
 		"automationsActive", "temperatures", "powers", "energies", "use24Time", "useMilitaryTime", "advAppDebug", "appDebug", "awayModes", "homeModes", "childDebug", "updNotifyWaitVal",
 		"appApiIssuesWaitVal", "misPollNotifyWaitVal", "misPollNotifyMsgWaitVal", "devHealthMsgWaitVal", "nestLocAway", "heardFromRestDt", "autoSaVer", "lastAnalyticUpdDt", "lastHeardFromRestDt",
-		"remDiagApp", "remDiagClientId", "restorationInProgress", "diagManagAppStateFilters", "diagChildAppStateFilters", "lastFinishedPoll",
+		"remDiagApp", "remDiagClientId", "restorationInProgress", "diagManagAppStateFilters", "diagChildAppStateFilters", "lastFinishedPoll","tDevVer", "pDevVer", "camDevVer", "presDevVer", "weatDevVer", "vtDevVer", "streamDevVer", 
 		"curAlerts", "curAstronomy", "curForecast", "curWeather", "detailEventHistory", "detailExecutionHistory", "evalExecutionHistory", "lastForecastUpdDt", "lastWeatherUpdDt",
-		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName", "ReallyChanged", /* "savedNestSettings", "savedNestSettingslastbuild", "savedNestSettingsprev", */ "tsMigrationDone"
+		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName", "ReallyChanged", "tsMigrationDone"
  	]
 
 	["oldTstatData", "oldCamData", "oldProtData", "oldPresData", "oldWeatherData", "lastCmdSentDt"]?.each { oi->
@@ -7497,16 +7507,10 @@ def stateCleanup() {
 		data = data+oiRem
 	}
 	data?.each { item ->
-		state.remove(item?.toString())
+		if(state?.containsKey(item)) { state.remove(item?.toString()) }
 	}
 
-	data = [ "tDevVer", "pDevVer", "camDevVer", "presDevVer", "weatDevVer", "vtDevVer", "streamDevVer" ]
-	def sData = atomicState?.swVer ?: [:]
-	data?.each { item ->
-		state.remove(item?.toString())
-		sData["${item}"] = null
-	}
-	atomicState?.swVer = sData
+	atomicState?.swVer = [ "tDevVer": null, "pDevVer": null, "camDevVer": null, "presDevVer": null, "weatDevVer": null, "vtDevVer": null, "streamDevVer": null]
 
 	atomicState.authTokenExpires = atomicState?.tokenExpires ?: atomicState?.authTokenExpires
 	state.remove("tokenExpires")
@@ -7520,16 +7524,16 @@ def stateCleanup() {
 			"recentSendCmd10", "recentSendCmd11", "recentSendCmd12", "recentSendCmd13", "recentSendCmd14", "recentSendCmd15"
 		]
 		data.each { item ->
-			state.remove(item?.toString())
+			if(state?.containsKey(item)) { state.remove(item?.toString()) }
 		}
 	}
 	atomicState.forceChildUpd = true
-	def sdata = [ "showAwayAsAuto", "temperatures", "powers", "energies", "childDevDataPageDev", "childDevPageRfsh", "childDevDataRfshVal", "childDevDataStateFilter", "childDevPageShowAttr", "childDevPageShowCapab", "childDevPageShowCmds", "childDevPageShowState",
-			"managAppPageRfsh", "managAppPageShowMeta", "managAppPageShowSet", "managAppPageShowState", "updChildOnNewOnly"
+	def remSettings = [ "showAwayAsAuto", "temperatures", "powers", "energies", "childDevDataPageDev", "childDevPageRfsh", "childDevDataRfshVal", "childDevDataStateFilter", "childDevPageShowAttr", 
+		"childDevPageShowCapab", "childDevPageShowCmds", "childDevPageShowState", "managAppPageRfsh", "managAppPageShowMeta", "managAppPageShowSet", "managAppPageShowState", "updChildOnNewOnly"
 	]
-	sdata.each { item ->
-		if(settings?."${item}" != null) {
-			settingUpdate("${item.toString()}", "")	// clear settings
+	remSettings.each { item ->
+		if(settings?.containsKey(item)) {
+			settingRemove(item as String)	// removes settings
 		}
 	}
 }
