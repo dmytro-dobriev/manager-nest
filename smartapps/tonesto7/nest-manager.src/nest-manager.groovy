@@ -375,6 +375,10 @@ def findStateStorageVal(val) {
 	return null
 }
 
+def storageAppInst(available) {
+	atomicState?.storageAppAvailable = (available == true)
+}
+
 private getStorageApp() {
 	def name = storageAppName()
 	def storageApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name != storageAppName() }
@@ -389,13 +393,15 @@ private checkStorageApp() {
 		if(storageApp?.label != name) { storageApp.updateLabel(name) }
 		return storageApp
 	}
-	try {
-		def setData = [:]
-		setData["storageFlag"] = [type:"bool", value:true]
-		storageApp = addChildApp(appNamespace(), autoAppName(), name, [settings:setData])
-	} catch (all) {
-		log.error "Please Make sure the NST Storage app is installed under the IDE"
-		return null
+	if(atomicState?.storageAppAvailable != true) {
+		try {
+			def setData = [:]
+			setData["storageFlag"] = [type:"bool", value:true]
+			storageApp = addChildApp(appNamespace(), autoAppName(), name, [settings:setData])
+		} catch (all) {
+			log.error "Please Make sure the NST Storage app is installed under the IDE"
+			return null
+		}
 	}
 	return storageApp
 }

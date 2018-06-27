@@ -115,6 +115,10 @@ def installed() {
 	log.debug "${app.label} Installed with settings: ${settings}"		// MUST BE log.debug
 	atomicState?.installData = ["initVer":appVersion(), "dt":getDtNow().toString()]
 	initialize()
+	if(settings["storageFlag"]) {
+		atomicState?.automationType = "storage"
+		parent?.storageAppInst(true)
+	}
 	sendNotificationEvent("${appName()} installed")
 }
 
@@ -521,6 +525,7 @@ def initAutoApp() {
 		atomicState?.automationType = "watchDog"
 	} else if(settings["storageFlag"]) {
 		atomicState?.automationType = "storage"
+		parent?.storageAppInst(true)
 	} else if(settings["remDiagFlag"]) {
 		atomicState?.automationType = "remDiag"
 		parent?.remDiagAppAvail(true)
@@ -1083,6 +1088,11 @@ def subscribeToEvents() {
 	if(autoType == "remDiag") {
 
 	}
+
+	//storage Subscriptions
+	if(autoType == "storage") {
+
+	}
 }
 
 def scheduler() {
@@ -1094,7 +1104,7 @@ def scheduler() {
 	if(autoType == "schMot" && atomicState?.scheduleSchedActiveCount && atomicState?.scheduleTimersActive) {
 		LogAction("${autoType} scheduled (${random_int} ${random_dint}/5 * * * ?)", "info", true)
 		schedule("${random_int} ${random_dint}/5 * * * ?", heartbeatAutomation)
-	} else if(autoType != "remDiag") {
+	} else if(autoType != "remDiag" || autoType != "storage") {
 		LogAction("${autoType} scheduled (${random_int} ${random_dint}/30 * * * ?)", "info", true)
 		schedule("${random_int} ${random_dint}/30 * * * ?", heartbeatAutomation)
 	}
