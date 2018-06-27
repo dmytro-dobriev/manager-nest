@@ -142,7 +142,6 @@ def startPage() {
 def authPage() {
 	//LogTrace("authPage()")
 	def execTime = now()
-	def storageApp = checkStorageApp()
 	generateInstallId()
 	if(!atomicState?.accessToken) { getAccessToken() }
 	atomicState.ok2InstallAutoFlag = false
@@ -242,7 +241,6 @@ def authPage() {
 def mainPage() {
 	//LogTrace("mainPage")
 	def execTime = now()
-	def storageApp = checkStorageApp()
 	def isInstalled = atomicState?.isInstalled
 	def setupComplete = (!atomicState?.newSetupComplete || !isInstalled) ? false : true
 	return dynamicPage(name: "mainPage", title: "", nextPage: (!setupComplete ? "reviewSetupPage" : null), install: setupComplete, uninstall: false) {
@@ -330,7 +328,7 @@ def mainPage() {
 
 // NEW STORAGE SmartApp
 def storageInfoSect() {
-	def storApp = checkStorageApp()
+	def storApp = getStorageApp()
 	section("Storage App Info:") {
 		if(storApp) {
 			def str = ""
@@ -346,7 +344,9 @@ def storageInfoSect() {
 def getStorageVal(val) {
 	if(val) {
 		def storApp = getStorageApp()
-		if(storApp) { return storApp?.getStateVal(val as String) ?: null }
+		def ret
+		if(storApp) { ret = storApp?.getStateVal(val as String) } // avoid multiple calls to child
+		return ret
 	}
 	return null
 }
@@ -381,7 +381,7 @@ def storageAppInst(available) {
 
 private getStorageApp() {
 	def name = storageAppName()
-	def storageApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name != storageAppName() }
+	def storageApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == storageAppName() }
 	if(storageApp) { return storageApp }
 	return null
 }
@@ -391,18 +391,10 @@ private checkStorageApp() {
 	def name = storageAppName()
 	if(storageApp) {
 		if(storageApp?.label != name) { storageApp.updateLabel(name) }
+		atomicState?.storageAppAvailable = true
 		return storageApp
 	}
-	if(atomicState?.storageAppAvailable != true) {
-		try {
-			def setData = [:]
-			setData["storageFlag"] = [type:"bool", value:true]
-			storageApp = addChildApp(appNamespace(), autoAppName(), name, [settings:setData])
-		} catch (all) {
-			log.error "Please Make sure the NST Storage app is installed under the IDE"
-			return null
-		}
-	}
+	atomicState?.storageAppAvailable = false
 	return storageApp
 }
 
@@ -2257,7 +2249,6 @@ def uninstalled() {
 def initialize() {
 	//LogTrace("initialize")
 	if(!atomicState?.tsMigration) { timestampMigration() }
-	def storageApp = checkStorageApp()
 	if(atomicState?.resetAllData || settings?.resetAllData) {
 		if(fixState()) { return }	// runIn of fixState will call initAutoApp() or initManagerApp()
 		settingUpdate("resetAllData", "false", "bool")
@@ -2305,6 +2296,10 @@ def initBuiltin(btype) {
 			}
 			autoStr = "remDiag"
 			break
+		case "initStorageApp":
+			autoStr = "storage"
+			keepApp = true
+			break
 		default:
  			LogAction("initBuiltin BAD btype ${btype}", "warn", true)
 			break
@@ -2320,6 +2315,16 @@ def initBuiltin(btype) {
 				}
 				if(btype == "initWatchdogApp") {
 					addChildApp(appNamespace(), autoAppName(), getWatDogAppChildName(), [settings:[watchDogFlag:["type":"bool", "value":true]]])
+				}
+				if(btype == "initStorageApp") {
+					def storageApp = getStorageApp()
+					if(!storageApp) {
+						def name = storageAppName()
+						def setData = [:]
+						setData["storageFlag"] = [type:"bool", value:true]
+						addChildApp(appNamespace(), autoAppName(), name, [settings:setData])
+					}
+					atomicState?.storageAppAvailable = true
 				}
 			} catch (ex) {
 				appUpdateNotify(true, "automation")
@@ -2354,6 +2359,10 @@ def initRemDiagApp() {
 	initBuiltin("initRemDiagApp")
 }
 
+def initStorageApp() {
+	initBuiltin("initStorageApp")
+}
+
 def initManagerApp() {
 	LogTrace("initManagerApp")
 	setStateVar()
@@ -2365,6 +2374,7 @@ def initManagerApp() {
 	stateCleanup()
 
 	atomicState.pollingOn = false
+	initStorageApp()
 	updTimestampMap("lastChildUpdDt", null) // force child update on next poll
 	updTimestampMap("lastChildForceUpdDt", null)
 	updTimestampMap("lastForcePoll", null)
@@ -3204,8 +3214,8 @@ def getInstAutoTypesDesc() {
 						LogAction("Deleting Old Storage Child (${a?.id})", "warn", true)
  						deleteChildApp(a)
 						updTimestampMap("lastAnalyticUpdDt", null)
-						def test = checkStorageApp()
 					 }
+					def test = checkStorageApp()
 					break
  				default:
  					LogAction("Deleting Unknown Automation (${a?.id})", "warn", true)
@@ -5779,7 +5789,7 @@ def updateWebStuff(now = false) {
 def getWeatherConditions(force = false) {
 	LogTrace("getWeatherConditions")
 	if(atomicState?.weatherDevice) {
-		def storageApp = checkStorageApp()
+		def storageApp = getStorageApp()
 		try {
 			LogAction("Retrieving Local Weather Conditions", "info", false)
 			def loc = ""
@@ -5798,7 +5808,9 @@ def getWeatherConditions(force = false) {
 				curWeather = getWeatherFeature("conditions")
 				curAlerts = getWeatherFeature("alerts")
 			}
-			if(getLastForecastUpdSec() > (1800) || (storageApp && (!getStorageVal("curForecast") || !getStorageVal("curAstronomy"))) || (!storageApp && (!atomicState?.curForecast || !atomicState?.curAstronomy))) {
+			if( getLastForecastUpdSec() > (1800) ||
+			    (storageApp && (!getStorageVal("curForecast") || !getStorageVal("curAstronomy"))) ||
+			    (!storageApp && (!atomicState?.curForecast || !atomicState?.curAstronomy))) {
 				if(custLoc) {
 					loc = custLoc
 					curForecast = getWeatherFeature("forecast", loc)
@@ -5868,7 +5880,7 @@ def getWeatherConditions(force = false) {
 }
 
 def getWeatherData(dataName) {
-	def storageApp = checkStorageApp()
+	def storageApp = getStorageApp()
 	if(storageApp) {
 		if(getStorageVal(dataName)) {
 			return getStorageVal(dataName)
@@ -6831,6 +6843,10 @@ def addRemoveDevices(uninst = null) {
 		}
 
 		if(!atomicState?.weatherDevice) {
+			remStorageVal("curForecast")
+			remStorageVal("curAstronomy")
+			remStorageVal("curWeather")
+			remStorageVal("curAlerts")
 			atomicState?.curWeather = null
 			atomicState?.curForecast = null
 			atomicState?.curAstronomy = null
@@ -7542,6 +7558,10 @@ def stateCleanup() {
 			settingRemove(item as String)	// removes settings
 		}
 	}
+	remStorageVal("curForecast")
+	remStorageVal("curAstronomy")
+	remStorageVal("curWeather")
+	remStorageVal("curAlerts")
 }
 
 /******************************************************************************
@@ -9935,7 +9955,7 @@ def appLabel()		{ return "Nest Manager" }
 def appAuthor()		{ return "Anthony S." }
 def appNamespace()	{ return "tonesto7" }
 def autoAppName()	{ return "NST Automations" }
-def storageAppName(){ return "NST Storage" }
+def storageAppName()	{ return "NSTMGR Storage" }
 def gitRepo()		{ return "tonesto7/nest-manager"}
 def gitBranch()		{ return betaMarker() ? "beta" : "master" }
 def gitPath()		{ return "${gitRepo()}/${gitBranch()}"}
