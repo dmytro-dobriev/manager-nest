@@ -359,7 +359,7 @@ def processEvent() {
 }
 
 def getStateSize()      { return state?.toString().length() }
-def getStateSizePerc()  { return (int) ((stateSize/100000)*100).toDouble().round(0) } //
+def getStateSizePerc()  { return (int) ((stateSize/100000)*100).toDouble().round(0) }
 def getDevTypeId() { return device?.getTypeId() }
 
 def getDataByName(String name) {
@@ -812,7 +812,7 @@ def getRecTimeDesc(val) {
 	def result = null
 	if(val && val instanceof Integer) {
 		if(val.toInteger() > 24) {
-			def nVal = (val/24).toDouble().round(0) //
+			def nVal = (val/24).toDouble().round(0)
 			result = "${nVal.toInteger()} days"
 		} else {
 			result = "${val} hours"
@@ -1031,7 +1031,7 @@ def getTimeDiffSeconds(strtDate, stpDate=null, methName=null) {
 */
 			def start = Date.parse("E MMM dd HH:mm:ss z yyyy", strtDate).getTime()
 			def stop = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal).getTime()
-			def diff = (int) (long) (stop - start) / 1000 //
+			def diff = (int) (long) (stop - start) / 1000
 			return diff
 		} else { return null }
 /*

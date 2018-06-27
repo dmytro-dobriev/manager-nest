@@ -385,7 +385,7 @@ void processEvent() {
 }
 
 def getStateSize()	{ return state?.toString().length() }
-def getStateSizePerc()	{ return (int) ((stateSize/100000)*100).toDouble().round(0) } //
+def getStateSizePerc()	{ return (int) ((stateSize/100000)*100).toDouble().round(0) }
 def getDevTypeId() { return device?.getTypeId() }
 
 def getDataByName(String name) {
@@ -606,7 +606,7 @@ def getWeatherConditions(weatData) {
 				def Tc = Math.round(cur?.current_observation?.feelslike_c as Double) as Double
 				state.curWeatherDewPoint_c = estimateDewPoint(hum,Tc)
 				if (state.curWeatherTemp_c < state.curWeatherDewPoint_c) { state.curWeatherDewPoint_c = state.curWeatherTemp_c }
-				state.curWeatherDewPoint_f = Math.round(state.curWeatherDewPoint_c * 9.0/5.0 + 32.0) //
+				state.curWeatherDewPoint_f = Math.round(state.curWeatherDewPoint_c * 9.0/5.0 + 32.0)
 				dewpointEvent((wantMetric() ? state?.curWeatherDewPoint_c : state?.curWeatherDewPoint_f))
 
 				getSomeData(true)
@@ -864,7 +864,7 @@ def getWeatherAlerts(weatData) {
 
 private pad(String s, size = 25) {
 	try {
-		def n = (size - s.size()) / 2 //
+		def n = (size - s.size()) / 2
 		if (n > 0) {
 			def sb = ""
 			n.times {sb += " "}
@@ -883,14 +883,14 @@ private pad(String s, size = 25) {
 }
 
 private estimateDewPoint(double rh,double t) {
-	def L = Math.log(rh/100) //
+	def L = Math.log(rh/100)
 	def M = 17.27 * t
 	def N = 237.3 + t
-	def B = (L + (M/N)) / 17.27 //
-	def dp = (237.3 * B) / (1 - B) //
+	def B = (L + (M/N)) / 17.27
+	def dp = (237.3 * B) / (1 - B)
 
-	def dp1 = 243.04 * ( Math.log(rh / 100) + ( (17.625 * t) / (243.04 + t) ) ) / (17.625 - Math.log(rh / 100) - ( (17.625 * t) / (243.04 + t) ) ) //
-	def ave = (dp + dp1)/2 //
+	def dp1 = 243.04 * ( Math.log(rh / 100) + ( (17.625 * t) / (243.04 + t) ) ) / (17.625 - Math.log(rh / 100) - ( (17.625 * t) / (243.04 + t) ) )
+	def ave = (dp + dp1)/2
 	//LogAction("dp: ${dp.round(1)} dp1: ${dp1.round(1)} ave: ${ave.round(1)}")
 	ave = dp1
 	return ave.round(1)
@@ -949,23 +949,23 @@ private estimateLux(weatherIcon) {
 				//LogAction("now: $now afterSunrise: $afterSunrise beforeSunset: $beforeSunset oneHour: $oneHour")
 				if(afterSunrise < oneHour) {
 					//dawn
-					lux = (long)(lux * (afterSunrise/oneHour)) //
+					lux = (long)(lux * (afterSunrise/oneHour))
 					runIn(5*60, "luxUpdate", [overwrite: true])
 				} else if (beforeSunset < oneHour) {
 					//dusk
 					//LogAction("dusk", "trace")
-					lux = (long)(lux * (beforeSunset/oneHour)) //
+					lux = (long)(lux * (beforeSunset/oneHour))
 					runIn(5*60, "luxUpdate", [overwrite: true])
 				} else if (beforeSunset < (oneHour*2)) {
 					//LogAction("before dusk", "trace")
-					def newTim = (beforeSunset - oneHour)/1000 // seconds
+					def newTim = (beforeSunset - oneHour)/1000 /// seconds
 					if(newTim > 0 && newTim < 3600) {
 						runIn(newTim, "luxUpdate", [overwrite: true])
 					}
 				}
 			} else {
 				if( (now > (sunriseDate-oneHour)) && now < sunsetDate) {
-					def newTim = (sunriseDate - now)/1000 // seconds
+					def newTim = (sunriseDate - now)/1000 /// seconds
 					if(newTim > 0 && newTim < 3600) {
 						runIn(newTim, "luxUpdate", [overwrite: true])
 					}

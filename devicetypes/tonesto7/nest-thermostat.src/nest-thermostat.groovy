@@ -662,7 +662,7 @@ void processEvent(data) {
 }
 
 def getStateSize()	{ return state?.toString().length() }
-def getStateSizePerc()  { return (int) ((stateSize/100000)*100).toDouble().round(0) } //
+def getStateSizePerc()  { return (int) ((stateSize/100000)*100).toDouble().round(0) }
 
 def getDataByName(String name) {
 	state[name] ?: device.getDataValue(name)
@@ -1619,7 +1619,7 @@ def GetTimeDiffSeconds(lastDate) {
 	def lastDt = Date.parse("E MMM dd HH:mm:ss z yyyy", lastDate)
 	def start = Date.parse("E MMM dd HH:mm:ss z yyyy", formatDt(lastDt)).getTime()
 	def stop = Date.parse("E MMM dd HH:mm:ss z yyyy", formatDt(now)).getTime()
-	def diff = (int) (long) (stop - start) / 1000 //
+	def diff = (int) (long) (stop - start) / 1000
 	return diff
 }
 
@@ -1633,7 +1633,7 @@ def getTimeDiffSeconds(strtDate, stpDate=null, methName=null) {
 		def stopDt = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal)
 		def start = Date.parse("E MMM dd HH:mm:ss z yyyy", formatDt(startDt)).getTime()
 		def stop = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal).getTime()
-		def diff = (int) (long) (stop - start) / 1000 //
+		def diff = (int) (long) (stop - start) / 1000
 		//LogTrace("[GetTimeDiffSeconds] Results for '$methName': ($diff seconds)")
 		return diff
 	} else { return null }
@@ -1754,7 +1754,7 @@ void setHeatingSetpoint(Double reqtemp, manChg=false) {
 	if(canHeat && state?.nestHvac_mode != "eco") {
 		switch (tempUnit) {
 			case "C":
-				temp = Math.round(reqtemp.round(1) * 2) / 2.0f //
+				temp = Math.round(reqtemp.round(1) * 2) / 2.0f
 				if(curMinTemp < 9.0) { curMinTemp = 9.0 }
 				if(curMaxTemp > 32.0) { curMaxTemp = 32.0 }
 				if(temp) {
@@ -1832,7 +1832,7 @@ void setCoolingSetpoint(Double reqtemp, manChg=false) {
 	if(canCool && state?.nestHvac_mode != "eco") {
 		switch (tempUnit) {
 			case "C":
-				temp = Math.round(reqtemp.round(1) * 2) / 2.0f //
+				temp = Math.round(reqtemp.round(1) * 2) / 2.0f
 				if(curMinTemp < 9.0) { curMinTemp = 9.0 }
 				if(curMaxTemp > 32.0) { curMaxTemp = 32.0 }
 				if(temp) {
@@ -3208,7 +3208,7 @@ def getIntListAvg(itemList) {
 	def iCnt = itemList?.size()
 	if(iCnt >= 1) {
 		if(iCnt > 1) {
-			avgRes = (itemList?.sum().toDouble() / iCnt.toDouble()).round(0) //
+			avgRes = (itemList?.sum().toDouble() / iCnt.toDouble()).round(0)
 		} else { itemList?.each { avgRes = avgRes + it.toInteger() } }
 	}
 	//log.debug "[getIntListAvg] avgRes: $avgRes"
@@ -3217,10 +3217,10 @@ def getIntListAvg(itemList) {
 
 def secToTimeMap(long seconds) {
 	long sec = (seconds % 60) ?: 0L
-	long minutes = ((seconds % 3600) / 60) ?: 0L //
-	long hours = ((seconds % 86400) / 3600) ?: 0L //
-	long days = (seconds / 86400) ?: 0L //
-	long years = (days / 365) ?: 0L //
+	long minutes = ((seconds % 3600) / 60) ?: 0L
+	long hours = ((seconds % 86400) / 3600) ?: 0L
+	long days = (seconds / 86400) ?: 0L
+	long years = (days / 365) ?: 0L
 	def res = ["m":minutes, "h":hours, "d":days, "y":years]
 	return res
 }
@@ -3964,12 +3964,12 @@ def showChartHtml(devNum="") {
 //TODO fix for fanonly
 	grpUseData?.each { mon ->
 		def data = mon?.value
-		def heat = data?.heating ? (data?.heating?.tSec.toLong()/3600).toDouble().round(0) : 0 //
-		def cool = data?.cooling ? (data?.cooling?.tSec.toLong()/3600).toDouble().round(0) : 0 //
-		def idle = data?.idle ? (data?.idle?.tSec.toLong()/3600).toDouble().round(0) : 0 //
-		def fanonly = data?.fanonly ? (data?.fanonly?.tSec.toLong()/3600).toDouble().round(0) : 0 //
-		def fanOn = data?.fanOn ? (data?.fanOn?.tSec.toLong()/3600).toDouble().round(0) : 0 //
-		def fanAuto = data?.fanAuto ? (data?.fanAuto?.tSec.toLong()/3600).toDouble().round(0) : 0 //
+		def heat = data?.heating ? (data?.heating?.tSec.toLong()/3600).toDouble().round(0) : 0
+		def cool = data?.cooling ? (data?.cooling?.tSec.toLong()/3600).toDouble().round(0) : 0
+		def idle = data?.idle ? (data?.idle?.tSec.toLong()/3600).toDouble().round(0) : 0
+		def fanonly = data?.fanonly ? (data?.fanonly?.tSec.toLong()/3600).toDouble().round(0) : 0
+		def fanOn = data?.fanOn ? (data?.fanOn?.tSec.toLong()/3600).toDouble().round(0) : 0
+		def fanAuto = data?.fanAuto ? (data?.fanAuto?.tSec.toLong()/3600).toDouble().round(0) : 0
 		def mName = getMonthNumToStr(mon?.key)
 		lStr += "\n$mName Usage - Idle: ($idle) | Heat: ($heat) | Cool: ($cool) | Fanonly: (${fanonly}) FanOn: ($fanOn) | FanAuto: ($fanAuto)"
 		def iNum = 1
@@ -4206,7 +4206,7 @@ def getDayTimePerc(val,data) {
 	//log.debug "getDayTimePerc($val, $data)"
 	//log.debug "getDayElapSec: ${getDayElapSec()}"
 	if(!data) { return null }
-	return (int) ((val.toInteger()/getDayElapSec())*100).toDouble().round(0) //
+	return (int) ((val.toInteger()/getDayElapSec())*100).toDouble().round(0)
 }
 
 def getDayElapSec() {
@@ -4217,7 +4217,7 @@ def getDayElapSec() {
 	c.set(Calendar.SECOND, 0);
 	c.set(Calendar.MILLISECOND, 0);
 	long passed = now - c.getTimeInMillis();
-	return (long) passed / 1000; //
+	return (long) passed / 1000
 }
 
 def getTimeMapString(data) {
@@ -4324,7 +4324,7 @@ def getExtTempVoiceDesc() {
 
 private adj_temp(tempF) {
 	if(getTemperatureScale() == "C") {
-		return (tempF - 32) * 5/9 as Double //
+		return (tempF - 32) * 5/9 as Double
 	} else {
 		return tempF
 	}
