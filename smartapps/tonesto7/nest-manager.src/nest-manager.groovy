@@ -3499,7 +3499,7 @@ def finishPoll(str=null, dev=null) {
 	if(getLastChildForceUpdSec() > (15*60)-2) {   // if nest goes silent (no changes coming back)
 		atomicState.forceChildUpd = true
 	}
-	if(dev || str || atomicState?.forceChildUpd || atomicState?.needChildUpd) { updateChildData() }
+	if(dev || str || atomicState?.forceChildUpd || atomicState?.needChildUpd) { runIn(1, "updateChildData", [overwrite : true]) }
 	updateWebStuff()
 	notificationCheck() //Checks if a notification needs to be sent for a specific event
 	broadcastCheck()
@@ -5777,7 +5777,7 @@ def updateWebStuff(now = false) {
 		if(now) {
 			getWeatherConditions(now)
 		} else {
-			if(canSchedule()) { runIn(20, "getWeatherConditions", [overwrite: true]) }
+			runIn(20, "getWeatherConditions", [overwrite: true])
 		}
 	}
 	if(atomicState?.isInstalled) {
