@@ -380,22 +380,37 @@ def storageAppInst(available) {
 }
 
 private getStorageApp() {
-	def name = storageAppName()
-	def storageApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == storageAppName() }
-	if(storageApp) { return storageApp }
-	return null
+	def storApp = null
+	def cApps = getChildApps()
+	cApps?.each { ca ->
+		if(ca?.getAutomationType() == "storage") {
+			storApp = ca
+		}
+	}
+	return storApp
+/*
+	def storApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == storageAppName() }
+	if(storApp) { return storApp }
+	else { return null }
+*/
 }
 
 private checkStorageApp() {
-	def storageApp = getStorageApp()
-	def name = storageAppName()
-	if(storageApp) {
-		if(storageApp?.label != name) { storageApp.updateLabel(name) }
+	def storApp = getStorageApp()
+	if(storApp) {
+		def name = storageAppName()
+		if(storApp?.label != name) {
+			LogAction("checkStorageApp name did not match", "error", false)
+			atomicState?.storageAppAvailable = false
+			deleteChildApp(storApp)
+			return null
+			//storApp.updateLabel(name)
+		}
 		atomicState?.storageAppAvailable = true
-		return storageApp
+		return storApp
 	}
 	atomicState?.storageAppAvailable = false
-	return storageApp
+	return null
 }
 
 def donationPage() {
@@ -3557,7 +3572,8 @@ def forcedPoll(type = null) {
 		atomicState.needDevPoll = true
 	}
 	atomicState.forceChildUpd = true
-	updateChildData()
+	runIn(1, "updateChildData", [overwrite : true])
+	//updateChildData()
 }
 
 def postCmd() {
@@ -5882,10 +5898,12 @@ def getWeatherConditions(force = false) {
 def getWeatherData(dataName) {
 	def storageApp = getStorageApp()
 	if(storageApp) {
-		if(getStorageVal(dataName)) {
-			return getStorageVal(dataName)
+		def t0 = getStorageVal(dataName)
+		if(t0) {
+			return t0
 		} else { if(getWeatherConditions(true)) { return getStorageVal(dataName) } }
 	} else {
+log.warn "storageApp not found getWeatherData"
 		if(atomicState?."$dataName") {
 			return atomicState?."$dataName"
 		} else { if(getWeatherConditions(true)) { return atomicState?."$dataName" }	}
