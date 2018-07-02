@@ -400,16 +400,16 @@ private checkStorageApp() {
 	if(storApp) {
 		def name = storageAppName()
 		if(storApp?.label != name) {
-			LogAction("checkStorageApp name did not match", "error", false)
-			atomicState?.storageAppAvailable = false
+			LogAction("checkStorageApp name did not match - deleting old Storage App", "warn", false)
 			deleteChildApp(storApp)
-			return null
+			updTimestampMap("lastAnalyticUpdDt", null)
 			//storApp.updateLabel(name)
+		} else {
+			storageAppInst(true)
+			return storApp
 		}
-		atomicState?.storageAppAvailable = true
-		return storApp
 	}
-	atomicState?.storageAppAvailable = false
+	storageAppInst(false)
 	return null
 }
 
@@ -2264,6 +2264,7 @@ def uninstalled() {
 def initialize() {
 	//LogTrace("initialize")
 	if(!atomicState?.tsMigration) { timestampMigration() }
+	def storageApp = checkStorageApp()
 	if(atomicState?.resetAllData || settings?.resetAllData) {
 		if(fixState()) { return }	// runIn of fixState will call initAutoApp() or initManagerApp()
 		settingUpdate("resetAllData", "false", "bool")
@@ -2339,7 +2340,7 @@ def initBuiltin(btype) {
 						setData["storageFlag"] = [type:"bool", value:true]
 						addChildApp(appNamespace(), autoAppName(), name, [settings:setData])
 					}
-					atomicState?.storageAppAvailable = true
+					storageAppInst(true)
 				}
 			} catch (ex) {
 				appUpdateNotify(true, "automation")

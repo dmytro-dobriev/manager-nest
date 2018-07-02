@@ -1052,7 +1052,8 @@ void whoMadeChanges(autoType, desc, dt) {
 def ecoDescEvent(val, updChk=false) {
 	//log.debug "ecoDescEvent($val)"
 	def curMode = device?.currentState("nestThermostatMode")?.stringValue
-	def curEcoDesc = device?.currentState("whoSetEcoMode")?.value ?: null
+	def t0 = device?.currentState("whoSetEcoMode")?.value
+	def curEcoDesc = t0 ?: null
 
 	def newVal = updChk ? curEcoDesc : val
 	def newEcoDesc = (curMode == "eco") ? (newVal == null ? "Set Outside of this DTH" : newVal) : "Not in Eco Mode"
