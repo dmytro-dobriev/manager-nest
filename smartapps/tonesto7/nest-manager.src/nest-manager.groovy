@@ -39,7 +39,7 @@ def appVersion() { "5.3.8" }
 def appVerDate() { "06-27-2018" }
 def minVersions() {
 	return [
-		"automation":["val":536, "desc":"5.3.6"],
+		"automation":["val":535, "desc":"5.3.5"],
 		"thermostat":["val":536, "desc":"5.3.6"],
 		"protect":["val":536, "desc":"5.3.6"],
 		"presence":["val":536, "desc":"5.3.6"],
