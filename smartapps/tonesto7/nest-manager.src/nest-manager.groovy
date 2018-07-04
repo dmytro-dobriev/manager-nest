@@ -26,8 +26,7 @@ definition(
 	iconUrl: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_5.png",
 	iconX2Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_5%402x.png",
 	iconX3Url: "https://raw.githubusercontent.com/${gitPath()}/Images/App/nst_manager_5%403x.png",
-	singleInstance: true,
-	usesThirdPartyAuthentication: true)
+	singleInstance: true)
 
 {
 	appSetting "clientId"
@@ -36,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.3.8" }
-def appVerDate() { "06-27-2018" }
+def appVerDate() { "07-04-2018" }
 def minVersions() {
 	return [
 		"automation":["val":535, "desc":"5.3.5"],
@@ -7253,7 +7252,7 @@ def toQueryString(Map m) {
 }
 
 def clientId() {
-	if(appSettings?.clientId) {
+	if(appSettings?.clientId && appSettings?.clientId != "blank") {
 		return appSettings?.clientId?.toString().trim()
 	} else {
 		if(atomicState?.appData?.token?.id) {
@@ -7266,7 +7265,7 @@ def clientId() {
 }
 
 def clientSecret() {
-	if(appSettings?.clientSecret) {
+	if(appSettings?.clientSecret && appSettings?.clientSecret != "blank") {
 		return appSettings?.clientSecret?.toString().trim()
 	} else {
 		if(atomicState?.appData?.token?.secret) {
@@ -9974,7 +9973,7 @@ def appLabel()		{ return "Nest Manager" }
 def appAuthor()		{ return "Anthony S." }
 def appNamespace()	{ return "tonesto7" }
 def autoAppName()	{ return "NST Automations" }
-def storageAppName()	{ return "NSTMGR Storage" }
+def storageAppName()	{ return "NST Storage" }
 def gitRepo()		{ return "tonesto7/nest-manager"}
 def gitBranch()		{ return betaMarker() ? "beta" : "master" }
 def gitPath()		{ return "${gitRepo()}/${gitBranch()}"}
