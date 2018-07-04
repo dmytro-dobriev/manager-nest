@@ -1,8 +1,9 @@
-<p style="font-size: 15px;"><strong>V5.3.6 (July 2nd, 2018):</strong><p>
+<p style="font-size: 15px;"><strong>V5.3.6 (July 4th, 2018):</strong><p>
 <hr noshade>
 <ul style="font-size: 12px; padding: 0 10px 0 10px; Margin: 0;">
     <li><strong>FIXED:</strong> Improved online status reporting based on last update from WU</li>
     <li><strong>FIXED:</strong> Fixed web calls</li>
+    <li><strong>FIXED:</strong> HTML Optimizations</li>
     <li><strong>FIXED:</strong> Exception Bug Fixes / Tweaks.</li>
 </ul>
 <br>
