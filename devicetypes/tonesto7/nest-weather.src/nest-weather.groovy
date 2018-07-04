@@ -1074,26 +1074,15 @@ def exceptionDataHandler(msg, methodName) {
 
 def getFileBase64(url, preType, fileType) {
 	try {
-		def params = [
-			uri: url,
-			contentType: "$preType/$fileType"
-		]
-		//log.warn "Params: ${params}"
+		def params = [uri: url, contentType: "$preType/$fileType"]
 		httpGet(params) { resp ->
 			if(resp?.status == 200) {
 				if(resp.data) {
 					def respData = resp?.data
-					ByteArrayOutputStream bos = new ByteArrayOutputStream()
-					int len
-					int size = 4096
-					byte[] buf = new byte[size]
-					while ((len = respData.read(buf, 0, size)) != -1)
-						bos.write(buf, 0, len)
-					buf = bos.toByteArray()
-					//LogAction("buf: $buf")
-					String s = buf?.encodeBase64()
-					//LogAction("resp: ${s}")
-					return s ? "data:${preType}/${fileType};base64,${s.toString()}" : null
+					byte[] byteData = resp?.data?.getBytes()
+					String enc = byteData?.encodeBase64()
+					// log.debug "enc: ${enc}"
+					return enc ? "data:${preType}/${fileType};base64,${enc?.toString()}" : null
 				}
 			} else {
 				LogAction("getFileBase64 Resp: ${resp?.status} ${url}", "error")
@@ -1101,8 +1090,7 @@ def getFileBase64(url, preType, fileType) {
 				return null
 			}
 		}
-	}
-	catch (ex) {
+	} catch (ex) {
 		if(ex instanceof groovyx.net.http.ResponseParseException) {
 			if(ex?.statusCode != 200) {
 				LogAction("getFileBase64 Resp: ${ex?.statusCode} ${url}", "error")
@@ -1116,29 +1104,9 @@ def getFileBase64(url, preType, fileType) {
 			exceptionDataHandler(ex, "getFileBase64")
 		}
 		return null
-	}
-}
-
-def getCssData() {
-	def cssData = null
-	def htmlInfo = state?.htmlInfo
-	if(htmlInfo?.cssUrl && htmlInfo?.cssVer) {
-		cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
-		state?.cssVer = htmlInfo?.cssVer
-	} else {
-		cssData = getFileBase64(cssUrl(), "text", "css")
-	}
-	return cssData
-}
-
-def getChartJsData(b64=true) {
-	//LogAction("getChartJsData: No Stored Chart Javascript Data Found for Device... Loading for Static URL...")
-	return b64 ? getFileBase64(chartJsUrl(), "text", "javascript") : chartJsUrl()
-}
-
-def cssUrl() { return "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css" }
-def chartJsUrl() { return "https://www.gstatic.com/charts/loader.js" }
-
+    }
+}					
+					
 def getWebData(params, desc, text=true) {
 	try {
 		Logger("getWebData: ${desc} data", "info")
@@ -1181,11 +1149,11 @@ def getWeatCondFromUrl(url) {
 	return splList?.last()
 }
 
-def getWeatherImg(cond, b64=true) {
+def getWeatherImg(cond) {
 	try {
 		def newCond = getWeatCondFromUrl(cond)
-		def url = "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/${getWeatCondFromUrl(cond) ?: "unknown"}.svg"
-		return b64 ? getFileBase64(url, "image", "svg+xml") : url
+		def url = "https://cdn.rawgit.com/tonesto7/nest-manager/master/Images/Weather/icons/black/${getWeatCondFromUrl(cond) ?: "unknown"}.svg"
+		return url
 	}
 	catch (ex) {
 		log.error "getWeatherImg Exception:", ex
@@ -1193,9 +1161,9 @@ def getWeatherImg(cond, b64=true) {
 	}
 }
 
-def getFavIcon(b64=true) {
+def getFavIcon() {
 	try {
-		return b64 ? getFileBase64("https://cdn.rawgit.com/tonesto7/nest-manager/master/Images/App/weather_icon.ico", "image", "ico") : "https://cdn.rawgit.com/tonesto7/nest-manager/master/Images/App/weather_icon.ico"
+		return "https://cdn.rawgit.com/tonesto7/nest-manager/master/Images/App/weather_icon.ico"
 	}
 	catch (ex) {
 		log.error "getFavIcon Exception:", ex
@@ -1594,10 +1562,10 @@ def getWeatherAlertHtml() {
 	return wAlertHtml
 }
 
-def forecastDay(day, b64=true) {
+def forecastDay(day) {
 	if(!state?.curForecast) { return }
 	def dayName = "<b>${state.curForecast.forecast.txt_forecast.forecastday[day].title} </b><br>"
-	def foreImgB64 = getWeatherImg(state.curForecast.forecast.txt_forecast.forecastday[day].icon_url, b64)
+	def foreImgB64 = getWeatherImg(state.curForecast.forecast.txt_forecast.forecastday[day].icon_url)
 	def forecastImageLink = """<a class=\"${day}-modal\"><img src="${foreImgB64}" style="width:64px;height:64px;"></a><br>"""
 	def forecastTxt = ""
 
@@ -1645,14 +1613,10 @@ def hasHtml() { return true }
 
 def getWeatherHTML() {
 	try {
-		if(!state?.curWeather || !state?.curForecast) {
-			return hideWeatherHtml()
-		}
+		if(!state?.curWeather || !state?.curForecast) { return hideWeatherHtml() }
 		def updateAvail = !state.updateAvailable ? "" : """<div class="greenAlertBanner">Device Update Available!</div>"""
 		def clientBl = state?.clientBl ? """<div class="brightRedAlertBanner">Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</div>""" : ""
-		//def obsrvTime = "Last Updated:\n${convertRfc822toDt(state?.curWeather?.current_observation?.observation_time_rfc822)}"
 		def obsrvTime = "Last Updated:\n${state?.curWeather?.current_observation?.observation_time_rfc822}"
-
 		def devBrdCastData = state?.devBannerData ?: null
 		def devBrdCastHtml = ""
 		if(devBrdCastData) {
@@ -1678,17 +1642,16 @@ def getWeatherHTML() {
 					<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
 					<meta http-equiv="pragma" content="no-cache"/>
 					<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
-				 	<link rel="stylesheet prefetch" href="${getCssData()}"/>
-					<script type="text/javascript" src="${getChartJsData()}"></script>
-					<script type="text/javascript" src="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js", "text", "javascript")}"></script>
-					<script type="text/javascript" src="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/js/vex.combined.min.js", "text", "javascript")}"></script>
-					<script src="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.1/js/swiper.min.js", "text", "javascript")}"></script>
 
-					<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css", "text", "css")}" />
-					<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-default.min.css", "text", "css")}" />
-					<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css", "text", "css")}" />
-
-					<script>vex.defaultOptions.className = 'vex-theme-default'</script>
+				 	<link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css"/>
+					<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex.min.css" async/>
+					<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex-theme-top.min.css" async />
+					<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex-theme-default.min.css" async/>
+					
+					<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+					<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/js/vex.combined.min.js"></script>
+					<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+					<script>vex.defaultOptions.className = 'vex-theme-default';</script>
 					<style>
 						.vex.vex-theme-default .vex-content { width: 95%; padding: 3px;	}
 					</style>

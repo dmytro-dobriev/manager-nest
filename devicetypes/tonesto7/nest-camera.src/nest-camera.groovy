@@ -136,7 +136,7 @@ metadata {
 		standardTile("refresh", "device.refresh", width:2, height:2, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/refresh_icon.png"
 		}
-		htmlTile(name:"devCamHtml", action: "getCamHtml", width: 6, height: 10, whitelist: ["raw.githubusercontent.com", "cdn.rawgit.com"])
+		htmlTile(name:"devCamHtml", action: "getCamHtml", width: 6, height: 10, whitelist: ["raw.githubusercontent.com", "cdn.rawgit.com", "cdnjs.cloudflare.com"])
 		valueTile("remind", "device.blah", inactiveLabel: false, width: 6, height: 2, decoration: "flat", wordWrap: true) {
 			state("default", label: 'Reminder:\nHTML Content is Available in SmartApp')
 		}
@@ -1107,26 +1107,15 @@ def isTimeBetween(start, end, now, tz) {
 
 def getFileBase64(url, preType, fileType) {
 	try {
-		def params = [
-			uri: url,
-			contentType: "$preType/$fileType"
-		]
-		//log.warn "Params: ${params}"
+		def params = [uri: url, contentType: "$preType/$fileType"]
 		httpGet(params) { resp ->
 			if(resp?.status == 200) {
 				if(resp.data) {
 					def respData = resp?.data
-					ByteArrayOutputStream bos = new ByteArrayOutputStream()
-					int len
-					int size = 4096
-					byte[] buf = new byte[size]
-					while ((len = respData.read(buf, 0, size)) != -1)
-						bos.write(buf, 0, len)
-					buf = bos.toByteArray()
-					//LogAction("buf: $buf")
-					String s = buf?.encodeBase64()
-					//LogAction("resp: ${s}")
-					return s ? "data:${preType}/${fileType};base64,${s?.toString()}" : null
+					byte[] byteData = resp?.data?.getBytes()
+					String enc = byteData?.encodeBase64()
+					// log.debug "enc: ${enc}"
+					return enc ? "data:${preType}/${fileType};base64,${enc?.toString()}" : null
 				}
 			} else {
 				LogAction("getFileBase64 Resp: ${resp?.status} ${url}", "error")
@@ -1134,8 +1123,7 @@ def getFileBase64(url, preType, fileType) {
 				return null
 			}
 		}
-	}
-	catch (ex) {
+	} catch (ex) {
 		if(ex instanceof groovyx.net.http.ResponseParseException) {
 			if(ex?.statusCode != 200) {
 				LogAction("getFileBase64 Resp: ${ex?.statusCode} ${url}", "error")
@@ -1144,12 +1132,12 @@ def getFileBase64(url, preType, fileType) {
 		} else if(ex instanceof groovyx.net.http.HttpResponseException && ex?.response) {
 			LogAction("getFileBase64 Resp: ${ex?.response?.status} ${url}", "error")
 			exceptionDataHandler("${ex?.response?.status} ${url}", "getFileBase64")
-                } else {
-                        log.error "getFileBase64 Exception:", ex
-                        exceptionDataHandler(ex, "getFileBase64")
-                }
-                return null
-        }
+		} else {
+			log.error "getFileBase64 Exception:", ex
+			exceptionDataHandler(ex, "getFileBase64")
+		}
+		return null
+    }
 }
 
 def getImg(imgName) {
@@ -1181,20 +1169,6 @@ def gitRepo()		{ return "tonesto7/nest-manager"}
 def gitBranch()		{ return state?.isBeta ? "beta" : "master" }
 def gitPath()		{ return "${gitRepo()}/${gitBranch()}"}
 def devVerInfo()	{ return getWebData([uri: "https://raw.githubusercontent.com/${gitPath()}/Data/changelog_cam.txt", contentType: "text/plain; charset=UTF-8"], "changelog") }
-
-def getCssData() {
-	def cssData = null
-	def htmlInfo = state?.htmlInfo
-	if(htmlInfo?.cssUrl && htmlInfo?.cssVer) {
-		cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
-		state?.cssVer = htmlInfo?.cssVer
-	} else {
-		cssData = getFileBase64(cssUrl(), "text", "css")
-	}
-	return cssData
-}
-
-def cssUrl() { return "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css" }
 
 //this scrapes the public nest cam page for its unique id for using in render html tile
 include 'asynchttp_v1' //<<<<<This is currently in Beta
@@ -1236,7 +1210,7 @@ def camPageHtmlRespMethod(response, data) {
 }
 
 def getCamApiServerData(camUUID) {
-	Logger("getCamApiServerData($camUUID)")
+	// LogTrace("getCamApiServerData($camUUID)")
 	try {
 		if(camUUID) {
 			def params = [
@@ -1297,7 +1271,7 @@ def getChgLogHtml() {
 	if(!state?.shownChgLog == true) {
 		chgStr = """
 			<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-			<script src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/js/vex.combined.min.js"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/js/vex.combined.min.js"></script>
 			<script>
 				\$(document).ready(function() {
 				    vex.dialog.alert({
@@ -1347,7 +1321,6 @@ def getCamHtml() {
 				"""
 			}
 		}
-
 		def mainHtml = """
 		<!DOCTYPE html>
 		<html>
@@ -1358,13 +1331,12 @@ def getCamHtml() {
 				<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
 				<meta http-equiv="pragma" content="no-cache"/>
 				<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
-				<link rel="stylesheet" href="${getCssData()}"/>
-				<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.1/css/swiper.min.css", "text", "css")}" />
-				<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css", "text", "css")}" />
-				<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css", "text", "css")}" />
-				<script src="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.1/js/swiper.min.js", "text", "javascript")}"></script>
-				<style>
-				</style>
+
+				<link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css"/>
+				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/css/swiper.min.css" />
+				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex.min.css" async/>
+				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex-theme-top.min.css" async />
+				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/js/swiper.min.js"></script>
 			</head>
 			<body>
 				${getChgLogHtml()}
@@ -1504,7 +1476,6 @@ def getCamHtml() {
 			</body>
 		</html>
 		"""
-/* """ */
 		incHtmlLoadCnt()
 		render contentType: "text/html", data: mainHtml, status: 200
 	}
@@ -1670,8 +1641,8 @@ def showCamHtml(tile=false) {
 	def camImgUrl = "${apiServer}/get_image?uuid=${camUUID}&width=410"
 	def camPlaylistUrl = "https://${liveStreamURL}/nexus_aac/${camUUID}/playlist.m3u8"
 
-	def animationUrl = state?.animation_url ? getFileBase64(state?.animation_url, 'image', 'gif') : null
-	def pubSnapUrl = state?.snapshot_url ? (!tile ? getFileBase64(state?.snapshot_url, 'image', 'jpeg') : state?.snapshot_url ) : null
+	def animationUrl = state?.animation_url ?: null
+	def pubSnapUrl = state?.snapshot_url ?: null
 
 	def vidBtn = (!state?.isStreaming || !liveStreamURL) ? "" : """<a href="#" onclick="toggle_visibility('liveStream');" class="button yellow">Live Video</a>"""
 	def imgBtn = (!state?.isStreaming || !pubSnapUrl) ? "" : """<a href="#" onclick="toggle_visibility('still');" class="button blue">Still Image</a>"""

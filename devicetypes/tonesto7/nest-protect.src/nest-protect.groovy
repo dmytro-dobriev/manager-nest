@@ -773,15 +773,15 @@ def getCarbonImg(b64=true) {
 	def captionClass = ""
 	switch(carbonVal) {
 		case "warning":
-			img = b64 ? getFileBase64(getImg("co2_warn_status.png"), "image", "png") : getImg("co2_warn_status.png")
+			img = getImg("co2_warn_status.png")
 			captionClass = "alarmWarnCap"
 			break
 		case "emergency":
-			img = b64 ? getFileBase64(getImg("co2_emergency_status.png"), "image", "png") : getImg("co2_emergency_status.png")
+			img = getImg("co2_emergency_status.png")
 			captionClass = "alarmEmerCap"
 			break
 		default:
-			img = b64 ? getFileBase64(getImg("co2_clear_status.png"), "image", "png") : getImg("co2_clear_status.png")
+			img = getImg("co2_clear_status.png")
 			captionClass = "alarmClearCap"
 			break
 	}
@@ -797,15 +797,15 @@ def getSmokeImg(b64=true) {
 	def captionClass = ""
 	switch(smokeVal) {
 		case "warning":
-			img = b64 ? getFileBase64(getImg("smoke_warn_status.png"), "image", "png") : getImg("smoke_warn_status.png")
+			img = getImg("smoke_warn_status.png")
 			captionClass = "alarmWarnCap"
 			break
 		case "emergency":
-			img = b64 ? getFileBase64(getImg("smoke_emergency_status.png"), "image", "png") : getImg("smoke_emergency_status.png")
+			img = getImg("smoke_emergency_status.png")
 			captionClass = "alarmEmerCap"
 			break
 		default:
-			img = b64 ? getFileBase64(getImg("smoke_clear_status.png"), "image", "png") : getImg("smoke_clear_status.png")
+			img = getImg("smoke_clear_status.png")
 			captionClass = "alarmClearCap"
 			break
 	}
@@ -848,46 +848,27 @@ def devVerInfo()	{ return getWebData([uri: "https://raw.githubusercontent.com/${
 
 def getFileBase64(url, preType, fileType) {
 	try {
-		def params = [
-			uri: url,
-			contentType: "$preType/$fileType"
-		]
+		def params = [uri: url, contentType: "$preType/$fileType"]
 		httpGet(params) { resp ->
-			if(resp.data) {
-				def respData = resp?.data
-				ByteArrayOutputStream bos = new ByteArrayOutputStream()
-				int len
-				int size = 4096
-				byte[] buf = new byte[size]
-				while ((len = respData.read(buf, 0, size)) != -1)
-					bos.write(buf, 0, len)
-				buf = bos.toByteArray()
-				//log.debug "buf: $buf"
-				String s = buf?.encodeBase64()
-				//log.debug "resp: ${s}"
-				return s ? "data:${preType}/${fileType};base64,${s.toString()}" : null
+			if(resp?.status == 200) {
+				if(resp.data) {
+					def respData = resp?.data
+					byte[] byteData = resp?.data?.getBytes()
+					String enc = byteData?.encodeBase64()
+					// log.debug "enc: ${enc}"
+					return enc ? "data:${preType}/${fileType};base64,${enc?.toString()}" : null
+				}
+			} else {
+				LogAction("getFileBase64 Resp: ${resp?.status} ${url}", "error")
+				exceptionDataHandler("resp ${ex?.response?.status} ${url}", "getFileBase64")
+				return null
 			}
 		}
-	}
-	catch (ex) {
+	} catch (ex) {
 		log.error "getFileBase64 Exception:", ex
 		exceptionDataHandler(ex?.message, "getFileBase64")
 	}
 }
-
-def getCssData() {
-	def cssData = null
-	def htmlInfo = state?.htmlInfo
-	if(htmlInfo?.cssUrl && htmlInfo?.cssVer) {
-		cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
-		state?.cssVer = htmlInfo?.cssVer
-	} else {
-		cssData = getFileBase64(cssUrl(), "text", "css")
-	}
-	return cssData
-}
-
-def cssUrl()	 { return "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css" }
 
 def disclaimerMsg() {
 	if(!state?.disclaimerMsgShown) {
@@ -908,7 +889,7 @@ def getChgLogHtml() {
 	if(!state?.shownChgLog == true) {
 		chgStr = """
 			<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-			<script src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/js/vex.combined.min.js"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/js/vex.combined.min.js"></script>
 			<script>
 				\$(document).ready(function() {
 				    vex.dialog.alert({
@@ -929,8 +910,7 @@ def hasHtml() { return true }
 
 def getInfoHtml() {
 	try {
-		def battImg = (state?.battVal == "low") ? "<img class='battImg' src=\"${getFileBase64(getImg("battery_low_h.png"), "image", "png")}\">" :
-				"<img class='battImg' src=\"${getFileBase64(getImg("battery_ok_h.png"), "image", "png")}\">"
+		def battImg = (state?.battVal == "low") ? """<img class="battImg" src="${getImg("battery_low_h.png")}">""" : """<img class="battImg" src="${getImg("battery_ok_h.png")}">"""
 
 		def testVal = device.currentState("isTesting")?.value
 		def testModeHTML = (testVal.toString() == "true") ? "<h3>Test Mode</h3>" : ""
@@ -964,13 +944,11 @@ def getInfoHtml() {
 				<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT"/>
 				<meta http-equiv="pragma" content="no-cache"/>
 				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
-                <script type="text/javascript" src="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js", "text", "javascript")}"></script>
 
-				<link rel="stylesheet prefetch" href="${getCssData()}"/>
-				<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css", "text", "css")}" />
-				<link rel="stylesheet" href="${getFileBase64("https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css", "text", "css")}" />
-				<style>
-				</style>
+				<link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css"/>
+				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex.min.css" async/>
+				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex-theme-top.min.css" async />
+				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 			</head>
 			<body>
 			  ${getChgLogHtml()}
@@ -1085,8 +1063,7 @@ def getInfoHtml() {
 
 def getDeviceTile(devNum) {
 	try {
-		def battImg = (state?.battVal == "low") ? "<img class='battImg' src=\"${getImg("battery_low_h.png")}\">" :
-				"<img class='battImg' src=\"${getImg("battery_ok_h.png")}\">"
+		def battImg = (state?.battVal == "low") ? """<img class="battImg" src="${getImg("battery_low_h.png")}">""" : """<img class="battImg" src="${getImg("battery_ok_h.png")}">"""
 
 		def testVal = device.currentState("isTesting")?.value
 		def testModeHTML = (testVal.toString() == "true") ? "<h3>Test Mode</h3>" : ""
