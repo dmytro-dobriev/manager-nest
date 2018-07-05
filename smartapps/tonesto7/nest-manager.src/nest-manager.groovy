@@ -379,34 +379,29 @@ def storageAppInst(available) {
 }
 
 private getStorageApp() {
-	def storApp = null
-	def cApps = getChildApps()
-	cApps?.each { ca ->
-		if(ca?.getAutomationType() == "storage") {
-			storApp = ca
-		}
+	def storApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == autoAppName() }
+	if(storApp) { 
+		if(storApp?.label != storageAppName()) { storApp?.updateLabel(storageAppName()) }
+		return storApp 
+	} else { 
+		runIn(5, "initStorageApp", [overwrite: true])
+		return null 
 	}
-	return storApp
-/*
-	def storApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == storageAppName() }
-	if(storApp) { return storApp }
-	else { return null }
-*/
 }
 
 private checkStorageApp() {
+	def oldStorApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == storageAppName() }
 	def storApp = getStorageApp()
-	if(storApp) {
-		def name = storageAppName()
-		if(storApp?.label != name) {
-			LogAction("checkStorageApp name did not match - deleting old Storage App", "warn", false)
-			deleteChildApp(storApp)
+	if(oldStorApp) {
+		if(oldStorApp?.label != name) {
+			LogAction("checkStorageApp | Removing Old Storage App", "warn", false)
+			deleteChildApp(oldStorApp)
 			updTimestampMap("lastAnalyticUpdDt", null)
-			//storApp.updateLabel(name)
-		} else {
-			storageAppInst(true)
-			return storApp
 		}
+	}
+	if(storApp) {
+		storageAppInst(true)
+		return storApp
 	}
 	storageAppInst(false)
 	return null
@@ -5903,7 +5898,7 @@ def getWeatherData(dataName) {
 			return t0
 		} else { if(getWeatherConditions(true)) { return getStorageVal(dataName) } }
 	} else {
-log.warn "storageApp not found getWeatherData"
+		log.warn "storageApp not found getWeatherData"
 		if(atomicState?."$dataName") {
 			return atomicState?."$dataName"
 		} else { if(getWeatherConditions(true)) { return atomicState?."$dataName" }	}
