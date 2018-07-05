@@ -347,7 +347,9 @@ def mainAutoPage(params) {
 								}
 							}
 						}
-						nDesc += (nModePresSensor || nModeSwitch) || (!nModePresSensor && !nModeSwitch && (nModeAwayModes && nModeHomeModes)) ? "\n\nTap to modify" : ""
+						def t1 = getNotifConfigDesc("nMode")
+						nDesc += t1 ? "\n\n${t1}" : ""
+						nDesc += t1 || (nModePresSensor || nModeSwitch) || (!nModePresSensor && !nModeSwitch && (nModeAwayModes && nModeHomeModes)) ? "\n\nTap to modify" : ""
 						def nModeDesc = isNestModesConfigured() ? "${nDesc}" : null
 						href "nestModePresPage", title: "Nest Mode Automation Config", description: nModeDesc ?: "Tap to configure", state: (nModeDesc ? "complete" : null), image: getAppImg("mode_automation_icon.png")
 					}
@@ -360,9 +362,10 @@ def mainAutoPage(params) {
 					if(autoType == "watchDog") {
 						//paragraph title:"Watch your Nest Location for Events:", ""
 						def watDesc = ""
-						def t1 = getVoiceNotifConfigDesc("watchDog")
-						watDesc += (settings["${getAutoType()}AllowSpeechNotif"] && (settings["${getAutoType()}SpeechDevices"] || settings["${getAutoType()}SpeechMediaPlayer"]) && t1) ?
-								"\n\nVoice Notifications:${t1}" : ""
+						//def t1 = getVoiceNotifConfigDesc("watchDog")
+						//watDesc += (settings["${getAutoType()}AllowSpeechNotif"] && (settings["${getAutoType()}SpeechDevices"] || settings["${getAutoType()}SpeechMediaPlayer"]) && t1) ?  "\n\nVoice Notifications:${t1}" : ""
+						def t1 = getNotifConfigDesc("watchDog")
+						watDesc += t1 ? "${t1}\n\nTap to modify" : ""
 						def watDogDesc = isWatchdogConfigured() ? "${watDesc}" : null
 						href "watchDogPage", title: "Nest Location Watchdog", description: watDogDesc ?: "Tap to configure", state: (watDogDesc ? "complete" : null), image: getAppImg("watchdog_icon.png")
 					}
@@ -421,6 +424,8 @@ def getSchMotConfigDesc(retAsList=false) {
 		list?.each { ls ->
 			sDesc += "\n • ${ls}"
 		}
+		def t1 = getNotifConfigDesc("schMot")
+		sDesc += t1 ? "\n\n${t1}" : ""
 		sDesc += settings?.schMotTstat ? "\n\nTap to modify" : ""
 		return isSchMotConfigured() ? "${sDesc}" : null
 	}
@@ -6507,17 +6512,17 @@ def getNotifConfigDesc(pName) {
 		//str += ( getRecipientDesc(pName) || (settings?."${pName}AllowSpeechNotif" && (settings?."${pName}SpeechDevices" || settings?."${pName}SpeechMediaPlayer"))) ?  "Notification Status:" : ""
 		str += "Notification Status:"
 		if(!getRecipientDesc(pName)) {
-			str += " • Contacts: Using Manager Settings"
+			str += "\n • Contacts: Using Manager Settings"
 		}
-		str += (settings?."${pName}NotifRecips") ? "${str != "" ? "\n" : ""} • Contacts: (${settings?."${pName}NotifRecips"?.size()})" : ""
+		str += (settings?."${pName}NotifRecips") ? "\n • Contacts: (${settings?."${pName}NotifRecips"?.size()})" : ""
 		str += (settings?."${pName}UsePush") ? "\n • Push Messages: Enabled" : ""
 		str += (settings?."${pName}NotifPhones") ? "\n • SMS: (${settings?."${pName}NotifPhones"?.size()})" : ""
 		def t0 = getVoiceNotifConfigDesc(pName)
-		str += t0 ? ("${(str != "") ? "\n\n" : "\n"}Voice Status:${t0}") : ""
+		str += t0 ? "\n\nVoice Status:${t0}" : ""
 		def t1 = getAlarmNotifConfigDesc(pName)
-		str += t1 ? ("${(str != "") ? "\n\n" : "\n"}Alarm Status:${t1}") : ""
+		str += t1 ?  "\n\nAlarm Status:${t1}" : ""
 		def t2 = getAlertNotifConfigDesc(pName)
-		str += t2 ? "\n${t2}" : ""
+		str += t2 ? "\n\n${t2}" : ""
 	}
 	return (str != "") ? "${str}" : null
 }
