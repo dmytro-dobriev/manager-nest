@@ -382,29 +382,22 @@ private getStorageApp() {
 	def storApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == autoAppName() }
 	if(storApp) { 
 		if(storApp?.label != storageAppName()) { storApp?.updateLabel(storageAppName()) }
+		storageAppInst(true)
 		return storApp 
 	} else { 
 		runIn(5, "initStorageApp", [overwrite: true])
+		storageAppInst(false)
 		return null 
 	}
 }
 
 private checkStorageApp() {
-	def oldStorApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == storageAppName() }
-	def storApp = getStorageApp()
+	def oldStorApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name != autoAppName() }
 	if(oldStorApp) {
-		if(oldStorApp?.label != storageAppName()) {
-			LogAction("checkStorageApp | Removing Old Storage App", "warn", false)
-			deleteChildApp(oldStorApp)
-			updTimestampMap("lastAnalyticUpdDt", null)
-		}
+		LogAction("checkStorageApp | Removing Old Storage App", "warn", false)
+		deleteChildApp(oldStorApp)
+		updTimestampMap("lastAnalyticUpdDt", null)
 	}
-	if(storApp) {
-		storageAppInst(true)
-		return storApp
-	}
-	storageAppInst(false)
-	return null
 }
 
 def donationPage() {
@@ -2258,7 +2251,8 @@ def uninstalled() {
 def initialize() {
 	//LogTrace("initialize")
 	if(!atomicState?.tsMigration) { timestampMigration() }
-	def storageApp = checkStorageApp()
+	checkStorage()
+	def storageApp = getStorageApp()
 	if(atomicState?.resetAllData || settings?.resetAllData) {
 		if(fixState()) { return }	// runIn of fixState will call initAutoApp() or initManagerApp()
 		settingUpdate("resetAllData", "false", "bool")
@@ -3225,7 +3219,7 @@ def getInstAutoTypesDesc() {
  						deleteChildApp(a)
 						updTimestampMap("lastAnalyticUpdDt", null)
 					 }
-					def test = checkStorageApp()
+					checkStorageApp()
 					break
  				default:
  					LogAction("Deleting Unknown Automation (${a?.id})", "warn", true)
@@ -9865,41 +9859,6 @@ def isPluralString(obj) {
 /************************************************************************************************
 |					GLOBAL Code | Logging AND Diagnostic							|
 *************************************************************************************************/
-
-def sendEventPushNotifications(message, type, pName) {
-	//LogTrace("sendEventPushNotifications($message, $type, $pName)")
-	if(settings["${pName}_Alert_1_Send_Push"] || settings["${pName}_Alert_2_Send_Push"]) {
-//TODO this portion is never reached
-		if(settings["${pName}_Alert_1_CustomPushMessage"]) {
-			sendNofificationMsg(settings["${pName}_Alert_1_CustomPushMessage"].toString(), type, settings?."${pName}NotifRecips", settings?."${pName}NotifPhones", settings?."${pName}UsePush")
-		} else {
-			sendNofificationMsg(message, type, settings?."${pName}NotifRecips", settings?."${pName}NotifPhones", settings?."${pName}UsePush")
-		}
-	} else {
-		sendNofificationMsg(message, type, settings?."${pName}NotifRecips", settings?."${pName}NotifPhones", settings?."${pName}UsePush")
-	}
-}
-
-def sendEventVoiceNotifications(vMsg, pName, msgId, rmAAMsg=false, rmMsgId) {
-	def allowNotif = settings?."${pName}NotificationsOn" ? true : false
-	def allowSpeech = allowNotif && settings?."${pName}AllowSpeechNotif" ? true : false
-	def ok2Notify = getOk2Notify()
-
-	LogAction("sendEventVoiceNotifications($vMsg, $pName)   ok2Notify: $ok2Notify", "trace", false)
-	if(allowNotif && allowSpeech) {
-		if(ok2Notify && (settings["${pName}SpeechDevices"] || settings["${pName}SpeechMediaPlayer"])) {
-			sendTTS(vMsg, pName)
-		}
-		if(settings["${pName}SendToAskAlexaQueue"]) {		// we queue to Alexa regardless of quiet times
-			if(rmMsgId != null && rmAAMsg == true) {
-				removeAskAlexaQueueMsg(rmMsgId)
-			}
-			if (vMsg && msgId != null) {
-				addEventToAskAlexaQueue(vMsg, msgId)
-			}
-		}
-	}
-}
 
 def addEventToAskAlexaQueue(vMsg, msgId, queue=null) {
 	if(getAskAlexaMQEn()) {
