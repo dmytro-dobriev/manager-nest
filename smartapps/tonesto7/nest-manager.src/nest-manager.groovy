@@ -34,11 +34,11 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.8" }
-def appVerDate() { "07-04-2018" }
+def appVersion() { "5.3.9" }
+def appVerDate() { "07-05-2018" }
 def minVersions() {
 	return [
-		"automation":["val":535, "desc":"5.3.5"],
+		"automation":["val":536, "desc":"5.3.6"],
 		"thermostat":["val":536, "desc":"5.3.6"],
 		"protect":["val":536, "desc":"5.3.6"],
 		"presence":["val":536, "desc":"5.3.6"],
@@ -5730,8 +5730,8 @@ def sendMsg(msgType, msg, showEvt=true, people = null, sms = null, push = null, 
 			LogAction("sendMsg: Skipping Due to Quiet Time ($flatMsg)", "info", true)
 		} else {
 			if(!brdcast) {
-				def who = people ? people : settings?.recipients
 				if(location.contactBookEnabled) {
+					def who = people ? people : settings?.recipients
 					if(who) {
 						sentstr = "Pushing to Contacts $who"
 						sendNotificationToContacts(newMsg, who, [event: showEvt])
