@@ -393,7 +393,7 @@ private checkStorageApp() {
 	def oldStorApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == storageAppName() }
 	def storApp = getStorageApp()
 	if(oldStorApp) {
-		if(oldStorApp?.label != name) {
+		if(oldStorApp?.label != storageAppName()) {
 			LogAction("checkStorageApp | Removing Old Storage App", "warn", false)
 			deleteChildApp(oldStorApp)
 			updTimestampMap("lastAnalyticUpdDt", null)
