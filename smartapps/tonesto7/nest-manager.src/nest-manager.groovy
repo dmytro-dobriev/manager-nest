@@ -1424,7 +1424,9 @@ def notifPrefPage() {
 				input ("phone", "phone", title: "Phone Number to send SMS to", required: false, submitOnChange: true, image: getAppImg("notification_icon2.png"))
 				settingRemove("recipients")
 			} else {
-				input(name: "recipients", type: "contact", title: "Select Default Contacts", required: false, submitOnChange: true, image: getAppImg("recipient_icon.png"))
+				input(name: "recipients", type: "contact", title: "Select Default Contacts", required: false, submitOnChange: true, image: getAppImg("recipient_icon.png")) {
+					input ("phone", "phone", title: "Phone Number to send SMS to", required: false, submitOnChange: true, image: getAppImg("notification_icon2.png"))
+				}
 				settingRemove("phone")
 				settingRemove("usePush")
 			}
@@ -1435,7 +1437,7 @@ def notifPrefPage() {
 		}
 		if(settings?.recipients || settings?.phone || settings?.usePush) {
 			if(settings?.recipients && !atomicState?.pushTested) {
-				if(sendMsg("Info", "Push Notification Test Successful. Notifications Enabled for ${appName()}", false)) {
+				if(sendMsg("Info", "Push Notification Test Successful. Notifications Enabled for ${appName()}", true)) {
 					atomicState.pushTested = true
 				}
 			}
@@ -5725,21 +5727,30 @@ def sendMsg(msgType, msg, showEvt=true, people = null, sms = null, push = null, 
 					def who = people ? people : settings?.recipients
 					if(who) {
 						sentstr = "Pushing to Contacts $who"
-						sendNotificationToContacts(newMsg, who, [event: showEvt])
+						sendNotificationToContacts(newMsg, people ? people : settings.recipients, [event: showEvt.toBoolean(), view: [name:"NSTMGR", data: [:]]])
+						//sendNotificationToContacts(newMsg, settings.recipients, [event: true])
 						sent = true
 					}
 				} else {
 					LogAction("ContactBook is NOT Enabled on your SmartThings Account", "warn", false)
 					if(push || settings?.usePush) {
 						sentstr = "Push Message"
-						sendPush(newMsg)	// sends push and notification feed
+						if(showEvt) {
+							sendPush(newMsg)	// sends push and notification feed
+						} else {
+							sendPushMessage(newMsg)	// sends push
+						}
 						sent = true
 					}
 					def thephone = sms ? sms.toString() : settings?.phone ? settings?.phone?.toString() : ""
 					if(thephone) {
 						sentstr = "Text Message to Phone $thephone"
 						def t0 = newMsg.take(140)
-						sendSms(thephone as String, t0 as String)	// send SMS and notification feed
+						if(showEvt) {
+							sendSms(thephone as String, t0 as String)	// send SMS and notification feed
+						} else {
+							sendSmsMessage(thephone as String, t0 as String)	// send SMS
+						}
 						sent = true
 					}
 				}
@@ -6852,10 +6863,7 @@ def addRemoveDevices(uninst = null) {
 		}
 
 		if(!atomicState?.weatherDevice) {
-			remStorageVal("curForecast")
-			remStorageVal("curAstronomy")
-			remStorageVal("curWeather")
-			remStorageVal("curAlerts")
+			runIn(5, "cleanStorage", [overwrite: true]) // calling the child truncates logs
 			atomicState?.curWeather = null
 			atomicState?.curForecast = null
 			atomicState?.curAstronomy = null
@@ -7547,7 +7555,7 @@ def stateCleanup() {
 		if(state?.containsKey(item)) { state.remove(item?.toString()) }
 	}
 
-	atomicState?.swVer = [ "tDevVer": null, "pDevVer": null, "camDevVer": null, "presDevVer": null, "weatDevVer": null, "vtDevVer": null, "streamDevVer": null]
+	//atomicState?.swVer = [ "tDevVer": null, "pDevVer": null, "camDevVer": null, "presDevVer": null, "weatDevVer": null, "vtDevVer": null, "streamDevVer": null] // this causes recursion
 
 	atomicState.authTokenExpires = atomicState?.tokenExpires ?: atomicState?.authTokenExpires
 	state.remove("tokenExpires")
@@ -7573,6 +7581,10 @@ def stateCleanup() {
 			settingRemove(item as String)	// removes settings
 		}
 	}
+	runIn(5, "cleanStorage", [overwrite: true]) // calling the child truncates logs
+}
+
+def cleanStorage() {
 	remStorageVal("curForecast")
 	remStorageVal("curAstronomy")
 	remStorageVal("curWeather")
