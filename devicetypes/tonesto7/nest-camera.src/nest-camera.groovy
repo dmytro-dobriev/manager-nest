@@ -328,6 +328,7 @@ def processEvent() {
 			audioInputEnabledEvent(results?.is_audio_input_enabled?.toString())
 			softwareVerEvent(results?.software_version?.toString())
 			if(results?.activity_zones) { state?.activityZones = results?.activity_zones }
+			state?.camMotionZoneFilter = results?.camMotionZoneFilter ? results?.camMotionZoneFilter : []
 			if(results?.snapshot_url) { state?.snapshot_url = results?.snapshot_url?.toString() }
 			if(results?.app_url) { state?.app_url = results?.app_url?.toString() }
 			if(results?.web_url) { state?.web_url = results?.web_url?.toString() }
@@ -565,7 +566,9 @@ def lastEventDataEvent(data) {
 	def curEndDt = device?.currentState("lastEventEnd")?.value ? tf?.format(Date.parse("E MMM dd HH:mm:ss z yyyy", device?.currentState("lastEventEnd")?.value?.toString())) : null
 	def newStartDt = data?.start_time ? tf.format(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", data?.start_time?.toString())) : "Not Available"
 	def newEndDt = data?.end_time ? tf.format(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", data?.end_time?.toString())) : "Not Available"
-
+	
+	def camMotionFilterZones = state?.camMotionZoneFilter ?: []
+	
 	def hasPerson = data?.has_person ? data?.has_person?.toBoolean() : false
 	state?.motionPerson = hasPerson
 	def hasMotion = data?.has_motion ? data?.has_motion?.toBoolean() : false

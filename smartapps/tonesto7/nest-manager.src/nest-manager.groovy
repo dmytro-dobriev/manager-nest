@@ -580,10 +580,16 @@ def devPrefPage() {
 				if(atomicState?.appData?.eventStreaming?.enabled == true || getDevOpt() || betaMarker()) {
 					input "camTakeSnapOnEvt", "bool", title: "Take Snapshot on Motion Events?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("snapshot_icon.png")
 					input "motionSndChgWaitVal", "enum", title: "Delay before Motion/Sound Events are marked Inactive?", required: false, defaultValue: 60, metadata: [values:waitValAltEnum(true)], submitOnChange: true, image: getAppImg("delay_time_icon.png")
-					// input "camEnMotionZoneFltr", "bool", title: "Allow filtering motion events by configured zones?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("motion_icon.png")
-					// if(settings?.camEnMotionZoneFltr) {
-					// 	href "camMotionZoneFltrPage", title: "Select the Zones for each camera to be used to trigger Motion?", description: "Tap to modify", image: getAppImg("zone_icon.png")
-					// }
+					input "camEnMotionZoneFltr", "bool", title: "Allow filtering motion events by configured zones?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("motion_icon.png")
+					if(settings?.camEnMotionZoneFltr) {
+						atomicState?.cameras.sort{it?.value}.each { cam ->
+							def camZones = getCamActivityZones(cam?.key)
+							if(camZones?.size()) {
+								def zoneDesc = settings?."${cam?.key}_zones"?.size() ? "(${settings?."${cam?.key}_zones"?.size()}) Zones Selected" : "Found (${camZones.size()}) Zones"
+								href "camMotionZoneFltrPage", title: "(${cam?.value}) Motion Zones?", description: zoneDesc, params: [camId:"${cam?.key}"], image: getAppImg("zone_icon.png"), state: (settings?."${cam?.key}_zones"?.size() ? "complete" : "")
+							} else { paragraph "(${cam?.value}) No Zones Found" }
+						}
+					}
 					atomicState.needChildUpd = true
 				} else {
 					paragraph "No Camera Device Options Yet..."
@@ -628,36 +634,37 @@ def getCamActivityZones(devId) {
 	def camZones = [:]
 	if(actZones.size()) {
 		actZones?.each { zn ->
-			def zId = zn?.id
-			def zName = zn?.name
-			def adni = [zId].join('.')
-			camZones[adni] = zName
+			camZones[zn?.id] = zn?.name
 		}
 	}
 	return camZones
 }
 
-def camMotionZoneFltrPage() {
+def camMotionZoneFltrPage(params) {
+	def camId = params.camId
+	if(params?.camId) {
+		atomicState.camFilterPageData = params
+	} else {
+		camId = atomicState?.camFilterPageData?.camId
+	}
 	def execTime = now()
-	dynamicPage(name: "camMotionZoneFltrPage", title: "", nextPage: "", install: false) {
-		def cnt = 1
-		atomicState?.cameras.sort{it?.value}.each { cam ->
-
-		   	def t0 = cam?.key
-			def t1 = cam?.value
-			def camZones = getCamActivityZones(t0)
+	dynamicPage(name: "camMotionZoneFltrPage", title: "", nextPage: "devPrefPage", install: false) {
+		if(camId) {
+			def camZones = getCamActivityZones(camId)
 			def zoneDesc = camZones.size() ? "Found (${camZones.size()}) Zones" : "No Zones Found"
 			LogAction("${zoneDesc} (${camZones})", "info", true)
-			section("Camera: (${t1})") {
-				if(!camZones?.size()) {
-					paragraph "No Zones were found for this camera."
+			section("Available Zones") {
+				if(!camZones.size()) {
+					paragraph "Camera has NO Zones..."
 				} else {
-					input(name: "${t0}_zones", title:"Available Zones", type: "enum",  description: "${zoneDesc}", required: false, multiple: true, submitOnChange: true,
-							metadata: [values:camZones], image: getAppImg("zone_icon.png"))
+					input(name: "${camId}_zones", title:"Available Zones", type: "enum", description: "${zoneDesc}", required: false, multiple: true, submitOnChange: false, options: camZones, image: getAppImg("zone_icon.png"))
 				}
 			}
+		} else {
+			section() {
+				paragraph "NO Camera Zones Found..."
+			}
 		}
-
 		atomicState.needChildUpd = true
 		devPageFooter("camZoneFltLoadCnt", execTime)
 	}
@@ -1616,9 +1623,9 @@ def getAppNotifConfDesc() {
 		def de = getDevNotifDesc()
 		def au = getAutoNotifDesc()
 		def nd = getNotifSchedDesc()
-		str += (settings?.recipients) ? "Sending via Contact Book (True)" : ""
-		str += (settings?.usePush) ? "Sending via Push: (True)" : ""
-		str += (settings?.phone) ? "\nSending via SMS: (True)" : ""
+		str += (settings?.recipients) ? "Sending via: (Contact Book)" : ""
+		str += (settings?.usePush) ? "Sending via: (Push)" : ""
+		str += (settings?.phone) ? "\nSending via: (SMS)" : ""
 		str += (ap || de || au) ? "\nEnabled Alerts:" : ""
 		str += (ap) ? "\n• App Alerts (True)" : ""
 		str += (de) ? "\n• Device Alerts (True)" : ""
@@ -4228,11 +4235,12 @@ def updateChildData(force = false) {
 			}
 			else if(devId && atomicState?.cameras && atomicState?.deviceData?.cameras && atomicState?.deviceData?.cameras[devId]) {
 				//devCodeIds["camera"] = it?.getDevTypeId()
+				def camZonesFilter = settings?."${devId}_zones"?.size() ? settings?."${devId}_zones" : []
 				def camData = ["data":atomicState?.deviceData?.cameras[devId], "mt":useMt, "debug":dbg, "logPrefix":logNamePrefix,
 						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestCamVer()?.ver?.toString(), "clientBl":clientBl,
 						"hcTimeout":hcCamTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg,
 						"streamNotify":nPrefs?.dev?.camera?.streamMsg, "devBannerData":devBannerData, "restStreaming":streamingActive, "motionSndChgWaitVal":motionSndChgWaitVal,
-						"isBeta":isBeta, "camTakeSnapOnEvt": camTakeSnapOnEvt, "hcRepairEnabled":hcRepairEnabled, "secState":locSecurityState ]
+						"isBeta":isBeta, "camTakeSnapOnEvt": camTakeSnapOnEvt, "hcRepairEnabled":hcRepairEnabled, "secState":locSecurityState, camMotionZoneFilter: camZonesFilter ]
 				def oldCamData = atomicState?."oldCamData${devId}"
 				def cDataChecksum = generateMD5_A(camData.toString())
 				atomicState."oldCamData${devId}" = cDataChecksum
