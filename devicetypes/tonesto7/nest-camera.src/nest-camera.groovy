@@ -44,10 +44,9 @@ metadata {
 		attribute "activityZoneName", "string"
 		attribute "isStreaming", "string"
 		attribute "audioInputEnabled", "string"
-		attribute "videoHistoryEnabled", "string"
+		attribute "nestAware", "string"
 		attribute "motionPerson", "string"
-		attribute "minVideoHistoryHours", "string"
-		attribute "maxVideoHistoryHours", "string"
+		attribute "videoQualityLevel", "string"
 		attribute "publicShareEnabled", "string"
 		attribute "lastEventStart", "string"
 		attribute "lastEventEnd", "string"
@@ -292,7 +291,7 @@ def processEvent() {
 		LogAction("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			def results = eventData?.data
-			//log.debug "results: $results"
+			// log.debug "results: $results"
 			state.isBeta = eventData?.isBeta == true ? true : false
 			state.hcRepairEnabled = eventData?.hcRepairEnabled == true ? true : false
 			state.takeSnapOnEvt = eventData?.camTakeSnapOnEvt == true ? true : false
@@ -302,12 +301,10 @@ def processEvent() {
 			state.streamMsg = eventData?.streamNotify == true ? true : false
 			state.healthMsg = eventData?.healthNotify == true ? true : false
 			state.motionSndChgWaitVal = eventData?.motionSndChgWaitVal ? eventData?.motionSndChgWaitVal?.toInteger() : 60
-//			if(useTrackedHealth()) {
-				if(eventData.hcTimeout && (state?.hcTimeout != eventData?.hcTimeout || !state?.hcTimeout)) {
-					state.hcTimeout = eventData?.hcTimeout
-					verifyHC()
-				}
-//			}
+			if(eventData.hcTimeout && (state?.hcTimeout != eventData?.hcTimeout || !state?.hcTimeout)) {
+				state.hcTimeout = eventData?.hcTimeout
+				verifyHC()
+			}
 			state?.useMilitaryTime = eventData?.mt ? true : false
 			state.clientBl = eventData?.clientBl == true ? true : false
 			state.mobileClientType = eventData?.mobileClientType
@@ -325,10 +322,11 @@ def processEvent() {
 			if(eventData?.allowDbException) { state?.allowDbException = eventData?.allowDbException = false ? false : true }
 			apiStatusEvent(eventData?.apiIssues)
 			debugOnEvent(eventData?.debug ? true : false)
+			state?.camMotionZones = eventData?.camMotionZones ?: []
 			audioInputEnabledEvent(results?.is_audio_input_enabled?.toString())
 			softwareVerEvent(results?.software_version?.toString())
 			if(results?.activity_zones) { state?.activityZones = results?.activity_zones }
-			state?.camMotionZoneFilter = results?.camMotionZoneFilter ? results?.camMotionZoneFilter : []
+			
 			if(results?.snapshot_url) { state?.snapshot_url = results?.snapshot_url?.toString() }
 			if(results?.app_url) { state?.app_url = results?.app_url?.toString() }
 			if(results?.web_url) { state?.web_url = results?.web_url?.toString() }
@@ -338,7 +336,8 @@ def processEvent() {
 				if(results?.last_event.start_time && results?.last_event.end_time) { lastEventDataEvent(results?.last_event) }
 			}
 			deviceVerEvent(eventData?.latestVer?.toString())
-			vidHistoryTimeEvent()
+			// videoQualityEvent()
+			// findCameraModel()
 			lastUpdatedEvent(true)
 			checkHealth()
 			if(state?.ok2Checkin == true) {
@@ -464,6 +463,11 @@ def lastOnlineEvent(dt) {
 
 def onlineStatusEvent(isOnline) {
 	LogAction("onlineStatusEvent($isOnline)")
+	state?.camApiServerData?.items[0]?.capabilities?.each {
+		if(it?.startsWith("streaming.cameraprofile") || it?.startsWith("streaming.data-usage-tier")) {
+			log.debug "${it}"
+		}
+	}
 	if(state?.camApiServerData && (state?.camApiServerData?.items[0]?.is_online != isOnline?.toBoolean() ) ) {
 		Logger("onlineStatusEvent: ${isOnline?.toBoolean()} | CamData: ${state?.camApiServerData?.items[0]?.is_online}")
 		//isOnline = state?.camApiServerData?.items[0]?.is_online
@@ -527,14 +531,15 @@ def audioInputEnabledEvent(on) {
 }
 
 def videoHistEnabledEvent(on) {
-	def isOn = device.currentState("videoHistoryEnabled")?.value
-	def val = (on?.toString() == "true") ? "Enabled" : "Disabled"
+	def isOn = device.currentState("nestAware")?.value
+	def val = (on?.toString() == "true") ? "Active" : "Inactive"
+	state?.nestAwareActive = (on?.toString() == "true")
 	state?.videoHistoryEnabled = val
-	if(isStateChange(device, "videoHistoryEnabled", val?.toString())) {
-		Logger("UPDATED | Video History Status is: (${val}) | Original State: (${isOn})")
-		sendEvent(name: "videoHistoryEnabled", value: val, descriptionText: "Video History Status is: ${val}", displayed: true, isStateChange: true, state: val)
-		addCheckinReason("videoHistoryEnabled")
-	} else { LogAction("Video History Status is: (${val}) | Original State: (${isOn})") }
+	if(isStateChange(device, "nestAware", val?.toString())) {
+		Logger("UPDATED | Nest Aware Status is: (${val}) | Original State: (${isOn})")
+		sendEvent(name: "nestAware", value: val, descriptionText: "Nest Aware Status is: ${val}", displayed: true, isStateChange: true, state: val)
+		addCheckinReason("nestAware")
+	} else { LogAction("Nest Aware Status is: (${val}) | Original State: (${isOn})") }
 }
 
 def publicShareEnabledEvent(on) {
@@ -567,7 +572,7 @@ def lastEventDataEvent(data) {
 	def newStartDt = data?.start_time ? tf.format(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", data?.start_time?.toString())) : "Not Available"
 	def newEndDt = data?.end_time ? tf.format(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", data?.end_time?.toString())) : "Not Available"
 	
-	def camMotionFilterZones = state?.camMotionZoneFilter ?: []
+	def camMotionZones = state?.camMotionZones && state?.camMotionZones != [] ? state?.camMotionZones : []
 	
 	def hasPerson = data?.has_person ? data?.has_person?.toBoolean() : false
 	state?.motionPerson = hasPerson
@@ -590,6 +595,7 @@ def lastEventDataEvent(data) {
 		state?.lastEventZonesHtml = zstr
 	}
 
+	def motionZoneOk = isMotionZoneOk(evtZoneIds)
 	//log.debug "curStartDt: $curStartDt | curEndDt: $curEndDt || newStartDt: $newStartDt | newEndDt: $newEndDt"
 
 	state.lastEventDate = formatDt2(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", data?.start_time?.toString()), "MMMMM d, yyyy")?.toString()
@@ -619,9 +625,9 @@ def lastEventDataEvent(data) {
 		LogAction("Last Event End Time: (${newEndDt}) - Zones: ${evtZoneNames} | Original State: (${curEndDt})")
 		LogAction("Last Event Type: (${evtType}) - Zones: ${evtZoneNames}")
 	}
-	motionSoundEvtHandler()
-	if(tryPic) {
-		if(state?.videoHistoryEnabled == "Enabled" && state?.animation_url) {
+	motionSoundEvtHandler(motionZoneOk)
+	if(tryPic && motionZoneOk) {
+		if(state?.videoHistoryEnabled == "Active" && state?.animation_url) {
 			takePicture(state?.animation_url)
 		} else {
 			takePicture(state?.snapshot_url)
@@ -629,10 +635,21 @@ def lastEventDataEvent(data) {
 	}
 }
 
-def motionSoundEvtHandler() {
+def isMotionZoneOk(evtZoneIds) {
+	if(state?.camMotionZones && evtZoneIds) {
+		if(evtZoneIds?.size()) {
+			def res = evtZoneIds?.find { it?.toString() in state?.camMotionZones }
+			// log.debug "result: ${res}"
+			if(res) { return false}
+		}
+	}
+	return true
+}
+
+def motionSoundEvtHandler(zoneOk=true) {
 	def data = state?.lastCamEvtData
 	if(data) {
-		motionEvtHandler(data)
+		if(zoneOk) { motionEvtHandler(data) }
 		data = state?.lastCamEvtData
 		soundEvtHandler(data)
 	}
@@ -738,21 +755,47 @@ def lastUpdatedEvent(sendEvt=false) {
 	}
 }
 
-def vidHistoryTimeEvent() {
+def videoQualityEvent() {
 	if(!state?.camApiServerData) { return }
-	def camData = state?.camApiServerData
-	def newMin = (camData?.items[0]?.hours_of_free_tier_history > 3 ? camData?.items[0]?.hours_of_free_tier_history : 3)
-	def newMax = (camData?.items[0]?.hours_of_recording_max > 3 ? camData?.items[0]?.hours_of_recording_max : 3)
-	def curMin = device.currentState("minVideoHistoryHours")?.value
-	def curMax = device.currentState("maxVideoHistoryHours")?.value
-	state?.minVideoHistoryHours = newMin
-	state?.maxVideoHistoryHours = newMax
-	if(isStateChange(device, "minVideoHistoryHours", newMin?.toString()) || isStateChange(device, "maxVideoHistoryHours", newMax?.toString())) {
-		Logger("UPDATED | Video Recording History Hours is Now: (Minimum: ${newMin} hours | Maximum: ${newMax} hours) | Original State: (Minimum: ${curMin} | Maximum: ${curMax})")
-		sendEvent(name: "minVideoHistoryHours", value: newMin, descriptionText: "Minimum Video Recording History Hours is Now: (${newMin} hours)", displayed: false, isStateChange: true, state: newMin)
-		sendEvent(name: "maxVideoHistoryHours", value: newMax, descriptionText: "Maximum Video Recording History Hours is Now: (${newMax} hours)", displayed: false, isStateChange: true, state: newMax)
-		addCheckinReason("videoHistoryTime")
-	} else { LogAction("Video Recording History Hours is Now: (Minimum: ${newMin} hours | Maximum: ${newMax} hours) | Original State: (Minimum: ${curMin} | Maximum: ${curMax})") }
+	def camData = state?.camApiServerData?.items[0]?.capabilities?.findAll { it?.startsWith("streaming.data-usage-tier") }.collect { it as String }
+	log.debug "camData: $camData"
+	/*
+		Nest Cam IQ (Indoor/Outdoor)
+		* Low: 100GB
+		* Medium Low: 200GB
+		* Medium High: 300GB
+		* High: 400GB
+
+		Nest Cam Indoor/Outdoor
+		* Low: 30GB
+		* Medium: 120GB
+		* High: 300GB
+
+		Dropcam, Dropcam HD
+		* Low: 30GB
+		* Medium: 120GB
+		
+		Nest Hello Doorbell
+		* Low: 50GB
+		* Medium: 150GB
+		* High: 300GB
+		
+	*/
+	def vals = []
+	camData?.each { item->
+		log.debug "${item?.split(".")}"
+		
+		// if(t[2]?.isNumber()) {
+		// 	vals.push(t[2] as Integer)
+		// }
+	}
+	log.debug "vals: ${vals} | max: "
+}
+
+def findCameraModel() {
+	// if(!state?.camApiServerData) { return }
+	// def camData = state?.camApiServerData?.items[0]?.capabilities?.findAll { it?.startsWith("streaming.cameraprofile") }
+	
 }
 
 def publicShareUrlEvent(url) {
@@ -1023,25 +1066,14 @@ def exceptionDataHandler(String msg, String methodName) {
 
 def getTimeDiffSeconds(strtDate, stpDate=null, methName=null) {
 	//LogTrace("[GetTimeDiffSeconds] StartDate: $strtDate | StopDate: ${stpDate ?: "Not Sent"} | MethodName: ${methName ?: "Not Sent"})")
-//	try {
-		if((strtDate && !stpDate) || (strtDate && stpDate)) {
-			def now = new Date()
-			def stopVal = stpDate ? stpDate.toString() : formatDt(now)
-/*
-			def startDt = Date.parse("E MMM dd HH:mm:ss z yyyy", strtDate)
-			def stopDt = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal)
-			def start = Date.parse("E MMM dd HH:mm:ss z yyyy", formatDt(startDt)).getTime()
-*/
-			def start = Date.parse("E MMM dd HH:mm:ss z yyyy", strtDate).getTime()
-			def stop = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal).getTime()
-			def diff = (int) (long) (stop - start) / 1000
-			return diff
-		} else { return null }
-/*
-	} catch (ex) {
-		log.warn "getTimeDiffSeconds error: Unable to parse datetime..."
-	}
-*/
+	if((strtDate && !stpDate) || (strtDate && stpDate)) {
+		def now = new Date()
+		def stopVal = stpDate ? stpDate.toString() : formatDt(now)
+		def start = Date.parse("E MMM dd HH:mm:ss z yyyy", strtDate).getTime()
+		def stop = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal).getTime()
+		def diff = (int) (long) (stop - start) / 1000
+		return diff
+	} else { return null }
 }
 
 def incHtmlLoadCnt() 		{ state?.htmlLoadCnt = (state?.htmlLoadCnt ? state?.htmlLoadCnt.toInteger()+1 : 1) }
@@ -1370,16 +1402,13 @@ def getCamHtml() {
 						  </section>
 						  <section class="sectionBg">
 							<table class="devInfo">
-							  <col width="50%">
-							  <col width="50%">
+							  <col width="100%">
 								<thead>
-								  <th>Video History (Min.)</th>
-								  <th>Video History (Max.)</th>
+								  <th>Nest Aware Status</th>
 								</thead>
 								<tbody>
 								  <tr>
-									<td>${getRecTimeDesc(state?.minVideoHistoryHours) ?: "Not Available"}</td>
-									<td>${getRecTimeDesc(state?.maxVideoHistoryHours) ?: "Not Available"}</td>
+									<td>${state?.nestAwareActive ?: "Not Available"}</td>
 								  </tr>
 							  </tbody>
 							</table>
@@ -1522,16 +1551,13 @@ def getDeviceTile(devNum) {
 						  </section>
 						  <section class="sectionBgTile">
 							<table class="devInfoTile centerText">
-							  <col width="50%">
-							  <col width="50%">
+							  <col width="100%">
 								<thead>
-								  <th>Video History (Min.)</th>
-								  <th>Video History (Max.)</th>
+								  <th>Nest Aware Status</th>
 								</thead>
 								<tbody>
 								  <tr>
-									<td>${getRecTimeDesc(state?.minVideoHistoryHours) ?: "Not Available"}</td>
-									<td>${getRecTimeDesc(state?.maxVideoHistoryHours) ?: "Not Available"}</td>
+									<td>${state?.nestAwareActive ?: "Not Available"}</td>
 								  </tr>
 							  </tbody>
 							</table>
