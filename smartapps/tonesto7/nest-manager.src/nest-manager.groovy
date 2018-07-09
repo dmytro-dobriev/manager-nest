@@ -327,7 +327,7 @@ def mainPage() {
 
 // NEW STORAGE SmartApp
 def storageInfoSect() {
-	if(isAppLiteMode()) { return "" }
+	if(!atomicState?.isInstalled || isAppLiteMode()) { return "" }
 	def storApp = getStorageApp()
 	section("Storage App Info:") {
 		if(storApp) {
@@ -690,7 +690,7 @@ def custWeatherPage() {
 				section("Manually Enter a Location:") {
 					href url:"https://www.wunderground.com/weatherstation/ListStations.asp", style:"embedded", required:false, title:"Weather Station ID Lookup",
 							description: "Lookup Weather Station ID", image: getAppImg("search_icon.png")
-					input("custLocStr", "text", title: "Manaually Set Weather Location?", required: false, defaultValue: defZip, submitOnChange: true, image: getAppImg("weather_icon_grey.png"))
+					input("custLocStr", "text", title: "Manually Set Weather Location?", required: false, defaultValue: defZip, submitOnChange: true, image: getAppImg("weather_icon_grey.png"))
 					def validEnt = "\n\nWeather Stations: [pws:station_id]\nZipCodes: [90250]\nZWM: [zwm:zwm_number]"
 					paragraph "Valid location entries are:${validEnt}", image: getAppImg("blank_icon.png")
 				}
