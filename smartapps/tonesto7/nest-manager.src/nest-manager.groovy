@@ -582,13 +582,9 @@ def devPrefPage() {
 					input "motionSndChgWaitVal", "enum", title: "Delay before Motion/Sound Events are marked Inactive?", required: false, defaultValue: 60, metadata: [values:waitValAltEnum(true)], submitOnChange: true, image: getAppImg("delay_time_icon.png")
 					input "camEnMotionZoneFltr", "bool", title: "Allow filtering motion events by configured zones?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("motion_icon.png")
 					if(settings?.camEnMotionZoneFltr) {
-						atomicState?.cameras.sort{it?.value}.each { cam ->
-							def camZones = getCamActivityZones(cam?.key)
-							if(camZones?.size()) {
-								def zoneDesc = settings?."${cam?.key}_zones"?.size() ? "(${settings?."${cam?.key}_zones"?.size()}) Zones Selected" : "Found (${camZones.size()}) Zones"
-								href "camMotionZoneFltrPage", title: "(${cam?.value}) Motion Zones?", description: zoneDesc, params: [camId:"${cam?.key}"], image: getAppImg("zone_icon.png"), state: (settings?."${cam?.key}_zones"?.size() ? "complete" : "")
-							} else { paragraph "(${cam?.value}) No Zones Found" }
-						}
+						def camZones = getCamActivityZones()
+						def t0 = camMotionZoneDesc()
+						href "camMotionZoneFltrPage", title: "Restrict Motion to Certain Zones?", description: t0, params: [devices: atomicState?.cameras.sort{it?.value}, camZones: camZones], image: getAppImg("zone_icon.png"), state: (t0 ? "complete" : "")
 					}
 					atomicState.needChildUpd = true
 				} else {
@@ -629,35 +625,42 @@ def devPrefPage() {
 	}
 }
 
-def getCamActivityZones(devId) {
-	def actZones = atomicState?.deviceData?.cameras[devId]?.activity_zones
+def getCamActivityZones() {
 	def camZones = [:]
-	if(actZones.size()) {
-		actZones?.each { zn ->
-			camZones[zn?.id] = zn?.name
+	atomicState?.cameras.sort{it?.value}.each { cam ->
+		camZones[cam?.key] = [:]
+		def actZones = atomicState?.deviceData?.cameras[cam?.key]?.activity_zones
+		if(actZones.size()) {
+			actZones?.each { zn ->
+				camZones[cam?.key][zn?.id as String] = zn?.name as String
+			}
 		}
 	}
 	return camZones
 }
 
 def camMotionZoneFltrPage(params) {
-	def camId = params.camId
-	if(params?.camId) {
+	def cams = params?.devices
+	def camZones = params?.camZones
+	if(params?.devices && params?.camZones) {
 		atomicState.camFilterPageData = params
 	} else {
-		camId = atomicState?.camFilterPageData?.camId
+		cams = atomicState?.camFilterPageData?.devices
+		camZones = atomicState?.camFilterPageData?.camZones
 	}
 	def execTime = now()
 	dynamicPage(name: "camMotionZoneFltrPage", title: "", nextPage: "devPrefPage", install: false) {
-		if(camId) {
-			def camZones = getCamActivityZones(camId)
-			def zoneDesc = camZones.size() ? "Found (${camZones.size()}) Zones" : "No Zones Found"
-			LogAction("${zoneDesc} (${camZones})", "info", true)
-			section("Available Zones") {
-				if(!camZones.size()) {
-					paragraph "Camera has NO Zones..."
-				} else {
-					input(name: "${camId}_zones", title:"Available Zones", type: "enum", description: "${zoneDesc}", required: false, multiple: true, submitOnChange: false, options: camZones, image: getAppImg("zone_icon.png"))
+		if(cams && camZones) {
+			cams?.each { cm->
+				def zones = camZones[cm?.key]?.sort { it?.value }
+				def zoneDesc = zones?.size() ? "Found (${zones?.size()}) Zones" : "No Zones Found"
+				// LogAction("${zoneDesc} (${zones})", "info", true)
+				section("(${cm?.value}) Zones") {
+					if(!zones?.size()) {
+						paragraph "Camera has NO Zones..."
+					} else {
+						input("camera_${cm?.key}_zones", "enum", title:"Available Zones", description: "${zoneDesc}", required: false, multiple: true, submitOnChange: true, options: zones, image: getAppImg("zone_icon.png"))
+					}
 				}
 			}
 		} else {
@@ -668,6 +671,19 @@ def camMotionZoneFltrPage(params) {
 		atomicState.needChildUpd = true
 		devPageFooter("camZoneFltLoadCnt", execTime)
 	}
+}
+
+def camMotionZoneDesc() {
+	def desc = ""
+	if(atomicState?.cameras) {
+		atomicState?.cameras.sort{it?.value}.each { cam ->
+			if(settings?."camera_${cam?.key}_zones"?.size()) {
+				desc += "${desc == "" ? "" : "\n"}${cam?.value}: (${settings?."camera_${cam?.key}_zones"?.size()}) Zones"
+				log.debug "desc: $desc"
+			}
+		}
+	}
+	return desc == "" ? null : desc
 }
 
 def custWeatherPage() {
@@ -3305,10 +3321,10 @@ def setPollingState() {
 			pollStrTime = Math.max(pollStrTime, theMax)
 			def weatherTimer = pollTime
 			if(atomicState?.weatherDevice) { weatherTimer = (settings?.pollWeatherValue ? settings?.pollWeatherValue.toInteger() : 900) }
-			def timgcd = gcd([pollTime, pollStrTime, weatherTimer])
+			Integer timgcd = gcd([pollTime, pollStrTime, weatherTimer])
 			def random = new Random()
 			def random_int = random.nextInt(60)
-			timgcd = (timgcd.toInteger() / 60) < 1 ? 1 : timgcd.toInteger() / 60
+			timgcd = (timgcd.div(60) < 1) ? 1 : (timgcd.div(60))
 			def random_dint = random.nextInt(timgcd.toInteger())
 			LogAction("POLL scheduled (${random_int} ${random_dint}/${timgcd} * * * ?)", "info", true)
 			schedule("${random_int} ${random_dint}/${timgcd} * * * ?", poll)	// this runs every timgcd minutes
@@ -3341,9 +3357,9 @@ private gcd(input = []) {
 
 def onAppTouch(event) {
 	stateCleanup()
-	createSavedNest()
-	//settingsUpdate
-	poll(true)
+	// createSavedNest()
+	updateChildData(true)
+	// poll(true)
 }
 
 /*
@@ -4235,7 +4251,7 @@ def updateChildData(force = false) {
 			}
 			else if(devId && atomicState?.cameras && atomicState?.deviceData?.cameras && atomicState?.deviceData?.cameras[devId]) {
 				//devCodeIds["camera"] = it?.getDevTypeId()
-				def camZonesFilter = settings?."${devId}_zones"?.size() ? settings?."${devId}_zones" : []
+				def camZonesFilter = (settings?.camEnMotionZoneFltr && settings?."camera_${devId}_zones"?.size()) ? settings?."camera_${devId}_zones" : []
 				def camData = ["data":atomicState?.deviceData?.cameras[devId], "mt":useMt, "debug":dbg, "logPrefix":logNamePrefix,
 						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestCamVer()?.ver?.toString(), "clientBl":clientBl,
 						"hcTimeout":hcCamTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg,
