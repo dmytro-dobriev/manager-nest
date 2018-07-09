@@ -379,6 +379,7 @@ def storageAppInst(available) {
 }
 
 private getStorageApp() {
+	if(isAppLiteMode()) { return null }
 	def storApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == autoAppName() }
 	if(storApp) { 
 		if(storApp?.label != storageAppName()) { storApp?.updateLabel(storageAppName()) }
@@ -5899,13 +5900,15 @@ def getWeatherConditions(force = false) {
 
 def getWeatherData(dataName) {
 	def storageApp = getStorageApp()
-	if(storageApp) {
+	if(storageApp && !isAppLiteMode()) {
 		def t0 = getStorageVal(dataName)
 		if(t0) {
 			return t0
 		} else { if(getWeatherConditions(true)) { return getStorageVal(dataName) } }
 	} else {
-		log.warn "storageApp not found getWeatherData"
+		if(!isAppLiteMode()) {
+			log.warn "storageApp not found getWeatherData"
+		}
 		if(atomicState?."$dataName") {
 			return atomicState?."$dataName"
 		} else { if(getWeatherConditions(true)) { return atomicState?."$dataName" }	}
