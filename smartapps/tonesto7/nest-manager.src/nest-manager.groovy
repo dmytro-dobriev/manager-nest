@@ -35,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.3.9" }
-def appVerDate() { "07-05-2018" }
+def appVerDate() { "07-09-2018" }
 def minVersions() {
 	return [
 		"automation":["val":536, "desc":"5.3.6"],
@@ -327,6 +327,7 @@ def mainPage() {
 
 // NEW STORAGE SmartApp
 def storageInfoSect() {
+	if(isAppLiteMode()) { return "" }
 	def storApp = getStorageApp()
 	section("Storage App Info:") {
 		if(storApp) {
