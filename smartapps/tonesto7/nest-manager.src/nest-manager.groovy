@@ -4244,12 +4244,12 @@ def updateChildData(force = false) {
 			}
 			else if(devId && atomicState?.cameras && atomicState?.deviceData?.cameras && atomicState?.deviceData?.cameras[devId]) {
 				//devCodeIds["camera"] = it?.getDevTypeId()
-				def camZonesFilter = (settings?.camEnMotionZoneFltr && settings?."camera_${devId}_zones"?.size()) ? settings?."camera_${devId}_zones" : []
+				def camMotionZones = (settings?.camEnMotionZoneFltr && settings?."camera_${devId}_zones"?.size()) ? settings?."camera_${devId}_zones" : []
 				def camData = ["data":atomicState?.deviceData?.cameras[devId], "mt":useMt, "debug":dbg, "logPrefix":logNamePrefix,
 						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestCamVer()?.ver?.toString(), "clientBl":clientBl,
 						"hcTimeout":hcCamTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg,
 						"streamNotify":nPrefs?.dev?.camera?.streamMsg, "devBannerData":devBannerData, "restStreaming":streamingActive, "motionSndChgWaitVal":motionSndChgWaitVal,
-						"isBeta":isBeta, "camTakeSnapOnEvt": camTakeSnapOnEvt, "hcRepairEnabled":hcRepairEnabled, "secState":locSecurityState, camMotionZoneFilter: camZonesFilter ]
+						"isBeta":isBeta, "camTakeSnapOnEvt": camTakeSnapOnEvt, "hcRepairEnabled":hcRepairEnabled, "secState":locSecurityState, "camMotionZones": camMotionZones ]
 				def oldCamData = atomicState?."oldCamData${devId}"
 				def cDataChecksum = generateMD5_A(camData.toString())
 				atomicState."oldCamData${devId}" = cDataChecksum
