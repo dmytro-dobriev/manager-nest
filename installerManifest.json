@@ -30,8 +30,8 @@
             "oAuth": true,
             "version": "5.3.9",
             "appSettings": {
-                "clientId": "blank",
-                "clientSecret": "blank",
+                "clientId": "",
+                "clientSecret": "",
                 "devOpt": "false"
             },
             "appUrl": "smartapps/tonesto7/nest-manager.src/nest-manager.groovy"

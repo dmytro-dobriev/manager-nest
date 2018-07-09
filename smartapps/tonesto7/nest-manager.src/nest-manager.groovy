@@ -8,8 +8,8 @@
 |    License Info: https://github.com/tonesto7/nest-manager/blob/master/app_license.txt     |
 |                                                                                           |
 |    NOTE: I really hope that we don't have a ton of forks being released to the community, |
-|    and that we can collaborate to make the smartapp and devices that will accommodate     |
-|    every use case                                                                         |
+|    and that we can collaborate to make smartapps and devices that will accommodate to     |
+|    all use cases                                                                          |
 *********************************************************************************************/
 
 import groovy.json.*
