@@ -653,21 +653,15 @@ def camMotionZoneFltrPage(params) {
 		if(cams && camZones) {
 			cams?.each { cm->
 				def zones = camZones[cm?.key]?.sort { it?.value }
-				def zoneDesc = zones?.size() ? "Found (${zones?.size()}) Zones" : "No Zones Found"
-				// LogAction("${zoneDesc} (${zones})", "info", true)
 				section("(${cm?.value}) Zones") {
 					if(!zones?.size()) {
 						paragraph "Camera has NO Zones..."
 					} else {
-						input("camera_${cm?.key}_zones", "enum", title:"Available Zones", description: "${zoneDesc}", required: false, multiple: true, submitOnChange: true, options: zones, image: getAppImg("zone_icon.png"))
+						input("camera_${cm?.key}_zones", "enum", title:"Available Zones", description: "Found (${zones?.size()}) Zones", required: false, multiple: true, submitOnChange: true, options: zones, image: getAppImg("zone_icon.png"))
 					}
 				}
 			}
-		} else {
-			section() {
-				paragraph "NO Camera Zones Found..."
-			}
-		}
+		} else { section() { paragraph "NO Camera Zones Found..." } }
 		atomicState.needChildUpd = true
 		devPageFooter("camZoneFltLoadCnt", execTime)
 	}
@@ -679,7 +673,6 @@ def camMotionZoneDesc() {
 		atomicState?.cameras.sort{it?.value}.each { cam ->
 			if(settings?."camera_${cam?.key}_zones"?.size()) {
 				desc += "${desc == "" ? "" : "\n"}${cam?.value}: (${settings?."camera_${cam?.key}_zones"?.size()}) Zones"
-				log.debug "desc: $desc"
 			}
 		}
 	}
