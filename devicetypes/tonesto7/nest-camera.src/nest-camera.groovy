@@ -280,7 +280,7 @@ def processEvent() {
 	if(state?.swVersion != devVer()) {
 		initialize()
 		state.swVersion = devVer()
-		state?.shownChgLog = false
+		state.shownChgLog = false
 		state.androidDisclaimerShown = false
 	}
 	def eventData = state?.eventData
@@ -301,11 +301,11 @@ def processEvent() {
 			state.streamMsg = eventData?.streamNotify == true ? true : false
 			state.healthMsg = eventData?.healthNotify == true ? true : false
 			state.motionSndChgWaitVal = eventData?.motionSndChgWaitVal ? eventData?.motionSndChgWaitVal?.toInteger() : 60
-			if(eventData.hcTimeout && (state?.hcTimeout != eventData?.hcTimeout || !state?.hcTimeout)) {
+			if(eventData?.hcTimeout && (state?.hcTimeout != eventData?.hcTimeout || !state?.hcTimeout)) {
 				state.hcTimeout = eventData?.hcTimeout
 				verifyHC()
 			}
-			state?.useMilitaryTime = eventData?.mt ? true : false
+			state.useMilitaryTime = eventData?.mt ? true : false
 			state.clientBl = eventData?.clientBl == true ? true : false
 			state.mobileClientType = eventData?.mobileClientType
 			state.nestTimeZone = eventData?.tz ?: null
@@ -463,9 +463,11 @@ def lastOnlineEvent(dt) {
 
 def onlineStatusEvent(isOnline) {
 	LogAction("onlineStatusEvent($isOnline)")
-	state?.camApiServerData?.items[0]?.capabilities?.each {
-		if(it?.startsWith("streaming.cameraprofile") || it?.startsWith("streaming.data-usage-tier")) {
-			log.debug "${it}"
+	if(state?.camApiServerData) {
+		state?.camApiServerData?.items[0]?.capabilities?.each {
+			if(it?.startsWith("streaming.cameraprofile") || it?.startsWith("streaming.data-usage-tier")) {
+				log.debug "${it}"
+			}
 		}
 	}
 	if(state?.camApiServerData && (state?.camApiServerData?.items[0]?.is_online != isOnline?.toBoolean() ) ) {
