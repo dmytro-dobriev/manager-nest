@@ -3350,28 +3350,9 @@ private gcd(input = []) {
 
 def onAppTouch(event) {
 	stateCleanup()
-	// createSavedNest()
-	updateChildData(true)
-	// poll(true)
+	createSavedNest()
+	poll(true)
 }
-
-/*
-void updAppCodeId(type,id) {
-	def appCodeId = atomicState?.appCodeIdData ?: [:]
-	if(appCodeId) {
-		appCodeId[type.toString()] = id.toString()
-	}
-	atomicState?.appCodeIdData = appCodeId
-}
-
-void updDevCodeId(type,id) {
-	def devCodeId = atomicState?.devCodeIdData ?: [:]
-	if(devCodeId) {
-		devCodeId[type.toString()] = id.toString()
-	}
-	atomicState?.devCodeIdData = devCodeId
-}
-*/
 
 def refresh(child = null) {
 	def devId = !child?.device?.deviceNetworkId ? child?.toString() : child?.device?.deviceNetworkId.toString()
@@ -7576,8 +7557,6 @@ def stateCleanup() {
 		if(state?.containsKey(item)) { state.remove(item?.toString()) }
 	}
 
-	//atomicState?.swVer = [ "tDevVer": null, "pDevVer": null, "camDevVer": null, "presDevVer": null, "weatDevVer": null, "vtDevVer": null, "streamDevVer": null] // this causes recursion
-
 	atomicState.authTokenExpires = atomicState?.tokenExpires ?: atomicState?.authTokenExpires
 	state.remove("tokenExpires")
 	updTimestampMap("authTokenCreatedDt", (atomicState?.tokenCreatedDt ?: getTimestampVal("authTokenCreatedDt")))
@@ -7597,6 +7576,13 @@ def stateCleanup() {
 	def remSettings = [ "showAwayAsAuto", "temperatures", "powers", "energies", "childDevDataPageDev", "childDevPageRfsh", "childDevDataRfshVal", "childDevDataStateFilter", "childDevPageShowAttr", 
 		"childDevPageShowCapab", "childDevPageShowCmds", "childDevPageShowState", "managAppPageRfsh", "managAppPageShowMeta", "managAppPageShowSet", "managAppPageShowState", "updChildOnNewOnly"
 	]
+	List camMotionSets = settings?.keySet()?.findAll { it?.toString()?.startsWith("camera_") && it?.toString()?.endsWith("_zones") }?.collect { it as String }
+	if(camMotionSets?.size()) {
+		if(settings?.camEnMotionZoneFltr) {
+			atomicState?.cameras?.keySet()?.each { cam-> if(camMotionSets?.find {"camera_${cam}_zones"}) { camMotionSets = camMotionSets - "camera_${cam}_zones" } }
+		}
+		remSettings = remSettings+camMotionSets
+	}
 	remSettings.each { item ->
 		if(settings?.containsKey(item)) {
 			settingRemove(item as String)	// removes settings
@@ -8125,22 +8111,10 @@ def sendFeedbackPage() {
 	}
 }
 
-/*
-def getAppIds() {
-	updAppCodeId("main", app?.smartAppId.toString())
-	def appIds = atomicState?.appCodeIdData
-	return appIds
-}
-
-def getDevIds() {
-	return atomicState?.devCodeIdData ?: [:]
-}
-*/
-
 def procDiagCmd() {
 	def status = [:]
 	def rData = request?.JSON
-	log.trace "procDiagCmd($rData)"
+	// log.trace "procDiagCmd($rData)"
 	if(rData) {
 		status["code"] = 200
 		if(rData?.cmd) {
@@ -8160,7 +8134,6 @@ def procDiagCmd() {
 			}
 		}
 	}
-
 	return [contentType: 'application/json', gotData: (rData != null), status: status?.code]
 }
 
