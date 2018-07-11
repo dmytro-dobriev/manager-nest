@@ -463,13 +463,13 @@ def lastOnlineEvent(dt) {
 
 def onlineStatusEvent(isOnline) {
 	LogAction("onlineStatusEvent($isOnline)")
-	if(state?.camApiServerData) {
-		state?.camApiServerData?.items[0]?.capabilities?.each {
-			if(it?.startsWith("streaming.cameraprofile") || it?.startsWith("streaming.data-usage-tier")) {
-				log.debug "${it}"
-			}
-		}
-	}
+	// if(state?.camApiServerData) {
+	// 	state?.camApiServerData?.items[0]?.capabilities?.each {
+	// 		if(it?.startsWith("streaming.cameraprofile") || it?.startsWith("streaming.data-usage-tier")) {
+	// 			log.debug "${it}"
+	// 		}
+	// 	}
+	// }
 	if(state?.camApiServerData && (state?.camApiServerData?.items[0]?.is_online != isOnline?.toBoolean() ) ) {
 		Logger("onlineStatusEvent: ${isOnline?.toBoolean()} | CamData: ${state?.camApiServerData?.items[0]?.is_online}")
 		//isOnline = state?.camApiServerData?.items[0]?.is_online
