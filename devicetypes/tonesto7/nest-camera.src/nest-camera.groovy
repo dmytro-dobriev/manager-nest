@@ -584,7 +584,7 @@ def lastEventDataEvent(data) {
 	def evtZoneIds = data?.activity_zone_ids
 	def evtZoneNames = null
 
-	def evtType = !hasMotion ? "Sound Event" : "Motion Event${hasPerson ? " (Person)${hasSound ? " (Sound)" : ""}" : ""}"
+	String evtType = !hasMotion ? "Sound Event" : "Motion Event${hasPerson ? " (Person)${hasSound ? " (Sound)" : ""}" : ""}"
 	state?.lastEventTypeHtml = !hasMotion && hasSound ? "Sound Event" : "Motion Event${hasPerson ? "<br>(Person)${hasSound ? "<br>(Sound)" : ""}" : ""}"
 	if(actZones && evtZoneIds) {
 		evtZoneNames = actZones.findAll { it?.id?.toString() in evtZoneIds }.collect { it?.name }
@@ -616,6 +616,7 @@ def lastEventDataEvent(data) {
 		Logger(state?.enRemDiagLogging ? "└──────────────" : "└────────────────────────────")
 		//Logger("│	URL: ${state?.animation_url ?: "None"}")
 		Logger("│	Took Snapshot: (${tryPic})")
+		if(evtType?.startsWith("Motion Event")) { Logger("│	Zone Motion Filtered: (${(motionZoneOk == false)})") }
 		Logger("│	Zones: ${evtZoneNames ?: "None"}")
 		Logger("│	End Time: (${newEndDt})")
 		Logger("│	Start Time: (${newStartDt})")
@@ -651,17 +652,18 @@ def isMotionZoneOk(evtZoneIds) {
 def motionSoundEvtHandler(zoneOk=true) {
 	def data = state?.lastCamEvtData
 	if(data) {
-		if(zoneOk) { motionEvtHandler(data) }
+		motionEvtHandler(data, zoneOk)
 		data = state?.lastCamEvtData
 		soundEvtHandler(data)
 	}
 }
 
-void motionEvtHandler(data) {
+void motionEvtHandler(data, zoneOk) {
+	
 	def curMotion = device.currentState("motion")?.stringValue
 	def motionStat = "inactive"
 	def motionPerStat = "inactive"
-	if(state?.restStreaming == true && data) {
+	if(state?.restStreaming == true && data && zoneOk != false) {
 		if(data?.endDt && data?.hasMotion && !data?.sentMUpd) {
 			def t0 = getTimeDiffSeconds(data?.startDt, data?.endDt)
 			def newDur = Math.min( Math.max(3, t0) , state?.motionSndChgWaitVal)
@@ -683,6 +685,7 @@ void motionEvtHandler(data) {
 			}
 		}
 	}
+	// log.trace "motionEvtHandler(zoneOk: $zoneOk) | motionStat: $motionStat | curMotion: $curMotion"
 	if(isStateChange(device, "motion", motionStat?.toString()) || isStateChange(device, "motionPerson", motionPerStat?.toString())) {
 		Logger("UPDATED | Motion Sensor is: (${motionStat}) | Person: (${motionPerStat}) | Original State: (${curMotion})")
 		sendEvent(name: "motion", value: motionStat, descriptionText: "Motion Sensor is: ${motionStat}", displayed: true, isStateChange: true, state: motionStat)
