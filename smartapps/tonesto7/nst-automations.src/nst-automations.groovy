@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.3.6" }
-def appVerDate() { "07-5-2018" }
+def appVerDate() { "07-22-2018" }
 
 preferences {
 	//startPage
@@ -823,7 +823,7 @@ def subscribeToEvents() {
 					if(d1) {
 						LogAction("Found: ${d1?.displayName} with (Id: ${dni?.key})", "debug", false)
 
-						subscribe(d1, "nestThermostatMode", automationGenericEvt)
+						//subscribe(d1, "nestThermostatMode", automationGenericEvt) // this is not needed for nMode
 						subscribe(d1, "presence", automationGenericEvt)
 					}
 					return d1
@@ -4067,11 +4067,11 @@ def nModeGenericEvt(evt) {
 }
 
 def adjustCameras(on, sendAutoType=null) {
-	def cams = settings?.nModeCamsSel ?: parent?.getCams()
-	def foundCams
+	def cams = parent?.getCams()
 	if(cams) {
+		def foundCams
 		if(settings?.nModeCamsSel) {
-			foundCams = cams
+			foundCams = settings?.nModeCamsSel
 		} else {
 			foundCams = cams?.collect { parent.getCameraDevice(it) }
 		}
@@ -7240,7 +7240,7 @@ def setTstatMode(tstat, mode, autoType=null) {
 			}
 			catch (ex) {
 				log.error "setTstatMode() Exception: ${tstat?.label} does not support mode ${mode}; check IDE and install instructions", ex
-				parent?.sendExceptionData(ex, "setTstatMode", true, getAutoType())
+				//parent?.sendExceptionData(ex, "setTstatMode", true, getAutoType())
 			}
 		}
 
