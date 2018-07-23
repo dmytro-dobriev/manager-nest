@@ -35,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.3.9" }
-def appVerDate() { "07-11-2018" }
+def appVerDate() { "07-22-2018" }
 def minVersions() {
 	return [
 		"automation":["val":536, "desc":"5.3.6"],
@@ -1297,7 +1297,7 @@ def locDesiredClear() {
 	LogTrace("locDesiredClear")
 	def list = [ "locDesiredHeatTemp", "locDesiredCoolTemp","locDesiredComfortDewpointMax", "locDesiredTempScale", "locDesiredButton" ]
 	list.each { item ->
-		settingUpdate(item.toString(), "")
+		settingRemove(item.toString())
 	}
 	if(atomicState?.thermostats && settings?.clearLocDesired) {
 		atomicState?.thermostats?.each { ts ->
@@ -1305,20 +1305,20 @@ def locDesiredClear() {
 			def canHeat = dev?.currentState("canHeat")?.stringValue == "false" ? false : true
 			def canCool = dev?.currentState("canCool")?.stringValue == "false" ? false : true
 			if(canHeat) {
-				settingUpdate("${dev?.deviceNetworkId}_safety_temp_min", "")
+				settingRemove("${dev?.deviceNetworkId}_safety_temp_min")
 			}
 			if(canCool) {
-				settingUpdate("${dev?.deviceNetworkId}_safety_temp_max", "")
+				settingRemove("${dev?.deviceNetworkId}_safety_temp_max")
 			}
 			if(settings?."${dev?.deviceNetworkId}_comfort_dewpoint_max") {
-				settingUpdate("${dev?.deviceNetworkId}_comfort_dewpoint_max", "")
+				settingRemove("${dev?.deviceNetworkId}_comfort_dewpoint_max")
 			}
 			if(settings?."${dev?.deviceNetworkId}_comfort_humidity_max") {
-				settingUpdate("${dev?.deviceNetworkId}_comfort_humidity_max", "")
+				settingRemove("${dev?.deviceNetworkId}_comfort_humidity_max")
 			}
 		}
 	}
-	settingUpdate("clearLocDesired", false)
+	settingRemove("clearLocDesired")
 }
 
 def getGlobTitleStr(typ) {
@@ -4496,8 +4496,8 @@ void physDevLblHandler(devType, devId, devLbl, devStateName, apiName, abrevStr, 
 	if(atomicState?.custLabelUsed && settings?."${abrevStr}_${devId}_lbl" != curlbl) {
 		settingUpdate("${abrevStr}_${devId}_lbl", curlbl?.toString())
 	}
-	if(!atomicState?.custLabelUsed && settings?."${abrevStr}_${devId}_lbl") { settingUpdate("${abrevStr}_${devId}_lbl", "") }
-	if(settings?."${abrevStr}_${deflblval}_lbl") { settingUpdate("${abrevStr}_${deflblval}_lbl", "") } // clean up old stuff
+	if(!atomicState?.custLabelUsed && settings?."${abrevStr}_${devId}_lbl") { settingRemove("${abrevStr}_${devId}_lbl") }
+	if(settings?."${abrevStr}_${deflblval}_lbl") { settingRemove("${abrevStr}_${deflblval}_lbl") } // clean up old stuff
 }
 
 void virtDevLblHandler(devId, devLbl, devMethAbrev, abrevStr, ovrRideNames) {
@@ -4512,7 +4512,7 @@ void virtDevLblHandler(devId, devLbl, devMethAbrev, abrevStr, ovrRideNames) {
 	if(atomicState?.custLabelUsed && settings?."${abrevStr}Dev_lbl" != curlbl) {
 		settingUpdate("${abrevStr}Dev_lbl", curlbl?.toString())
 	}
-	if(!atomicState?.custLabelUsed && settings?."${abrevStr}Dev_lbl") { settingUpdate("${abrevStr}Dev_lbl", "") }
+	if(!atomicState?.custLabelUsed && settings?."${abrevStr}Dev_lbl") { settingRemove("${abrevStr}Dev_lbl") }
 }
 
 def apiIssues() {
@@ -7574,7 +7574,7 @@ def stateCleanup() {
 	}
 	atomicState.forceChildUpd = true
 	def remSettings = [ "showAwayAsAuto", "temperatures", "powers", "energies", "childDevDataPageDev", "childDevPageRfsh", "childDevDataRfshVal", "childDevDataStateFilter", "childDevPageShowAttr", 
-		"childDevPageShowCapab", "childDevPageShowCmds", "childDevPageShowState", "managAppPageRfsh", "managAppPageShowMeta", "managAppPageShowSet", "managAppPageShowState", "updChildOnNewOnly"
+		"childDevPageShowCapab", "childDevPageShowCmds", "childDevPageShowState", "managAppPageRfsh", "managAppPageShowMeta", "managAppPageShowSet", "managAppPageShowState", "updChildOnNewOnly", "locDesiredButton", "locDesiredTempScale"
 	]
 	List camMotionSets = settings?.keySet()?.findAll { it?.toString()?.startsWith("camera_") && it?.toString()?.endsWith("_zones") }?.collect { it as String }
 	if(camMotionSets?.size()) {
@@ -7584,11 +7584,11 @@ def stateCleanup() {
 		remSettings = remSettings+camMotionSets
 	}
 	remSettings.each { item ->
-		if(settings?.containsKey(item)) {
-			settingRemove(item as String)	// removes settings
-		}
+		//if(settings?.containsKey(item)) {
+			settingRemove(item.toString())	// removes settings
+		//}
 	}
-	runIn(5, "cleanStorage", [overwrite: true]) // calling the child truncates logs
+	runIn(25, "cleanStorage", [overwrite: true]) // calling the child truncates logs
 }
 
 def cleanStorage() {
@@ -7955,10 +7955,10 @@ def alarmTestPage() {
 
 void resetAlarmTest() {
 	LogAction("Resetting Protect Alarm Test back to the default.", "info", true)
-	settingUpdate("alarmCoTestDevice", "")
-	settingUpdate("alarmCoTestDeviceSimSmoke", "false")
-	settingUpdate("alarmCoTestDeviceSimCo", "false")
-	settingUpdate("alarmCoTestDeviceSimLowBatt", "false")
+	settingRemove("alarmCoTestDevice")
+	settingRemove("alarmCoTestDeviceSimSmoke")
+	settingRemove("alarmCoTestDeviceSimCo")
+	settingRemove("alarmCoTestDeviceSimLowBatt")
 	atomicState?.isAlarmCoTestActive = false
 	atomicState?.curProtTestPageData = null
 }
