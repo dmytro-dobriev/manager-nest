@@ -1050,8 +1050,14 @@ def subscribeToEvents() {
 			subscribe(schMotTstat, "thermostatOperatingState", automationGenericEvt)
 			subscribe(schMotTstat, "temperature", automationGenericEvt)
 			subscribe(schMotTstat, "presence", automationGenericEvt)
-			subscribe(schMotTstat, "coolingSetpoint", automationGenericEvt)
-			subscribe(schMotTstat, "heatingSetpoint", automationGenericEvt)
+			def canCool = atomicState?.schMotTstatCanCool
+			if(canCool) {
+				subscribe(schMotTstat, "coolingSetpoint", automationGenericEvt)
+			}
+			def canHeat = atomicState?.schMotTstatCanHeat
+			if(canHeat) {
+				subscribe(schMotTstat, "heatingSetpoint", automationGenericEvt)
+			}
 			subscribe(schMotTstat, "safetyTempExceeded", automationSafetyTempEvt)
 			subscribe(location, "sunset", automationGenericEvt)
 			subscribe(location, "sunrise", automationGenericEvt)
