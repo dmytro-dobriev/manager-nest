@@ -4107,25 +4107,30 @@ def adjustEco(on, senderAutoType=null) {
 			def d1 = parent.getThermostatDevice(dni)
 			if(d1) {
 				def didstr = null
+				def tstatAction = null
 				def curMode = d1?.currentnestThermostatMode?.toString()
-				if(on && (curMode in ["eco"])) {
-					if(senderAutoType) { sendEcoActionDescToDevice(d1, senderAutoType) } // THIS ONLY WORKS ON NEST THERMOSTATS
-				}
+				def prevMode = d1?.currentpreviousthermostatMode?.toString()
+				//LogAction("adjustEco: CURMODE: ${curMode} ON: ${on} PREVMODE: ${prevMode}", "trace", false)
+
 				if(on && !(curMode in ["eco", "off"])) {
 					didstr = "ECO"
-					setTstatMode(d1, "eco", senderAutoType)
+					tstatAction = "eco"
 				}
-				def prevMode = d1?.currentpreviousthermostatMode?.toString()
-				LogAction("adjustEco: CURMODE: ${curMode} ON: ${on} PREVMODE: ${prevMode}", "trace", false)
 				if(!on && curMode in ["eco"]) {
 					if(prevMode && prevMode != curMode) {
 						didstr = "$prevMode"
-						setTstatMode(d1, prevMode, senderAutoType)
+						tstatAction = prevMode
 					}
 				}
 				if(didstr) {
+					setTstatMode(d1, tstatAction, senderAutoType)
 					LogAction("adjustEco($on): | Thermostat: ${d1?.displayName} setting to HVAC mode $didstr was $curMode", "trace", true)
 					storeLastAction("Set ${d1?.displayName} to $didstr", getDtNow(), senderAutoType, d1)
+				} else {
+					if(on && (curMode in ["eco"])) { // override device to know nMODE is active
+						if(senderAutoType) { sendEcoActionDescToDevice(d1, senderAutoType) } // THIS ONLY WORKS ON NEST THERMOSTATS
+					}
+					LogAction("adjustEco: | Thermostat: ${d1?.displayName} NOCHANGES CURMODE: ${curMode} ON: ${on} PREVMODE: ${prevMode}", "trace", false)
 				}
 				return d1
 			} else { LogAction("adjustEco NO D1", "warn", true) }
@@ -7258,7 +7263,7 @@ def setMultipleTstatMode(tstats, mode, autoType=null) {
 		tstats?.each { ts ->
 			def retval
 //			try {
-				retval = setTstatMode(ts, mode, autoType)   // THERE IS A PROBLEM HERE IF MIRROR THERMOSTATS ARE NOT NEST
+				retval = setTstatMode(ts, mode, autoType)
 //			} catch (ex) {
 //				log.error "setMultipleTstatMode() Exception:", ex
 //				parent?.sendExceptionData(ex, "setMultipleTstatMode", true, getAutoType())
