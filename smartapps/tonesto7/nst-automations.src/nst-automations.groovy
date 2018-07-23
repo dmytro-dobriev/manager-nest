@@ -960,7 +960,8 @@ def subscribeToEvents() {
 					}
 				}
 			}
-			if(settings?.schMotOperateFan || settings?.schMotRemoteSensor || settings?.schMotHumidityControl) {
+			def hasFan = atomicState?.schMotTstatHasFan ? true : false
+			if(hasFan && (settings?.schMotOperateFan || settings?.schMotRemoteSensor || settings?.schMotHumidityControl)) {
 				subscribe(schMotTstat, "thermostatFanMode", automationGenericEvt)
 			}
 
