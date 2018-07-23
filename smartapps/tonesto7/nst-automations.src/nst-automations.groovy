@@ -506,10 +506,19 @@ def backupConfigToFirebase() {
 
 void settingUpdate(name, value, type=null) {
 	LogTrace("settingUpdate($name, $value, $type)...")
-	try {
-		if(name && type) { app?.updateSetting("$name", [type: "$type", value: value]) }
-		else if (name && type == null) { app?.updateSetting(name.toString(), value) }
-	} catch(e) { log.error "settingUpdate Exception:", ex }
+	if(name) {
+		if(value == "" || value == null || value = []) {
+			settingRemove(name)
+			return
+		}
+	}
+	if(name && type) { app?.updateSetting("$name", [type: "$type", value: value]) }
+	else if (name && type == null) { app?.updateSetting(name.toString(), value) }
+}
+
+void settingRemove(name) {
+	LogAction("settingRemove($name)...", "trace", false)
+	if(name) { app?.deleteSetting("$name") }
 }
 
 def stateUpdate(key, value) {
@@ -1409,7 +1418,7 @@ def watchDogAlarmActions(dev, dni, actType) {
 			} else {return}
 			break
 	}
-	if(getLastWatDogSafetyAlertDtSec(dni) > getWatDogRepeatMsgDelayVal()) {
+	if(getLastWatDogSafetyAlertDtSec("${dni?.key}") > getWatDogRepeatMsgDelayVal()) {
 		LogAction("watchDogAlarmActions() | ${evtNotifMsg}", "warn", true)
 
 		if(allowNotif) {
@@ -1423,7 +1432,7 @@ def watchDogAlarmActions(dev, dni, actType) {
 		} else {
 			sendNofificationMsg(evtNotifMsg, "Warning")
 		}
-		atomicState?."lastWatDogSafetyAlertDt${dni}" = getDtNow()
+		atomicState?."lastWatDogSafetyAlertDt${dni?.key}" = getDtNow()
 	}
 }
 
