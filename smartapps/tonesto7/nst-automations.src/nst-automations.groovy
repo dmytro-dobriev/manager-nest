@@ -507,7 +507,7 @@ def backupConfigToFirebase() {
 void settingUpdate(name, value, type=null) {
 	LogTrace("settingUpdate($name, $value, $type)...")
 	if(name) {
-		if(value == "" || value == null || value = []) {
+		if(value == "" || value == null || value == []) {
 			settingRemove(name)
 			return
 		}
