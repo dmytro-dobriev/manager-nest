@@ -824,7 +824,7 @@ def subscribeToEvents() {
 						LogAction("Found: ${d1?.displayName} with (Id: ${dni?.key})", "debug", false)
 
 						//subscribe(d1, "nestThermostatMode", automationGenericEvt) // this is not needed for nMode
-						subscribe(d1, "presence", automationGenericEvt)
+						//subscribe(d1, "presence", automationGenericEvt) // this is not needed, tracking only
 					}
 					return d1
 				}
