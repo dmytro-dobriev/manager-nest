@@ -9161,7 +9161,7 @@ def renderDeviceTiles(type=null) {
 		def html = """
 			<head>
 				${getWebHeaderHtml(type, true, true, true, true)}
-				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
+				<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
 				<style>
 					h1, h2, h3, h4, h5, h6 {
 						padding: 20px;
