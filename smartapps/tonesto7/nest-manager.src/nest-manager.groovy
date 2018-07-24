@@ -119,7 +119,6 @@ mappings {
 			path("/getDeviceData")	{action: [GET: "renderDeviceData"]}
 			path("/getInstData")	{action: [GET: "renderInstData"]}
 			path("/getAppData")		{action: [GET: "renderAppData"]}
-
 		}
 	}
 }
@@ -8324,10 +8323,10 @@ def getWebHeaderHtml(title, clipboard=true, vex=false, swiper=false, charts=fals
 	"""
 	html += clipboard ? """<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>""" : ""
 	html += vex ? """<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/js/vex.combined.min.js"></script>""" : ""
-	html += swiper ? """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/css/swiper.min.css" />""" : ""
+	html += swiper ? """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/css/swiper.min.css" />""" : ""
 	html += vex ? """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex.min.css" />""" : ""
 	html += vex ? """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.0/css/vex-theme-top.min.css" />""" : ""
-	html += swiper ? """<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.0.6/js/swiper.min.js"></script>""" : ""
+	html += swiper ? """<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/js/swiper.min.js"></script>""" : ""
 	html += charts ? """<script src="https://www.gstatic.com/charts/loader.js"></script>""" : ""
 	html += vex ? """<script>vex.defaultOptions.className = 'vex-theme-default'</script>""" : ""
 	
@@ -9162,7 +9161,7 @@ def renderDeviceTiles(type=null) {
 		def html = """
 			<head>
 				${getWebHeaderHtml(type, true, true, true, true)}
-				<link rel="stylesheet" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
+				<link rel="stylesheet" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/diagpages_new.css">
 				<style>
 					h1, h2, h3, h4, h5, h6 {
 						padding: 20px;

@@ -23,12 +23,6 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Thermostat"
-		//capability "Thermostat Cooling Setpoint"
-		//capability "Thermostat Fan Mode"
-		//capability "Thermostat Heating Setpoint"
-		//capability "Thermostat Mode"
-		//capability "Thermostat Operating State"
-		//capability "Thermostat Setpoint"
 		capability "Temperature Measurement"
 		capability "Health Check"
 
@@ -3300,8 +3294,7 @@ def getGraphHTML() {
 
 		def timeToTarget = device.currentState("timeToTarget").stringValue
 		def sunCorrectStr = state?.sunCorrectEnabled ? "Enabled (${state?.sunCorrectActive == true ? "Active" : "Inactive"})" : "Disabled"
-		def refreshBtnHtml = state.mobileClientType == "ios" ?
-				"""<div class="pageFooterBtn"><button type="button" class="btn btn-info pageFooterBtn" onclick="reloadTstatPage()"><span>&#10227;</span> Refresh</button></div>""" : ""
+		def refreshBtnHtml = state.mobileClientType == "ios" ? """<div class="pageFooterCls"><p class="slideFooterText">Swipe/Tap to Change Slide</p><button type="button" class="btn btn-info slideFooterBtn" onclick="reloadPage()"><span>&#10227;</span> Refresh</button></div>""" : ""
 		def chartHtml = (
 				state?.showGraphs &&
 				state?.temperatureTable?.size() > 0 &&
@@ -3405,13 +3398,35 @@ def getGraphHTML() {
 				<meta http-equiv="pragma" content="no-cache"/>
 				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
 
-				<link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css"/>
-				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/css/swiper.min.css" />
+				<link rel="stylesheet" type="text/css" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css"/>
+				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/css/swiper.min.css" />
 				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex.min.css" async/>
 				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex-theme-top.min.css" async />
 				<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/js/swiper.min.js"></script>
+				<style>
+					.swiper-container {
+						width: 95%;
+						min-height: 300px;
+						padding: 0 10px !important;
+					}
+
+					.swiper-pagination-bullet {
+						width: 20px;
+						height: 20px;
+						text-align: center;
+						line-height: 20px;
+						font-size: 10px;
+						color: #000;
+						opacity: 1;
+						background: rgba(0, 0, 0, 0.2);
+					}
+
+					.swiper-pagination-bullet-active {
+						color: #fff;
+						background: #007aff;
+					}
+				</style>
 			</head>
 			<body>
 				${getChgLogHtml()}
@@ -3495,49 +3510,46 @@ def getGraphHTML() {
 					</div>
 					<!-- If we need pagination -->
 					<div class="swiper-pagination"></div>
-
-					<div style="text-align: center;">
-						<p class="slideFooterMsg">Swipe-Tap to Change Slide</p>
-					</div>
+					<div style="text-align: center; padding: 25px 0;"></div>
 				</div>
+				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/js/swiper.min.js"></script>
 				<script>
 					var mySwiper = new Swiper ('.swiper-container', {
 						direction: 'horizontal',
-						initialSlide: 0,
-						lazyLoading: true,
-						loop: false,
+						roundLengths: true,
+						updateOnImagesReady: true,
+						loop: true,
 						slidesPerView: '1',
+						grabCursor: true,
 						centeredSlides: true,
 						spaceBetween: 100,
 						autoHeight: true,
-						keyboardControl: true,
-            			mousewheelControl: true,
 						iOSEdgeSwipeDetection: true,
-						iOSEdgeSwipeThreshold: 20,
 						parallax: true,
 						slideToClickedSlide: true,
-
 						effect: 'coverflow',
-						coverflow: {
-						  rotate: 50,
-						  stretch: 0,
-						  depth: 100,
-						  modifier: 1,
-						  slideShadows : true
+						coverFlowEffect: {
+							rotate: 50,
+							stretch: 0,
+							depth: 100,
+							modifier: 1,
+							slideShadows: false
 						},
-						onTap: function(s, e) {
-							s.slideNext(false);
-							if(s.clickedIndex >= s.slides.length) {
-								s.slideTo(0, 400, false)
-							}
+						on: {
+							tap: function() {
+								this.slideNext()
+							},
 						},
-						pagination: '.swiper-pagination',
-						paginationHide: false,
-						paginationClickable: true
-					})
-					function reloadTstatPage() {
-						// var url = "https://" + window.location.host + "/api/devices/${device?.getId()}/graphHTML"
-						// window.location = url;
+						pagination: {
+							el: '.swiper-pagination',
+							hideOnClick: false,
+							clickable: true,
+							renderBullet: function (index, className) {
+								return '<span class="' + className + '">' + (index + 1) + '</span>';
+							},
+						}
+					});
+					function reloadPage() {
 						window.location.reload();
 					}
 				</script>
@@ -3545,7 +3557,6 @@ def getGraphHTML() {
 			</body>
 		</html>
 		"""
-/* """ */
 		incHtmlLoadCnt()
 		render contentType: "text/html", data: html, status: 200
 	} catch (ex) {
@@ -3746,56 +3757,53 @@ def getDeviceTile(devNum) {
 						${chartHtml}
 					</div>
 					<!-- If we need pagination -->
-					<div class="swiper-pagination"></div>
-
-					<div style="text-align: center;">
-						<p class="slideFooterMsg">Swipe/Drag to Change Slide</p>
+					<div style="text-align: center; padding: 20px;">
+						<p class="slideFooterTextTile">Swipe/Drag to Change Slide</p>
 					</div>
+					<div class="swiper-pagination"></div>
 				</div>
 			</div>
 			<script>
 				var mySwiper${devNum} = new Swiper ('.swiper-container-${devNum}', {
 					direction: 'horizontal',
-					initialSlide: 0,
-					lazyLoading: true,
-					loop: false,
+					roundLengths: true,
+					updateOnImagesReady: true,
+					loop: true,
 					slidesPerView: '1',
+					grabCursor: true,
 					centeredSlides: true,
-					spaceBetween: 200,
+					spaceBetween: 100,
 					autoHeight: true,
-					keyboardControl: true,
-        			mousewheelControl: true,
 					iOSEdgeSwipeDetection: true,
-					iOSEdgeSwipeThreshold: 20,
 					parallax: true,
 					slideToClickedSlide: true,
-
 					effect: 'coverflow',
-					coverflow: {
-					  rotate: 50,
-					  stretch: 0,
-					  depth: 100,
-					  modifier: 1,
-					  slideShadows : true
+					coverFlowEffect: {
+						rotate: 50,
+						stretch: 0,
+						depth: 100,
+						modifier: 1,
+						slideShadows: false
 					},
-					onTap: function(s, e) {
-						s.slideNext(false);
-						if(s.clickedIndex >= s.slides.length) {
-							s.slideTo(0, 400, false)
-						}
+					on: {
+						tap: function() {
+							this.slideNext();
+						},
 					},
-					pagination: '.swiper-pagination',
-					paginationHide: false,
-					paginationClickable: true
-				})
+					pagination: {
+						el: '.swiper-pagination',
+						hideOnClick: false,
+						clickable: true,
+						renderBullet: function (index, className) {
+							return '<span class="' + className + '">' + (index + 1) + '</span>';
+						},
+					}
+				});
 				function reloadTstatPage() {
-					// var url = "https://" + window.location.host + "/api/devices/${device?.getId()}/graphHTML"
-					// window.location = url;
 					window.location.reload();
 				}
 			</script>
 		"""
-/* """ */
 		render contentType: "text/html", data: html, status: 200
 	} catch (ex) {
 		log.error "getDeviceTile Exception:", ex

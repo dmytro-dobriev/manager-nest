@@ -331,7 +331,7 @@ def processEvent() {
 			if(results?.app_url) { state?.app_url = results?.app_url?.toString() }
 			if(results?.web_url) { state?.web_url = results?.web_url?.toString() }
 			if(results?.last_event) {
-				state?.animation_url = null
+				// state?.animation_url = null
 				if(results?.last_event?.animated_image_url) { state?.animation_url = results?.last_event?.animated_image_url }
 				if(results?.last_event.start_time && results?.last_event.end_time) { lastEventDataEvent(results?.last_event) }
 			}
@@ -350,9 +350,7 @@ def processEvent() {
 	}
 	catch (ex) {
 		def s = ""
-		if(ex && ex?.message) {
-			s = ex?.message?.toString()
-		}
+		if(ex && ex?.message) { s = ex?.message?.toString() }
 		log.error "processEvent Exception: ${s}", ex
 		exceptionDataHandler(s, "processEvent")
 	}
@@ -833,8 +831,6 @@ def publicShareUrlEvent(url) {
 		}
 	} else {
 		//Logger("Url: $url | Url(state): ${state?.public_share_url} | pubVidId: ${state.pubVidId} | lastVidId: ${state.lastPubVidId} | camUUID: ${state?.camUUID} | camApiServerData ${state?.camApiServerData} | animation_url ${state?.animation_url} | snapshot_url ${state?.snapshot_url}", "warn")
-		//if(state?.public_share_url || state?.pubVidId || state?.lastPubVidId || state?.camUUID || state?.camApiServerData || state?.animation_url || state?.snapshot_url) {
-
 		if(state?.public_share_url || state?.pubVidId || state?.lastPubVidId || state?.camUUID || state?.camApiServerData) {
 			state?.public_share_url = null
 			state?.pubVidId = null
@@ -1342,13 +1338,13 @@ def getCamIframHtml() {
 def getCamHtml() {
 	try {
 		// These are used to determine the URL for the nest cam stream
-		//def refreshUrl = "https://api.smartthings.com/elder/${location?.id}/api/devices/${device?.getId()}/getCamHtml"
 		def updateAvail = !state.updateAvailable ? "" : """<div class="greenAlertBanner">Device Update Available!</div>"""
 		def clientBl = state?.clientBl ? """<div class="brightRedAlertBanner">Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</div>""" : ""
 		def pubVidUrl = state?.public_share_url
 		def camHtml = (pubVidUrl && state?.camUUID && state?.isStreaming && state?.isOnline) ? showCamHtml(false) : hideCamHtml()
 		def devBrdCastData = state?.devBannerData ?: null
 		def devBrdCastHtml = ""
+		def refreshBtnHtml = state.mobileClientType == "ios" ? """<div class="pageFooterCls"><p class="slideFooterText">Swipe/Tap to Change Slide</p><button type="button" class="btn btn-info slideFooterBtn" onclick="reloadPage()"><span>&#10227;</span> Refresh</button></div>""" : ""
 		if(devBrdCastData) {
 			def curDt = Date.parse("E MMM dd HH:mm:ss z yyyy", getDtNow())
 			def expDt = Date.parse("E MMM dd HH:mm:ss z yyyy", devBrdCastData?.expireDt?.toString())
@@ -1372,11 +1368,33 @@ def getCamHtml() {
 				<meta http-equiv="pragma" content="no-cache"/>
 				<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
 
-				<link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css"/>
-				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/css/swiper.min.css" />
+				<link rel="stylesheet" type="text/css" href="https://rawgit.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css"/>
+				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/css/swiper.min.css" />
 				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex.min.css" async/>
 				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex-theme-top.min.css" async />
-				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/js/swiper.min.js"></script>
+				<style>
+					.swiper-container {
+						width: 95%;
+						min-height: 300px;
+						padding: 0 10px !important;
+					}
+
+					.swiper-pagination-bullet {
+						width: 20px;
+						height: 20px;
+						text-align: center;
+						line-height: 20px;
+						font-size: 10px;
+						color: #000;
+						opacity: 1;
+						background: rgba(0, 0, 0, 0.2);
+					}
+
+					.swiper-pagination-bullet-active {
+						color: #fff;
+						background: #007aff;
+					}
+				</style>
 			</head>
 			<body>
 				${getChgLogHtml()}
@@ -1407,28 +1425,17 @@ def getCamHtml() {
 						  </section>
 						  <section class="sectionBg">
 							<table class="devInfo">
-							  <col width="100%">
-								<thead>
-								  <th>Nest Aware Status</th>
-								</thead>
-								<tbody>
-								  <tr>
-									<td>${state?.nestAwareActive ?: "Not Available"}</td>
-								  </tr>
-							  </tbody>
-							</table>
-						  </section>
-						  <section class="sectionBg">
-							<table class="devInfo">
 							  <col width="33%">
 							  <col width="33%">
 							  <col width="33%">
 							  <thead>
+								<th>Nest Aware</th>
 								<th>Public Video</th>
 								<th>Mic Status</th>
 							  </thead>
 							  <tbody>
 								<tr>
+								  <td>${state?.nestAwareActive == true ? "Active" : "Not Active"}</td>
 								  <td>${state?.publicShareEnabled?.toString()}</td>
 								  <td>${state?.audioInputEnabled?.toString()}</td>
 								</tr>
@@ -1441,7 +1448,7 @@ def getCamHtml() {
 							  <col width="20%">
 							  <col width="40%">
 							  <thead>
-								<th>FW Version</th>
+								<th>Firmware</th>
 								<th>Debug</th>
 								<th>Device Type</th>
 							  </thead>
@@ -1469,16 +1476,17 @@ def getCamHtml() {
 						</div>
 					</div>
 					<div class="swiper-pagination"></div>
-					<div style="text-align: center;">
-						<p class="slideFooterMsg">Swipe/Tap to Change Slide</p>
-					</div>
+					<div style="text-align: center; padding: 25px 0;"></div>
 				</div>
+				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/js/swiper.min.js"></script>
 				<script>
 					var mySwiper = new Swiper ('.swiper-container', {
 						direction: 'horizontal',
-						lazyLoading: true,
+						roundLengths: true,
+						updateOnImagesReady: true,
 						loop: true,
 						slidesPerView: '1',
+						grabCursor: true,
 						centeredSlides: true,
 						spaceBetween: 100,
 						autoHeight: true,
@@ -1486,30 +1494,32 @@ def getCamHtml() {
 						parallax: true,
 						slideToClickedSlide: true,
 						effect: 'coverflow',
-						coverflow: {
+						coverFlowEffect: {
 						  rotate: 50,
 						  stretch: 0,
 						  depth: 100,
 						  modifier: 1,
-						  slideShadows : true
+						  slideShadows: false
 						},
-						onTap: (swiper, event) => {
-							let element = event.target;
-							swiper.slideNext()
+						on: {
+							tap: function() {
+								this.slideNext()
+							},
 						},
-						pagination: '.swiper-pagination',
-						paginationHide: false,
-						paginationClickable: true
-					})
-					function reloadCamPage() {
-					    window.location.reload();
+						pagination: {
+							el: '.swiper-pagination',
+							hideOnClick: false,
+							clickable: true,
+							renderBullet: function (index, className) {
+								return '<span class="' + className + '">' + (index + 1) + '</span>';
+							},
+						}
+					});
+					function reloadPage() {
+						window.location.reload();
 					}
 				</script>
-				<div class="pageFooterBtn">
-				    <button type="button" class="btn btn-info pageFooterBtn" onclick="reloadCamPage()">
-					  <span>&#10227;</span> Refresh
-				    </button>
-				</div>
+				${refreshBtnHtml}
 			</body>
 		</html>
 		"""
@@ -1525,7 +1535,7 @@ def getCamHtml() {
 def getDeviceTile(devNum) {
 	try {
 		def updateAvail = !state.updateAvailable ? "" : """<div class="greenAlertBanner">Device Update Available!</div>"""
-		def clientBl = state?.clientBl ? """<div class="brightRedAlertBanner">Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</div>""" : ""
+		def clientBl = state?.clientBl ? """<div class="brightRedAlertBanner">Your Manager client has been blacklisted!\nPlease contact the NST Manager developer to get the issue resolved!!!</div>""" : ""
 		def pubVidUrl = state?.public_share_url
 		def camHtml = (pubVidUrl && state?.camUUID && state?.isStreaming && state?.isOnline) ? showCamHtml(true) : hideCamHtml()
 		def mainHtml = """
@@ -1534,7 +1544,7 @@ def getDeviceTile(devNum) {
 			${getCamIframHtml()}
 			<div class="device">
 				<div class="swiper-container-${devNum}" style="max-width: 100%; overflow: hidden;">
-					<div class="swiper-wrapper">
+					<div class="swiper-wrapper" style="height: auto;">
 						${camHtml}
 						<div class="swiper-slide">
 						  <section class="sectionBgTile">
@@ -1556,28 +1566,17 @@ def getDeviceTile(devNum) {
 						  </section>
 						  <section class="sectionBgTile">
 							<table class="devInfoTile centerText">
-							  <col width="100%">
-								<thead>
-								  <th>Nest Aware Status</th>
-								</thead>
-								<tbody>
-								  <tr>
-									<td>${state?.nestAwareActive ?: "Not Available"}</td>
-								  </tr>
-							  </tbody>
-							</table>
-						  </section>
-						  <section class="sectionBgTile">
-							<table class="devInfoTile centerText">
 							  <col width="33%">
 							  <col width="33%">
 							  <col width="33%">
 							  <thead>
+								<th>Nest Aware</th>
 								<th>Public Video</th>
 								<th>Mic Status</th>
 							  </thead>
 							  <tbody>
 								<tr>
+								  <td>${state?.nestAwareActive == true ? "Active" : "Not Active"}</td>
 								  <td>${state?.publicShareEnabled?.toString()}</td>
 								  <td>${state?.audioInputEnabled?.toString()}</td>
 								</tr>
@@ -1617,18 +1616,20 @@ def getDeviceTile(devNum) {
 						   </section>
 						</div>
 					</div>
-					<div class="swiper-pagination"></div>
-					<div style="text-align: center;">
-						<p class="slideFooterMsgTile">Swipe/Drag to Change Slide</p>
+					<div style="text-align: center; padding: 20px;">
+						<p class="slideFooterTextTile">Swipe/Drag to Change Slide</p>
 					</div>
+					<div class="swiper-pagination"></div>
 				</div>
 			</div>
 			<script>
 				var mySwiper${devNum} = new Swiper ('.swiper-container-${devNum}', {
 					direction: 'horizontal',
-					lazyLoading: true,
+					roundLengths: true,
+					updateOnImagesReady: true,
 					loop: true,
 					slidesPerView: '1',
+					grabCursor: true,
 					centeredSlides: true,
 					spaceBetween: 100,
 					autoHeight: true,
@@ -1636,25 +1637,29 @@ def getDeviceTile(devNum) {
 					parallax: true,
 					slideToClickedSlide: true,
 					effect: 'coverflow',
-					// resistance: true,
-					coverflow: {
-					  rotate: 50,
-					  stretch: 0,
-					  depth: 100,
-					  modifier: 1,
-					  slideShadows : true
+					coverFlowEffect: {
+						rotate: 50,
+						stretch: 0,
+						depth: 100,
+						modifier: 1,
+						slideShadows: false
 					},
-					onTap: (swiper, event) => {
-						let element = event.target;
-						swiper.slideNext()
+					on: {
+						tap: function() {
+							this.slideNext()
+						},
 					},
-					pagination: '.swiper-pagination',
-					paginationHide: false,
-					paginationClickable: true
-				})
+					pagination: {
+						el: '.swiper-pagination',
+						hideOnClick: false,
+						clickable: true,
+						renderBullet: function (index, className) {
+							return '<span class="' + className + '">' + (index + 1) + '</span>';
+						},
+					}
+				});
 			</script>
 		"""
-/* """ */
 		return mainHtml
 	}
 	catch (ex) {
