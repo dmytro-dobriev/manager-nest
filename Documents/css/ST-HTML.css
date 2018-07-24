@@ -570,6 +570,7 @@ tr {
     font-size: 3.0vw;
     margin: 1em auto;
     padding: 0;
+    text-decoration: underline;
 }
 
 .pageFooterCls {
