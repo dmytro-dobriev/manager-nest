@@ -971,7 +971,7 @@ td {
     margin: 1em auto;
 }
 
-.slideFooterMsgTile {
+.slideFooterMsg {
     font-size: 1.8vw;
     padding: 20px;
     margin: 1em auto;
@@ -986,7 +986,6 @@ td {
 
 .pageFooterBtn {
     padding: 10px;
-    horizontal-align: center;
     text-align: center;
 }
 
