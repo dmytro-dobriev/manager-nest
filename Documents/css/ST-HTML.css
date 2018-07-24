@@ -572,6 +572,10 @@ tr {
     padding: 0;
 }
 
+.pageFooterCls {
+    text-align: center;
+}
+
 .swiper-container {
     width: 95%;
     min-height: 300px;
