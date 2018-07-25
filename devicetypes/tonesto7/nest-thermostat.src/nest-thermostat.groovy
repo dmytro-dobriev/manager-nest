@@ -108,20 +108,20 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"temperature", type:"thermostat", width:6, height:4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("default", label:'${currentValue}\u00b0')
+				attributeState("temperature", label:'${currentValue}\u00b0')
 			}
 			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
-				attributeState("default", action: "levelUpDown")
+				// attributeState("default", action: "levelUpDown")
 				attributeState("VALUE_UP", action: "levelUp")
 				attributeState("VALUE_DOWN", action: "levelDown")
 			}
 			tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
-				attributeState("default", label:'${currentValue}%', unit:"%")
+				attributeState("humidity", label:'${currentValue}%', unit:"%", defaultState: true)
 			}
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
 				attributeState("idle",			backgroundColor:"#44B621")
-				attributeState("heating",		 backgroundColor:"#FFA81E")
-				attributeState("cooling",		 backgroundColor:"#2ABBF0")
+				attributeState("heating",		 backgroundColor:"#e86d13")
+				attributeState("cooling",		 backgroundColor:"#00a0dc")
 				attributeState("fan only",		  backgroundColor:"#145D78")
 				attributeState("pending heat",	  backgroundColor:"#B27515")
 				attributeState("pending cool",	  backgroundColor:"#197090")
