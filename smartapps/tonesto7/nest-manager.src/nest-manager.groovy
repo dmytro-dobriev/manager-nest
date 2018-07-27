@@ -35,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.3.9" }
-def appVerDate() { "07-22-2018" }
+def appVerDate() { "07-27-2018" }
 def minVersions() {
 	return [
 		"automation":["val":536, "desc":"5.3.6"],
@@ -3536,6 +3536,7 @@ def forcedPoll(type = null) {
 
 	if(lastFrcdPoll > pollWaitVal) { // This limits manual forces to 10 seconds or more
 		updTimestampMap("lastForcePoll", getDtNow())
+		atomicState?.workQrunInActive = false
 		atomicState?.pollBlocked = false
 		atomicState?.pollBlockedReason = null
 		cmdProcState(false)
@@ -5083,17 +5084,30 @@ void schedNextWorkQ(useShort=false) {
 
 	def qnum = getQueueToWork()
 	def timeVal = cmdDelay
+	def str = ""
 	if(qnum != null) {
-		if( !(getRecentSendCmd(qnum) > 0 || getLastCmdSentSeconds(qnum) > 60) ) {
-			timeVal = (60 - getLastCmdSentSeconds(qnum) + getChildWaitVal())
+		def queueItemsAvail = getRecentSendCmd(qnum)
+		def lastCommandSent = getLastCmdSentSeconds(qnum)
+		//if( !(getRecentSendCmd(qnum) > 0 || getLastCmdSentSeconds(qnum) > 60) ) {
+		if( queueItemsAvail <= 0  || atomicState?.apiRateLimited) {
+			timeVal = 60 + cmdDelay
+			atomicState?.workQrunInActive = false
+		} else if(lastCommandSent < 60) {
+			timeVal = (60 - lastCommandSent + cmdDelay)
+			if(queueItemsAvail > 0) { timeVal = 0 }
 		}
-		def str = timeVal > cmdDelay ? "*RATE LIMITING ON* " : ""
-		LogAction("schedNextWorkQ │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${getRecentSendCmd(qnum)} │ last seconds: ${getLastCmdSentSeconds(qnum)} │ cmdDelay: ${cmdDelay} │ allowAsync: ${allowAsync}", "info", true)
-	}
-	if(timeVal != 0) {
-		runIn(timeVal, "workQueue", [overwrite: true])
+		str = timeVal > cmdDelay || atomicState?.apiRateLimited ? "*RATE LIMITING ON* " : ""
+		LogAction("schedNextWorkQ │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${queueItemsAvail} │ last seconds: ${lastCommandSent} │ cmdDelay: ${cmdDelay} │ allowAsync: ${allowAsync} | runInActive: ${atomicState?.workQrunInActive}", "info", true)
 	} else {
-		workQueue()
+		timeVal = 0
+	}
+	if(!atomicState?.workQrunInActive) {
+		atomicState?.workQrunInActive = true
+		if(timeVal != 0) {
+			runIn(timeVal, "workQueue", [overwrite: true])
+		} else {
+			workQueue()
+		}
 	}
 }
 
@@ -5145,6 +5159,7 @@ def storeLastCmdData(cmd, qnum) {
 
 void workQueue() {
 	LogTrace("workQueue")
+	atomicState?.workQrunInActive = false
 	//def cmdDelay = getChildWaitVal()
 	if(!atomicState?.cmdQlist) { atomicState?.cmdQlist = [] }
 	def cmdQueueList = atomicState?.cmdQlist
@@ -5177,7 +5192,7 @@ void workQueue() {
 				atomicState?."cmdQ${qnum}" = cmdQueue
 				def cmdres
 
-				if(getLastCmdSentSeconds(qnum) > 3600) { setRecentSendCmd(qnum, 3) } // if nothing sent in last hour, reset 3 command limit
+				if(getLastCmdSentSeconds(qnum) > 3600) { setRecentSendCmd(qnum, 3) } // if nothing sent in last hour, reset = 3 command limit
 
 				storeLastCmdData(cmd, qnum)
 
@@ -5191,7 +5206,7 @@ void workQueue() {
 						cmdres = queueProcNestApiCmd(getNestApiUrl(), cmd[0], cmd[1], cmd[2], cmd[3], qnum, cmd)
 						return
 					} else {
-						cmdres = procNestApiCmd(getNestApiUrl(), cmd[0], cmd[1], cmd[2], cmd[3], qnum)
+						cmdres = procNestApiCmd(getNestApiUrl(), cmd[0], cmd[1], cmd[2], cmd[3], qnum, cmd)
 					}
 				}
 				finishWorkQ(cmd, cmdres)
@@ -5207,6 +5222,7 @@ void workQueue() {
 		atomicState.forceChildUpd = true
 		atomicState?.pollBlocked = false
 		atomicState?.pollBlockedReason = null
+		atomicState?.workQrunInActive = true
 		runIn(60, "workQueue", [overwrite: true])
 		runIn((60 + 4), "postCmd", [overwrite: true])
 		return
@@ -5272,7 +5288,7 @@ def queueProcNestApiCmd(uri, typeId, type, obj, objVal, qnum, cmd, redir = false
 		LogAction("Processing Queued Cmd: [ObjId: ${typeId} | ObjType: ${type} | ObjKey: ${obj} | ObjVal: ${objVal} | QueueNum: ${qnum} | Redirect: ${redir}]", "trace", true)
 		atomicState?.lastCmdSent = "$type: (${obj}: ${objVal})"
 
-		if(!redir && (getRecentSendCmd(qnum) > 0) && (getLastCmdSentSeconds(qnum) < 60)) {
+		if(!redir && (getRecentSendCmd(qnum) > 0) /* && (getLastCmdSentSeconds(qnum) < 60) */ ) {
 			def val = getRecentSendCmd(qnum)
 			val -= 1
 			setRecentSendCmd(qnum, val)
@@ -5324,12 +5340,29 @@ def nestCmdResponse(resp, data) {
 			atomicState?.apiRateLimited = false
 			atomicState?.apiCmdFailData = null
 			result = true
-		} else {
+		}
+		if(resp?.status == 429) {
+			// requeue command
+			def newCmd = [command[0], command[1], command[2], command[3], command[4]]
+			def tempQueue = []
+			tempQueue << newCmd
+			if(!atomicState?."cmdQ${qnum}" ) { atomicState."cmdQ${qnum}" = [] }
+			def cmdQueue = atomicState?."cmdQ${qnum}"
+			cmdQueue.each { cmd ->
+				newCmd = [cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]]
+				tempQueue << newCmd
+			}
+			atomicState."cmdQ${qnum}" = tempQueue
+		}
+		if(resp?.status != 200) {
 			apiIssueEvent(true)
 			atomicState?.lastCmdSentStatus = "failed"
 			if(resp?.hasError()) {
 				apiRespHandler((resp?.getStatus() ?: null), (resp?.getErrorJson() ?: null), "nestCmdResponse", "nestCmdResponse ${qnum} ($type{$obj:$objVal})", true)
 			}
+		}
+		if(resp?.status == 429) {
+			result = true // we requeued the command
 		}
 		finishWorkQ(command, result)
 
@@ -5345,7 +5378,7 @@ def nestCmdResponse(resp, data) {
 	}
 }
 
-def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, redir = false) {
+def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, origcmd, redir = false) {
 	LogTrace("procNestApiCmd: typeId: ${typeId}, type: ${type}, obj: ${obj}, objVal: ${objVal}, qnum: ${qnum},  isRedirUri: ${redir}")
 	def result = false
 	if(!atomicState?.authToken) { return result }
@@ -5377,9 +5410,10 @@ def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, redir = false) {
 			if(resp?.status == 307) {
 				def newUrl = resp?.headers?.location?.split("\\?")
 				LogTrace("NewUrl: ${newUrl[0]}")
-				if( procNestApiCmd(newUrl[0], typeId, type, obj, objVal, qnum, true) ) {
+				if( procNestApiCmd(newUrl[0], typeId, type, obj, objVal, qnum, origcmd, true) ) {
 					result = true
 				}
+				return result
 			}
 			else if(resp?.status == 200) {
 				LogAction("procNestApiCmd Processed queue: ${qnum} ($type{$obj:$objVal}) SUCCESSFULLY!", "info", true)
@@ -5389,12 +5423,27 @@ def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, redir = false) {
 				atomicState?.apiRateLimited = false
 				atomicState?.apiCmdFailData = null
 				result = true
+				return result
 			}
-			else {
-				apiIssueEvent(true)
-				atomicState?.lastCmdSentStatus = "failed"
-				result = false
-				apiRespHandler(resp?.status, resp?.data, "procNestApiCmd", "procNestApiCmd ${qnum} ($type{$obj:$objVal})", true)
+			if(resp?.status == 429) {
+				// requeue command
+				def newCmd = [origcmd[0], origcmd[1], origcmd[2], origcmd[3], origcmd[4]]
+				def tempQueue = []
+				tempQueue << newCmd
+				if(!atomicState?."cmdQ${qnum}" ) { atomicState."cmdQ${qnum}" = [] }
+				def cmdQueue = atomicState?."cmdQ${qnum}"
+				cmdQueue.each { cmd ->
+					newCmd = [cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]]
+					tempQueue << newCmd
+				}
+				atomicState."cmdQ${qnum}" = tempQueue
+			}
+			apiIssueEvent(true)
+			atomicState?.lastCmdSentStatus = "failed"
+			result = false
+			apiRespHandler(resp?.status, resp?.data, "procNestApiCmd", "procNestApiCmd ${qnum} ($type{$obj:$objVal})", true)
+			if(resp?.status == 429) {
+				result = true // we requeued the command
 			}
 		}
 	} catch (ex) {
@@ -5595,9 +5644,9 @@ def failedCmdNotify(failData, tstr) {
 	if(!(getLastFailedCmdMsgSec() > 300)) { return }
 	def nPrefs = atomicState?.notificationPrefs
 	def cmdFail = (nPrefs?.app?.api?.cmdFailMsg && failData?.msg != null) ? true : false
+	def cmdstr = tstr ?: atomicState?.lastCmdSent
+	def msg = "\nThe (${cmdstr}) CMD sent to the API has failed.\nStatus Code: ${failData?.code}\nErrorMsg: ${failData?.msg}\nDT: ${failData?.dt}"
 	if(cmdFail) {
-		def cmdstr = tstr ?: atomicState?.lastCmdSent
-		def msg = "\nThe (${cmdstr}) CMD sent to the API has failed.\nStatus Code: ${failData?.code}\nErrorMsg: ${failData?.msg}\nDT: ${failData?.dt}"
 		if(sendMsg("${app?.name} API CMD Failed", msg)) {
 			updTimestampMap("lastFailedCmdMsgDt", getDtNow())
 		}
@@ -7198,6 +7247,7 @@ def revokeCleanState() {
 	updTimestampMap("lastMetaDataUpd", null)
 	atomicState?.pollingOn = false
 	atomicState?.pollBlocked = false
+	atomicState?.workQrunInActive = false
 	atomicState?.pollBlockedReason = "No Auth Token"
 }
 
