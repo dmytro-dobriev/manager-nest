@@ -5038,10 +5038,13 @@ private getQueueNumber(cmdTypeId) {
 		qnum = cmdQueueList.indexOf(cmdTypeId)
 		atomicState?."cmdQ${qnum}" = null
 		setLastCmdSentSeconds(qnum, null)
-		setRecentSendCmd(qnum, null)
+		//setRecentSendCmd(qnum, null)
 	}
 	qnum = cmdQueueList.indexOf(cmdTypeId)
 	if(qnum == -1 ) { LogAction("getQueueNumber: NOT FOUND", "warn", true ) }
+	if(qnum != -1) {
+		if(getLastCmdSentSeconds(qnum) > 3600) { setRecentSendCmd(qnum, 3) } // if nothing sent in last hour, reset = 3 command limit
+	}
 	return qnum
 }
 
@@ -5062,6 +5065,9 @@ def getQueueToWork() {
 		}
 	}
 	LogTrace("getQueueToWork queue: ${qnum}")
+	if(qnum != -1) {
+		if(getLastCmdSentSeconds(qnum) > 3600) { setRecentSendCmd(qnum, 3) } // if nothing sent in last hour, reset = 3 command limit
+	}
 	return qnum
 }
 
@@ -5085,30 +5091,36 @@ void schedNextWorkQ(useShort=false) {
 	def qnum = getQueueToWork()
 	def timeVal = cmdDelay
 	def str = ""
+	def queueItemsAvail
+	def lastCommandSent
 	if(qnum != null) {
-		def queueItemsAvail = getRecentSendCmd(qnum)
-		def lastCommandSent = getLastCmdSentSeconds(qnum)
+		queueItemsAvail = getRecentSendCmd(qnum)
+		lastCommandSent = getLastCmdSentSeconds(qnum)
 		//if( !(getRecentSendCmd(qnum) > 0 || getLastCmdSentSeconds(qnum) > 60) ) {
 		if( queueItemsAvail <= 0  || atomicState?.apiRateLimited) {
 			timeVal = 60 + cmdDelay
-			atomicState?.workQrunInActive = false
+			//atomicState?.workQrunInActive = false
 		} else if(lastCommandSent < 60) {
 			timeVal = (60 - lastCommandSent + cmdDelay)
 			if(queueItemsAvail > 0) { timeVal = 0 }
 		}
 		str = timeVal > cmdDelay || atomicState?.apiRateLimited ? "*RATE LIMITING ON* " : ""
-		LogAction("schedNextWorkQ │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${queueItemsAvail} │ last seconds: ${lastCommandSent} │ cmdDelay: ${cmdDelay} │ allowAsync: ${allowAsync} | runInActive: ${atomicState?.workQrunInActive}", "info", true)
+		//LogAction("schedNextWorkQ │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${queueItemsAvail} │ last seconds: ${lastCommandSent} │ cmdDelay: ${cmdDelay} │ allowAsync: ${allowAsync} | runInActive: ${atomicState?.workQrunInActive} | Api Limited: ${atomicState?.apiRateLimited}", "info", true)
 	} else {
 		timeVal = 0
 	}
+	def actStr = "ALREADY PENDING "
 	if(!atomicState?.workQrunInActive) {
 		atomicState?.workQrunInActive = true
 		if(timeVal != 0) {
+			actStr = "RUNIN "
 			runIn(timeVal, "workQueue", [overwrite: true])
 		} else {
+			actStr = "DIRECT CALL "
 			workQueue()
 		}
 	}
+	LogAction("schedNextWorkQ ${actStr} │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${queueItemsAvail} │ last seconds: ${lastCommandSent} │ cmdDelay: ${cmdDelay} │ allowAsync: ${allowAsync} | runInActive: ${atomicState?.workQrunInActive} | Api Limited: ${atomicState?.apiRateLimited}", "info", true)
 }
 
 private getRecentSendCmd(qnum) {
@@ -5341,6 +5353,7 @@ def nestCmdResponse(resp, data) {
 			atomicState?.apiCmdFailData = null
 			result = true
 		}
+/*
 		if(resp?.status == 429) {
 			// requeue command
 			def newCmd = [command[0], command[1], command[2], command[3], command[4]]
@@ -5354,6 +5367,7 @@ def nestCmdResponse(resp, data) {
 			}
 			atomicState."cmdQ${qnum}" = tempQueue
 		}
+*/
 		if(resp?.status != 200) {
 			apiIssueEvent(true)
 			atomicState?.lastCmdSentStatus = "failed"
@@ -5361,9 +5375,11 @@ def nestCmdResponse(resp, data) {
 				apiRespHandler((resp?.getStatus() ?: null), (resp?.getErrorJson() ?: null), "nestCmdResponse", "nestCmdResponse ${qnum} ($type{$obj:$objVal})", true)
 			}
 		}
+/*
 		if(resp?.status == 429) {
 			result = true // we requeued the command
 		}
+*/
 		finishWorkQ(command, result)
 
 	} catch (ex) {
@@ -5396,7 +5412,7 @@ def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, origcmd, redir = false)
 		LogAction("procNestApiCmd Url: $uri | params: ${params}", "trace", true)
 		atomicState?.lastCmdSent = "$type: (${obj}: ${objVal})"
 
-		if(!redir && (getRecentSendCmd(qnum) > 0) && (getLastCmdSentSeconds(qnum) < 60)) {
+		if(!redir && (getRecentSendCmd(qnum) > 0) /* && (getLastCmdSentSeconds(qnum) < 60)*/ ) {
 			def val = getRecentSendCmd(qnum)
 			val -= 1
 			setRecentSendCmd(qnum, val)
@@ -5425,6 +5441,7 @@ def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, origcmd, redir = false)
 				result = true
 				return result
 			}
+/*
 			if(resp?.status == 429) {
 				// requeue command
 				def newCmd = [origcmd[0], origcmd[1], origcmd[2], origcmd[3], origcmd[4]]
@@ -5438,13 +5455,16 @@ def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, origcmd, redir = false)
 				}
 				atomicState."cmdQ${qnum}" = tempQueue
 			}
+*/
 			apiIssueEvent(true)
 			atomicState?.lastCmdSentStatus = "failed"
 			result = false
 			apiRespHandler(resp?.status, resp?.data, "procNestApiCmd", "procNestApiCmd ${qnum} ($type{$obj:$objVal})", true)
+/*
 			if(resp?.status == 429) {
 				result = true // we requeued the command
 			}
+*/
 		}
 	} catch (ex) {
 		apiIssueEvent(true)
@@ -7603,7 +7623,8 @@ def stateCleanup() {
 		data = data+oiRem
 	}
 	data?.each { item ->
-		if(state?.containsKey(item)) { state.remove(item?.toString()) }
+		//if(state?.containsKey(item)) { state.remove(item?.toString()) }
+		state.remove(item?.toString())
 	}
 
 	atomicState.authTokenExpires = atomicState?.tokenExpires ?: atomicState?.authTokenExpires
@@ -7612,15 +7633,17 @@ def stateCleanup() {
 	state.remove("tokenCreatedDt")
 
 	if(!atomicState?.cmdQlist) {
-		data = [ "cmdQ2", "cmdQ3", "cmdQ4", "cmdQ5", "cmdQ6", "cmdQ7", "cmdQ8", "cmdQ9", "cmdQ10", "cmdQ11", "cmdQ12", "cmdQ13", "cmdQ14", "cmdQ15", "lastCmdSentDt2", "lastCmdSentDt3",
+		data = [ "cmdQ0", "cmdQ1", "cmdQ2", "cmdQ3", "cmdQ4", "cmdQ5", "cmdQ6", "cmdQ7", "cmdQ8", "cmdQ9", "cmdQ10", "cmdQ11", "cmdQ12", "cmdQ13", "cmdQ14", "cmdQ15", "lastCmdSentDt0", "lastCmdSentDt1", "lastCmdSentDt2", "lastCmdSentDt3",
 			"lastCmdSentDt4", "lastCmdSentDt5", "lastCmdSentDt6", "lastCmdSentDt7", "lastCmdSentDt8", "lastCmdSentDt9", "lastCmdSentDt10", "lastCmdSentDt11", "lastCmdSentDt12", "lastCmdSentDt13",
-			"lastCmdSentDt14", "lastCmdSentDt15", "recentSendCmd2", "recentSendCmd3", "recentSendCmd4", "recentSendCmd5", "recentSendCmd6", "recentSendCmd7", "recentSendCmd8", "recentSendCmd9",
+			"lastCmdSentDt14", "lastCmdSentDt15", "recentSendCmd0", "recentSendCmd1", "recentSendCmd2", "recentSendCmd3", "recentSendCmd4", "recentSendCmd5", "recentSendCmd6", "recentSendCmd7", "recentSendCmd8", "recentSendCmd9",
 			"recentSendCmd10", "recentSendCmd11", "recentSendCmd12", "recentSendCmd13", "recentSendCmd14", "recentSendCmd15"
 		]
 		data.each { item ->
-			if(state?.containsKey(item)) { state.remove(item?.toString()) }
+			//if(state?.containsKey(item)) { state.remove(item?.toString()) }
+			state.remove(item?.toString()) 
 		}
 	}
+	atomicState?.workQrunInActive = false
 	atomicState.forceChildUpd = true
 	def remSettings = [ "showAwayAsAuto", "temperatures", "powers", "energies", "childDevDataPageDev", "childDevPageRfsh", "childDevDataRfshVal", "childDevDataStateFilter", "childDevPageShowAttr", 
 		"childDevPageShowCapab", "childDevPageShowCmds", "childDevPageShowState", "managAppPageRfsh", "managAppPageShowMeta", "managAppPageShowSet", "managAppPageShowState", "updChildOnNewOnly", "locDesiredButton", "locDesiredTempScale"
