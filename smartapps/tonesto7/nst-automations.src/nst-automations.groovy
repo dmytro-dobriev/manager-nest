@@ -125,7 +125,7 @@ def installed() {
 def updated() {
 	LogAction("${app.label} Updated...with settings: ${settings}", "debug", true)
 	initialize()
-	sendNotificationEvent("${appName()} has updated settings")
+	//sendNotificationEvent("${appName()} has updated settings")
 	atomicState?.lastUpdatedDt = getDtNow()
 }
 
@@ -1422,21 +1422,21 @@ def watchDogAlarmActions(dev, dni, actType) {
 		LogAction("watchDogAlarmActions() | ${evtNotifMsg}", "warn", true)
 
 		if(allowNotif) {
-			sendEventPushNotifications(evtNotifMsg, "Warning", pName)
+			sendEventPushNotifications(evtNotifMsg, "Warning", pName) // this uses parent and honors quiet times others do NOT
 			if(allowSpeech) {
 				sendEventVoiceNotifications(voiceNotifString(evtVoiceMsg, pName), pName, "nmWatDogEvt_${app?.id}", true, "nmWatDogEvt_${app?.id}")
 			}
 			if(allowAlarm) {
 				scheduleAlarmOn(pName)
 			}
+			atomicState?."lastWatDogSafetyAlertDt${dni?.key}" = getDtNow()
 		} else {
-			sendNofificationMsg(evtNotifMsg, "Warning")
+			//sendNofificationMsg(evtNotifMsg, "Warning")
 		}
-		atomicState?."lastWatDogSafetyAlertDt${dni?.key}" = getDtNow()
 	}
 }
 
-def getLastWatDogSafetyAlertDtSec(dni) { return !atomicState?."lastWatDogSafetyAlertDt{$dni}" ? 10000 : GetTimeDiffSeconds(atomicState?."lastWatDogSafetyAlertDt${dni}", null, "getLastWatDogSafetyAlertDtSec").toInteger() }
+def getLastWatDogSafetyAlertDtSec(dni) { return !atomicState?."lastWatDogSafetyAlertDt${dni}" ? 10000 : GetTimeDiffSeconds(atomicState?."lastWatDogSafetyAlertDt${dni}", null, "getLastWatDogSafetyAlertDtSec").toInteger() }
 def getWatDogRepeatMsgDelayVal() { return !watDogRepeatMsgDelay ? 3600 : watDogRepeatMsgDelay.toInteger() }
 
 def isWatchdogConfigured() {
@@ -6770,7 +6770,7 @@ def sendNofificationMsg(msg, msgType, recips = null, sms = null, push = null) {
 /************************************************************************************************
 |							GLOBAL Code | Logging AND Diagnostic							    |
 *************************************************************************************************/
-
+// parent has  res["msgDefaultWait"] = (settings?.notifyMsgWaitVal == null ? 3600 : settings?.notifyMsgWaitVal.toInteger())
 def sendEventPushNotifications(message, type, pName) {
 	LogTrace("sendEventPushNotifications($message, $type, $pName)")
 	def allowNotif = settings?."${pName}NotificationsOn" ? true : false

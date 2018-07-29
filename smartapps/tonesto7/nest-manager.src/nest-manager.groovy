@@ -5576,7 +5576,6 @@ def getLastMissPollMsgSec() { return !getTimestampVal("lastMisPollMsgDt") ? 1000
 def getLastApiIssueMsgSec() { return !getTimestampVal("lastApiIssueMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastApiIssueMsgDt"), null, "getLastApiIssueMsgSec").toInteger() }
 def getLastLogRemindMsgSec() { return !getTimestampVal("lastLogRemindMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastLogRemindMsgDt"), null, "getLastLogRemindMsgSec").toInteger() }
 def getLastFailedCmdMsgSec() { return !getTimestampVal("lastFailedCmdMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastFailedCmdMsgDt"), null, "getLastFailedCmdMsgSec").toInteger() }
-def getLastDevHealthMsgSec() { return !atomicState?.lastDevHealthMsgData?.dt ? 100000 : GetTimeDiffSeconds(atomicState?.lastDevHealthMsgData?.dt, null, "getLastDevHealthMsgSec").toInteger() }
 def getDebugLogsOnSec() { return !getTimestampVal("debugEnableDt") ? 0 : GetTimeDiffSeconds(getTimestampVal("debugEnableDt"), null, "getDebugLogsOnSec").toInteger() }
 
 def getRecipientsSize() { return !settings.recipients ? 0 : settings?.recipients?.size() }
@@ -5595,14 +5594,24 @@ def cameraStreamNotify(child, Boolean streaming) {
 	sendMsg("${child?.device?.displayName} Info", "Streaming is now '${streaming ? "ON" : "OFF"}'", false)
 }
 
+def getLastDevHealthMsgSec(timeVal) { return !timeVal ? 100000 : GetTimeDiffSeconds(timeVal, null, "getLastDevHealthMsgSec").toInteger() }
+
 def deviceHealthNotify(child, Boolean isHealthy) {
 	// log.trace "deviceHealthNotify(${child?.device?.displayName}, $isHealthy)"
 	def nPrefs = atomicState?.notificationPrefs?.dev?.devHealth
+	if(isHealthy == true || nPrefs?.healthMsg != true) {
+		return
+	}
 	def devLbl = child?.device?.displayName
-	def sameAsLastDev = (atomicState?.lastDevHealthMsgData?.device == devLbl)
-	if(isHealthy == true || nPrefs?.healthMsg != true || (getLastDevHealthMsgSec() <= nPrefs?.healthMsgWait?.toInteger() && sameAsLastDev) ) { return }
-	sendMsg("$devLbl Health Warning", "\nDevice is currently OFFLINE. Please check your logs for possible issues.")
-	atomicState?.lastDevHealthMsgData = ["device":"$devLbl", "dt":getDtNow()]
+	def devId = !child?.device?.deviceNetworkId ? child?.toString() : child?.device?.deviceNetworkId.toString()
+	def t0 =  atomicState?.lastDevHealthMsgMap ?: [:]
+	def lastTime = t0 && devId && t0?."${devId}" ? t0["${devId}"].dt : null
+	if(!devId || getLastDevHealthMsgSec(lastTime) <= nPrefs?.healthMsgWait?.toInteger() ) {
+		return 
+	}
+	sendMsg("$devLbl Health Warning", "\nDevice is OFFLINE. Please check your logs for possible issues.")
+	t0["${devId}"] = ["device":"$devLbl", "dt":getDtNow()]
+	atomicState.lastDevHealthMsgMap = t0
 }
 
 def getNestZipCode() {
@@ -5702,7 +5711,7 @@ def missPollNotify(on) {
 			restStreamHandler(true)   // close the stream if we have not heard from it in a while
 			atomicState?.restStreamingOn = false
 		}
-		def msgWait = atomicState?.notificationPrefs?.msgDefaultWait ?: 900
+		def msgWait = atomicState?.notificationPrefs?.msgDefaultWait ?: 3600
 		if(on && getLastMissPollMsgSec() > msgWait.toInteger()) {
 			if(sendMsg("${app.name} Nest Data update Issue", msg)) {
 				updTimestampMap("lastMisPollMsgDt", getDtNow())
@@ -5789,6 +5798,9 @@ def sendMsg(msgType, msg, showEvt=true, people = null, sms = null, push = null, 
 		def flatMsg = newMsg.toString().replaceAll("\n", " ")
 		if(!getOk2Notify()) {
 			LogAction("sendMsg: Skipping Due to Quiet Time ($flatMsg)", "info", true)
+			if(showEvt) {
+				sendNotificationEvent(newMsg)
+			}
 		} else {
 			if(!brdcast) {
 				if(location.contactBookEnabled) {
@@ -7615,7 +7627,7 @@ def stateCleanup() {
 		"appApiIssuesWaitVal", "misPollNotifyWaitVal", "misPollNotifyMsgWaitVal", "devHealthMsgWaitVal", "nestLocAway", "heardFromRestDt", "autoSaVer", "lastAnalyticUpdDt", "lastHeardFromRestDt",
 		"remDiagApp", "remDiagClientId", "restorationInProgress", "diagManagAppStateFilters", "diagChildAppStateFilters", "lastFinishedPoll","tDevVer", "pDevVer", "camDevVer", "presDevVer", "weatDevVer", "vtDevVer", "streamDevVer", 
 		"curAlerts", "curAstronomy", "curForecast", "curWeather", "detailEventHistory", "detailExecutionHistory", "evalExecutionHistory", "lastForecastUpdDt", "lastWeatherUpdDt",
-		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName", "ReallyChanged", "tsMigrationDone", "pushTested"
+		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName", "ReallyChanged", "tsMigrationDone", "pushTested", "lastDevHealthMsgData"
  	]
 
 	["oldTstatData", "oldCamData", "oldProtData", "oldPresData", "oldWeatherData", "lastCmdSentDt"]?.each { oi->
