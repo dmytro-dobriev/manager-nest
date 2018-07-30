@@ -3399,33 +3399,14 @@ def getGraphHTML() {
 				<meta name="viewport" content="width = device-width, user-scalable=no, initial-scale=1.0">
 
 				<link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css"/>
-				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/css/swiper.min.css" />
+				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/css/swiper.min.css" />
 				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex.min.css" async/>
 				<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vex-js/3.1.1/css/vex-theme-top.min.css" async />
 				<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/js/swiper.min.js"></script>
 				<style>
-					.swiper-container {
-						width: 95%;
-						min-height: 300px;
-						padding: 0 10px !important;
-					}
-
-					.swiper-pagination-bullet {
-						width: 20px;
-						height: 20px;
-						text-align: center;
-						line-height: 20px;
-						font-size: 10px;
-						color: #000;
-						opacity: 1;
-						background: rgba(0, 0, 0, 0.2);
-					}
-
-					.swiper-pagination-bullet-active {
-						color: #fff;
-						background: #007aff;
-					}
+					
 				</style>
 			</head>
 			<body>
@@ -3512,42 +3493,40 @@ def getGraphHTML() {
 					<div class="swiper-pagination"></div>
 					<div style="text-align: center; padding: 25px 0;"></div>
 				</div>
-				<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/js/swiper.min.js"></script>
 				<script>
 					var mySwiper = new Swiper ('.swiper-container', {
 						direction: 'horizontal',
-						roundLengths: true,
-						updateOnImagesReady: true,
-						loop: true,
+						initialSlide: 0,
+						lazyLoading: true,
+						loop: false,
 						slidesPerView: '1',
-						grabCursor: true,
 						centeredSlides: true,
 						spaceBetween: 100,
 						autoHeight: true,
+						keyboardControl: true,
+            			mousewheelControl: true,
 						iOSEdgeSwipeDetection: true,
+						iOSEdgeSwipeThreshold: 20,
 						parallax: true,
 						slideToClickedSlide: true,
+
 						effect: 'coverflow',
-						coverFlowEffect: {
-							rotate: 50,
-							stretch: 0,
-							depth: 100,
-							modifier: 1,
-							slideShadows: false
+						coverflow: {
+						  rotate: 50,
+						  stretch: 0,
+						  depth: 100,
+						  modifier: 1,
+						  slideShadows : true
 						},
-						on: {
-							tap: function() {
-								this.slideNext()
-							},
+						onTap: function(s, e) {
+							s.slideNext(false);
+							if(s.clickedIndex >= s.slides.length) {
+								s.slideTo(0, 400, false)
+							}
 						},
-						pagination: {
-							el: '.swiper-pagination',
-							hideOnClick: false,
-							clickable: true,
-							renderBullet: function (index, className) {
-								return '<span class="' + className + '">' + (index + 1) + '</span>';
-							},
-						}
+						pagination: '.swiper-pagination',
+						paginationHide: false,
+						paginationClickable: true
 					});
 					function reloadPage() {
 						window.location.reload();
@@ -3766,38 +3745,37 @@ def getDeviceTile(devNum) {
 			<script>
 				var mySwiper${devNum} = new Swiper ('.swiper-container-${devNum}', {
 					direction: 'horizontal',
-					roundLengths: true,
-					updateOnImagesReady: true,
-					loop: true,
+					initialSlide: 0,
+					lazyLoading: true,
+					loop: false,
 					slidesPerView: '1',
-					grabCursor: true,
 					centeredSlides: true,
 					spaceBetween: 100,
 					autoHeight: true,
+					keyboardControl: true,
+					mousewheelControl: true,
 					iOSEdgeSwipeDetection: true,
+					iOSEdgeSwipeThreshold: 20,
 					parallax: true,
 					slideToClickedSlide: true,
+
 					effect: 'coverflow',
-					coverFlowEffect: {
+					coverflow: {
 						rotate: 50,
 						stretch: 0,
 						depth: 100,
 						modifier: 1,
-						slideShadows: false
+						slideShadows : true
 					},
-					on: {
-						tap: function() {
-							this.slideNext();
-						},
+					onTap: function(s, e) {
+						s.slideNext(false);
+						if(s.clickedIndex >= s.slides.length) {
+							s.slideTo(0, 400, false)
+						}
 					},
-					pagination: {
-						el: '.swiper-pagination',
-						hideOnClick: false,
-						clickable: true,
-						renderBullet: function (index, className) {
-							return '<span class="' + className + '">' + (index + 1) + '</span>';
-						},
-					}
+					pagination: '.swiper-pagination',
+					paginationHide: false,
+					paginationClickable: true
 				});
 				function reloadTstatPage() {
 					window.location.reload();
@@ -4067,12 +4045,16 @@ def showChartHtml(devNum="") {
 					seriesType: 'bars',
 					colors: ['#FF9900', '#0066FF', '#884ae5'],
 					chartArea: {
-					  left: '15%',
-					  right: '23%',
+					  left: '10%',
+					  right: '5%',
 					  top: '7%',
 					  bottom: '10%',
-					  height: '100%',
-					  width: '90%'
+					  height: '95%',
+					  width: '100%'
+					},
+					legend: {
+						position: 'bottom',
+						maxLines: 4
 					}
 				};
 
@@ -4098,7 +4080,6 @@ def showChartHtml(devNum="") {
 			</section>
   		  </div>
 	  """
-/* */
 	return data
 }
 
