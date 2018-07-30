@@ -3362,11 +3362,13 @@ private gcd(input = []) {
 }
 
 def onAppTouch(event) {
+/*
 // Debug to remove
 		def sData = atomicState?.swVer ?: [:]
 		sData["mgrVer"] = "tester"
 		atomicState?.swVer = sData
 		return
+*/
 	stateCleanup()
 	createSavedNest()
 	poll(true)
