@@ -110,8 +110,8 @@ metadata {
 			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
 		}
 		standardTile("sound", "device.sound", width: 2, height: 2, decoration: "flat", wordWrap: true) {
-			state "detected", label:'Noise', icon:"st.sound.sound.detected", backgroundColor:"#00a0dc"
-			state "not detected", label:'Quiet', icon:"st.sound.sound.notdetected", backgroundColor:"#ffffff"
+			state "detected", label:'Noise', icon:"st.Entertainment.entertainment15", backgroundColor:"#00a0dc"
+			state "not detected", label:'Quiet', icon:"st.Entertainment.entertainment15", backgroundColor:"#ffffff"
 		}
 		valueTile("softwareVer", "device.softwareVer", inactiveLabel: false, width: 3, height: 1, decoration: "flat", wordWrap: true) {
 			state("default", label: 'Firmware:\nv${currentValue}')
