@@ -35,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.3.9" }
-def appVerDate() { "07-29-2018" }
+def appVerDate() { "07-30-2018" }
 def minVersions() {
 	return [
 		"automation":["val":536, "desc":"5.3.6"],
@@ -386,7 +386,7 @@ private getStorageApp() {
 		storageAppInst(true)
 		return storApp 
 	} else { 
-		runIn(5, "initStorageApp", [overwrite: true])
+		//runIn(5, "initStorageApp", [overwrite: true])
 		storageAppInst(false)
 		return null 
 	}
@@ -2252,6 +2252,11 @@ def updated() {
 	} else {
 		LogAction("${app.label} Updated...with settings: ${settings}", "debug", true)
 	}
+	atomicState?.pollBlocked = true
+	atomicState?.pollBlockedReason = "Software Update pending"
+	restStreamHandler(true)   // stop the rest stream
+	atomicState?.restStreamingOn = false
+	atomicState.ssdpOn = false
 	// if(atomicState?.migrationInProgress == true) { LogAction("Skipping updated() as migration in-progress", "warn", true); return }
 	if(atomicState?.needToFinalize == true) { LogAction("Skipping updated() as auth change in-progress", "warn", true); return }
 	initialize()
@@ -2272,11 +2277,9 @@ def uninstalled() {
 def initialize() {
 	//LogTrace("initialize")
 	if(!atomicState?.tsMigration) { timestampMigration() }
-	checkStorageApp()
-	def storageApp = getStorageApp()
 	if(atomicState?.resetAllData || settings?.resetAllData) {
-		if(fixState()) { return }	// runIn of fixState will call initAutoApp() or initManagerApp()
-		settingUpdate("resetAllData", "false", "bool")
+		if(fixState()) { return }	// runIn of fixState will call initManagerApp()
+		//settingUpdate("resetAllData", "false", "bool")
 	}
 	if(!isAppLiteMode()) {
 		runIn(5, "reInitBuiltins", [overwrite: true])  // These are to have these apps release subscriptions to devices (in case of delete)
@@ -2285,9 +2288,11 @@ def initialize() {
 }
 
 def reInitBuiltins() {
+	checkStorageApp()
 	if(!isAppLiteMode()) {
 		initWatchdogApp()
   		initNestModeApp()
+		initStorageApp()
 	}
 	if(atomicState?.tsMigration) { initRemDiagApp() }
 }
@@ -2414,6 +2419,9 @@ def initManagerApp() {
 	}
 	if(!addRemoveDevices()) { // if we changed any devices or had an error trying, reset queues and polling
 		atomicState.cmdQlist = []
+		if(!isAppLiteMode()) {
+			runIn(15, "reInitBuiltins", [overwrite: true])  // need to have watchdog/nestmode check if we created devices
+		}
 	}
 	if(settings?.thermostats || settings?.protects || settings?.cameras || settings?.presDevice || settings?.weatherDevice) {
 		atomicState?.isInstalled = true
@@ -2431,39 +2439,43 @@ def finishInitManagerApp() {
 		createSavedNest()
 		if(app.label == "Nest Manager") { app.updateLabel("NST Manager") }
 		def badAutomation = false
-		def autoId = null
 		def storId = null
 		if(!isAppLiteMode()) {
 			getChildApps()?.sort()?.each { chld ->
-				if(autoId == null) {autoId = chld?.smartAppId}
 				chld?.update()
 			}
 		} else {
 			badAutomation = true
 		}
-		//if(autoId) { updAppCodeId("auto", autoId) }
 
-		def tstatAutoApp = getChildApps()?.find {
-			def aa = null
-			try {
-				aa = it?.getAutomationType()
-				def bb = it?.getCurrentSchedule()
-				def ai = it?.getAutomationsInstalled()
-			} catch (Exception e) {
-				LogAction("BAD Automation file ${it?.label?.toString()} (${it?.id}), please INSTALL proper automation file", "error", true)
-				badAutomation = true
-				appUpdateNotify(true, "automation")
+		if (!badAutomation) {
+			def tstatAutoApp = getChildApps()?.find {
+				def aa = null
+				try {
+					aa = it?.getAutomationType()
+					def bb = it?.getCurrentSchedule()
+					def ai = it?.getAutomationsInstalled()
+				} catch (Exception e) {
+					LogAction("BAD Automation file ${it?.label?.toString()} (${it?.id}), please INSTALL proper automation file", "error", true)
+					badAutomation = true
+					appUpdateNotify(true, "automation")
+				}
+				if( !badAutomation && !(aa in ["nMode", "watchDog", "remDiag", "schMot", "storage"]) ) { badAutomation = true }
 			}
-			if( !badAutomation && !(aa in ["nMode", "watchDog", "remDiag", "schMot", "storage"]) ) { badAutomation = true }
-		}
-		if(!isAppLiteMode()) {
-			runIn(5, "reInitBuiltins", [overwrite: true])  // need to have watchdog/nestmode check if we created devices
 		}
 		if(badAutomation) {
 			LogAction("Deleting BAD Automations in 10 mins", "warn", true)
 			runIn(600, "removeBadAutomations", [overwrite: true])
 		}
+		if(resetAllData) { // This is to cleanup state for resetAllData - children are given 90 seconds to fixState()
+			runIn(90, "cleanupResetSettings", [overwrite: true])
+		}
 	}
+}
+
+def cleanupResetSettings() {
+	settingUpdate("resetAllData", "false", "bool")
+	runIn(75, "initialize", [overwrite: true]) // cause cleanup to propagate to child apps
 }
 
 def removeBadAutomations() {
@@ -2953,19 +2965,19 @@ def startStopStream() {
 		return
 	}
 	if(strEn && settings?.restStreaming && atomicState?.restStreamingOn) {
-		runIn(5, "restStreamCheck", [overwrite: true])
+		runIn(25, "restStreamCheck", [overwrite: true])
 		return
 	}
 	if(strEn && settings?.restStreaming && !atomicState?.restStreamingOn) {
 		//LogAction("Sending restStreamHandler(Start) Event to local node service", "debug", true)
 		restStreamHandler()
-		runIn(5, "restStreamCheck", [overwrite: true])
+		runIn(25, "restStreamCheck", [overwrite: true])
 	}
 	else if ((!settings?.restStreaming || !strEn) && atomicState?.restStreamingOn) {
 		//LogAction("Sending restStreamHandler(Stop) Event to local node service", "debug", true)
 		restStreamHandler(true)
 		atomicState?.restStreamingOn = false
-		runIn(5, "restStreamCheck", [overwrite: true])
+		runIn(25, "restStreamCheck", [overwrite: true])
 	}
 }
 
@@ -3320,6 +3332,8 @@ def setPollingState() {
 			def random_dint = random.nextInt(timgcd.toInteger())
 			LogAction("POLL scheduled (${random_int} ${random_dint}/${timgcd} * * * ?)", "info", true)
 			schedule("${random_int} ${random_dint}/${timgcd} * * * ?", poll)	// this runs every timgcd minutes
+			atomicState?.pollBlocked = false
+			atomicState?.pollBlockedReason = null
 			def timChk = atomicState?.streamPolling ? 1200 : 240
 			if(!getTimestampVal("lastDevDataUpd") || getLastDevicePollSec() > timChk) {
 				if(atomicState.streamPolling) {
@@ -3348,6 +3362,11 @@ private gcd(input = []) {
 }
 
 def onAppTouch(event) {
+// Debug to remove
+		def sData = atomicState?.swVer ?: [:]
+		sData["mgrVer"] = "tester"
+		atomicState?.swVer = sData
+		return
 	stateCleanup()
 	createSavedNest()
 	poll(true)
@@ -3379,7 +3398,13 @@ def checkIfSwupdated() {
 		iData["shownFeedback"] = false
 		iData["shownDonation"] = false
 		atomicState?.installData = iData
-		updated()
+// force full fixState
+		settingUpdate("resetAllData", "true", "bool")
+		atomicState?.resetAllData = false
+		atomicState?.pollBlocked = true
+		atomicState?.pollBlockedReason = "Software Update pending"
+		runIn(20, "updated", [overwrite: true])
+		//updated()
 		sendInstallSlackNotif(false)
 		return true
 	}
@@ -4482,7 +4507,7 @@ void physDevLblHandler(devType, devId, devLbl, devStateName, apiName, abrevStr, 
 	def curlbl = devLbl?.toString()
 	if(deflbl && deflbl == curlbl) { nameIsDefault = true }
 	def newlbl = "getNest${abrevStr.capitalize()}Label"(apiName, devId)
-	LogTrace("physDevLblHandler | deflbl: ${deflbl} | curlbl: ${curlbl} | newlbl: ${newlbl} | deflblval: ${deflblval} || devId: ${devId}")
+	//LogTrace("physDevLblHandler | deflbl: ${deflbl} | curlbl: ${curlbl} | newlbl: ${newlbl} | deflblval: ${deflblval} || devId: ${devId}")
 	if(ovrRideNames || (nameIsDefault && curlbl != newlbl)) {		// label change from nest
 		if(curlbl != newlbl) {
 			LogAction("Changing name from ${curlbl} to ${newlbl}", "info", true)
@@ -4503,7 +4528,7 @@ void physDevLblHandler(devType, devId, devLbl, devStateName, apiName, abrevStr, 
 void virtDevLblHandler(devId, devLbl, devMethAbrev, abrevStr, ovrRideNames) {
 	def curlbl = devLbl?.toString()
 	def newlbl = "getNest${devMethAbrev.capitalize()}Label"()
-	LogTrace("virtDevLblHandler | curlbl: ${curlbl} | newlbl: ${newlbl} || devId: ${devId}")
+	//LogTrace("virtDevLblHandler | curlbl: ${curlbl} | newlbl: ${newlbl} || devId: ${devId}")
 	if(ovrRideNames && curlbl != newlbl) {
 		LogAction("Changing name from ${curlbl} to ${newlbl}", "info", true)
 		setDeviceLabel(devId, newlbl?.toString())
@@ -5581,6 +5606,7 @@ def getDebugLogsOnSec() { return !getTimestampVal("debugEnableDt") ? 0 : GetTime
 def getRecipientsSize() { return !settings.recipients ? 0 : settings?.recipients?.size() }
 
 def notificationCheck() {
+	LogTrace("notificationCheck")
 	def nPrefs = atomicState?.notificationPrefs
 	if(!getOk2Notify()) { return }
 	apiIssueNotify(nPrefs?.app?.api?.issueMsg, nPrefs?.app?.api?.rateLimitMsg, nPrefs?.app?.api?.issueMsgWait)
@@ -5663,7 +5689,7 @@ def apiIssueNotify(msgOn, rateOn, wait) {
 		def msg = ""
 		msg += !rateLimit && apiIssue ? "\nThe Nest API appears to be having issues. This will effect the updating of device and location data.\nThe issues started at (${getTimestampVal("apiIssueDt")})" : ""
 		msg += rateLimit ? "${apiIssue ? "\n\n" : "\n"}Your API connection is currently being Rate-limited for excessive commands." : ""
-		if(sendMsg("${app?.name} API Issue Warning", msg, true)) {
+		if(sendMsg("${app?.label} API Issue Warning", msg, true)) {
 			updTimestampMap("lastApiIssueMsgDt", getDtNow())
 		}
 	}
@@ -5676,7 +5702,7 @@ def failedCmdNotify(failData, tstr) {
 	def cmdstr = tstr ?: atomicState?.lastCmdSent
 	def msg = "\nThe (${cmdstr}) CMD sent to the API has failed.\nStatus Code: ${failData?.code}\nErrorMsg: ${failData?.msg}\nDT: ${failData?.dt}"
 	if(cmdFail) {
-		if(sendMsg("${app?.name} API CMD Failed", msg)) {
+		if(sendMsg("${app?.label} API CMD Failed", msg)) {
 			updTimestampMap("lastFailedCmdMsgDt", getDtNow())
 		}
 	}
@@ -5689,7 +5715,7 @@ def loggingRemindNotify(msgOn) {
 	def dbgAlert = (getDebugLogsOnSec() > 86400)
 	if(dbgAlert) {
 		def msg = "Your debug logging has remained enabled for more than 24 hours please disable them to reduce resource usage on ST platform."
-		if(sendMsg(("${app?.name} Debug Logging Reminder"), msg, true)) {
+		if(sendMsg(("${app?.label} Debug Logging Reminder"), msg, true)) {
 			updTimestampMap("lastLogRemindMsgDt", getDtNow())
 		}
 	}
@@ -5713,7 +5739,7 @@ def missPollNotify(on) {
 		}
 		def msgWait = atomicState?.notificationPrefs?.msgDefaultWait ?: 3600
 		if(on && getLastMissPollMsgSec() > msgWait.toInteger()) {
-			if(sendMsg("${app.name} Nest Data update Issue", msg)) {
+			if(sendMsg("${app.label} Nest Data update Issue", msg)) {
 				updTimestampMap("lastMisPollMsgDt", getDtNow())
 			}
 		}
@@ -5776,11 +5802,13 @@ def updateHandler() {
 			sendMsg("Critical", "There are Critical Updates available for ${appName()}! Please visit the IDE and make sure to update the App and Devices Code")
 			atomicState?.lastCritUpdateInfo = ["dt":getDtNow(), "ver":atomicState?.appData?.updater?.updateVer?.toInteger()]
 		}
-		if(atomicState?.appData?.updater?.updateMsg != null && atomicState?.appData?.updater?.updateMsg != atomicState?.lastUpdateMsg) {
+		def t0 = atomicState?.appData?.updater?.updateMsg
+		LogAction("updateHandler: t0 is ${t0}", "info", true)
+		if(t0 != null && t0 != "" && t0 != atomicState?.lastUpdateMsg) {
 			if(getLastUpdateMsgSec() > 86400) {
-				if(sendMsg("Info", "${atomicState?.updater?.updateMsg}")) {
+				if(sendMsg("Info", "${t0}")) {
 					updTimestampMap("lastUpdateMsgDt", getDtNow())
-					atomicState.lastUpdateMsg = atomicState?.appData?.updater?.updateMsg
+					atomicState.lastUpdateMsg = t0
 				}
 			}
 		}
@@ -5790,6 +5818,7 @@ def updateHandler() {
 def getOk2Notify() { return (daysOk(settings?.quietDays) && notificationTimeOk() && modesOk(settings?.quietModes)) }
 
 def sendMsg(msgType, msg, showEvt=true, people = null, sms = null, push = null, brdcast = null) {
+	//LogAction("sendMsg:  msgType: ${msgType}, msg: ${msg}, showEvt: ${showEvt}", "warn", true)
 	LogTrace("sendMsg")
 	def sentstr = "Push"
 	def sent = false
@@ -5861,10 +5890,11 @@ def getLastUpdateMsgSec() { return !getTimestampVal("lastUpdateMsgDt") ? 100000 
 
 def getStZipCode() { return location?.zipCode?.toString() }
 
-def updateWebStuff(now = false) {
-	LogTrace("updateWebStuff")
+def updateWebStuff(now=false) {
+	//LogTrace("updateWebStuff $now")
 	def nnow = now
 	if(!atomicState?.appData) { nnow = true }
+	LogTrace("updateWebStuff $now $nnow")
 	if(nnow || (getLastWebUpdSec() > (3600*4))) {
 		if(nnow) {
 			getWebFileData()
@@ -5885,7 +5915,7 @@ def updateWebStuff(now = false) {
 }
 
 def getWeatherConditions(force = false) {
-	LogTrace("getWeatherConditions")
+	LogTrace("getWeatherConditions $force")
 	if(atomicState?.weatherDevice) {
 		def storageApp = getStorageApp()
 		try {
@@ -6016,7 +6046,7 @@ def getWeatherDeviceInst() {
 }
 
 def getWebFileData(now = true) {
-	//LogTrace("getWebFileData")
+	LogTrace("getWebFileData $now")
 	def params = [ uri: "https://raw.githubusercontent.com/${gitPath()}/Data/appData.json", contentType: 'application/json' ]
 	def result = false
 	try {
@@ -6166,9 +6196,10 @@ def clientBlacklisted() {
 }
 
 def broadcastCheck() {
+	LogTrace("broadcastCheck")
 	def bCastData = atomicState?.appData?.broadcast
 	if(atomicState?.isInstalled && bCastData) {
-		if(bCastData?.msgId != null && atomicState?.lastBroadcastId != bCastData?.msgId) {
+		if(bCastData?.msgId != "" && bCastData?.message != "" && atomicState?.lastBroadcastId != bCastData?.msgId) {
 			if(sendMsg(strCapitalize(bCastData?.type), bCastData?.message.toString(), true, null, null, null, true)) {
 				atomicState?.lastBroadcastId = bCastData?.msgId
 			}
@@ -6193,6 +6224,8 @@ def helpHandler() {
 }
 
 def getHtmlInfo() {
+	return "not used"
+/*
 	if(atomicState?.appData?.html?.cssUrl && atomicState?.appData?.html?.cssVer && atomicState?.appData?.html?.chartJsUrl && atomicState?.appData?.html?.chartJsVer ) {
 		return ["cssUrl":atomicState?.appData?.html?.cssUrl, "cssVer":atomicState?.appData?.html?.cssVer, "chartJsUrl":atomicState?.appData?.html?.chartJsUrl, "chartJsVer":atomicState?.appData?.html?.chartJsVer]
 	} else {
@@ -6200,6 +6233,7 @@ def getHtmlInfo() {
 			return ["cssUrl":atomicState?.appData?.html?.cssUrl, "cssVer":atomicState?.appData?.html?.cssVer, "chartJsUrl":atomicState?.appData?.html?.chartJsUrl, "chartJsVer":atomicState?.appData?.html?.chartJsVer]
 		}
 	}
+*/
 }
 
 def allowDbException() {
@@ -6312,7 +6346,7 @@ def isStreamUpdateAvail() {
 }
 
 def reqSchedInfoRprt(child, report=true) {
-	LogTrace("reqSchedInfoRprt: (${child.device.label})")
+	LogTrace("reqSchedInfoRprt: (${child.device.label}, $report)")
 	def result = null
 
 	def tstat = getChildDevice(child.device.deviceNetworkId)
@@ -6343,7 +6377,9 @@ def reqSchedInfoRprt(child, report=true) {
 			if(!report) {
 				def useMot = (schedMotionActive && (schedData?.mctemp || schedData?.mhtemp)) ? true : false
 				tempSrcStr = useMot ? "Schedule Motion Trigger" : tempSrcStr
+
 				return ["scdNum":actSchedNum, "schedName":schedData?.lbl, "reqSenHeatSetPoint":reqSenHeatSetPoint, "reqSenCoolSetPoint":reqSenCoolSetPoint, "curZoneTemp":curZoneTemp, "tempSrc":tempSrc, "tempSrcDesc":tempSrcStr]
+
 			} else {
 				def tempScaleStr = " degrees"
 				def canHeat = tstat?.currentCanHeat?.toString() == "true" ? true : false
@@ -6392,10 +6428,11 @@ def reqSchedInfoRprt(child, report=true) {
 				}
 			}
 		} else {
-			//LogAction ("reqSchedInfoRprt: No Automation Schedules were found for ${tstat} device", "warn", false)
+			LogTrace("reqSchedInfoRprt: No Automation Schedules were found for ${tstat} device")
 			if(report) {
 				result = "No Thermostat Automation Schedules were found for ${tstat} device"
 			}
+			result = [:]
 		}
 	} else {
 		LogAction("reqSchedInfoRprt: Thermostat device not found", "error", true)
@@ -7494,7 +7531,7 @@ def fixState() {
 	def before = getStateSizePerc()
 	if(!parent) {
 		if(!atomicState?.resetAllData && resetAllData) {
-			def data = getState()?.findAll { !(it?.key in ["accessToken", "authToken", "authTokenExpires", "timestampDtMap", "authTokenNum", "enRemDiagLogging", "installationId", "installData", "remDiagLogDataStore", "remDiagDataSentDt", "resetAllData", "pollingOn", "apiCommandCnt", "autoMigrationComplete", "tsMigration" ]) }
+			def data = getState()?.findAll { !(it?.key in ["accessToken", "authToken", "authTokenExpires", "timestampDtMap", "authTokenNum", "enRemDiagLogging", "installationId", "installData", "remDiagLogDataStore", "remDiagDataSentDt", "resetAllData", "pollingOn", "apiCommandCnt", "autoMigrationComplete", "tsMigration", "savedNestSettings" ]) }
 			data.each { item ->
 				state.remove(item?.key.toString())
 			}
@@ -7514,7 +7551,7 @@ def fixState() {
 	if(result) {
 		atomicState.resetAllData = true
 		LogAction("fixState: State Data: before: $before  after: ${getStateSizePerc()}", "info", true)
-		runIn(20, "finishFixState", [overwrite: true])
+		runIn(22, "finishFixState", [overwrite: true])
 	}
 	return result
 }
@@ -7548,7 +7585,8 @@ void finishFixState() {
 				atomicState?.setupVersion = atomicState?.appData?.updater?.setupVersion?.toInteger() ?: 0
 			} else { atomicState.isInstalled = false }
 
-			initManagerApp()
+			runIn(21, "initManagerApp", [overwrite: true])	// need to give time for watchdog updates before we try to delete devices.
+			//initManagerApp()
 		}
 	} else {
 		LogAction("finishFixState called as CHILD", "error", true)
