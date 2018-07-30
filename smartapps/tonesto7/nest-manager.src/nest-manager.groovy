@@ -38,7 +38,7 @@ def appVersion() { "5.3.9" }
 def appVerDate() { "07-30-2018" }
 def minVersions() {
 	return [
-		"automation":["val":536, "desc":"5.3.6"],
+		"automation":["val":537, "desc":"5.3.7"],
 		"thermostat":["val":536, "desc":"5.3.6"],
 		"protect":["val":536, "desc":"5.3.6"],
 		"presence":["val":536, "desc":"5.3.6"],
@@ -1434,26 +1434,16 @@ def automationKickStartPage() {
 def notifPrefPage() {
 	def execTime = now()
 	dynamicPage(name: "notifPrefPage", install: false) {
-		def sectDesc = !location.contactBookEnabled ? "Enable push notifications below" : "Select People or Devices to Receive Notifications"
-		section(sectDesc) {
-			if(!location.contactBookEnabled) {
-				input(name: "usePush", type: "bool", title: "Send Push Notitifications", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("notification_icon.png"))
-				input ("phone", "phone", title: "Phone Number to send SMS to", required: false, submitOnChange: true, image: getAppImg("notification_icon2.png"))
-				settingRemove("recipients")
-			} else {
-				input(name: "recipients", type: "contact", title: "Select Default Contacts", required: false, submitOnChange: true, image: getAppImg("recipient_icon.png")) {
-					input ("phone", "phone", title: "Phone Number to send SMS to", required: false, submitOnChange: true, image: getAppImg("notification_icon2.png"))
-				}
-				settingRemove("phone")
-				settingRemove("usePush")
-			}
-			if(settings?.recipients || settings?.phone || settings?.usePush) {
+		section("Enable push notifications below") {
+			input ("usePush", "bool", title: "Send Push Notitifications", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("notification_icon.png"))
+			input ("phone", "phone", title: "Phone Number to send SMS to", required: false, multiple: true, submitOnChange: true, image: getAppImg("notification_icon2.png"))
+			if(settings?.phone || settings?.usePush) {
 				def t1 = getNotifSchedDesc()
 				href "setNotificationTimePage", title: "Notification Restrictions", description: (t1 ?: "Tap to configure"), state: (t1 ? "complete" : null), image: getAppImg("restriction_icon.png")
 			}
 		}
-		if(settings?.recipients || settings?.phone || settings?.usePush) {
-			if(settings?.recipients && !atomicState?.pushTested) {
+		if(settings?.phone || settings?.usePush) {
+			if(settings?.usePush && !atomicState?.pushTested) {
 				if(sendMsg("Info", "Push Notification Test Successful. Notifications Enabled for ${appName()}", true)) {
 					atomicState.pushTested = true
 				}
@@ -1631,7 +1621,6 @@ def getAppNotifConfDesc() {
 		def de = getDevNotifDesc()
 		def au = getAutoNotifDesc()
 		def nd = getNotifSchedDesc()
-		str += (settings?.recipients) ? "Sending via: (Contact Book)" : ""
 		str += (settings?.usePush) ? "Sending via: (Push)" : ""
 		str += (settings?.phone) ? "\nSending via: (SMS)" : ""
 		str += (ap || de || au) ? "\nEnabled Alerts:" : ""
@@ -5596,7 +5585,7 @@ def incAppNotifSentCnt() {
 /************************************************************************************************
 |								Push Notification Functions										|
 *************************************************************************************************/
-def pushStatus() { return (settings?.recipients || settings?.phone || settings?.usePush) ? (settings?.usePush ? "Push Enabled" : "Enabled") : null }
+def pushStatus() { return (settings?.phone || settings?.usePush) ? (settings?.usePush ? "Push Enabled" : "Enabled") : null }
 //def getLastMsgSec() { return !atomicState?.lastMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastMsgDt, null, "getLastMsgSec").toInteger() }
 def getLastUpdMsgSec() { return !getTimestampVal("lastUpdMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastUpdMsgDt"), null, "getLastUpdMsgSec").toInteger() }
 def getLastMissPollMsgSec() { return !getTimestampVal("lastMisPollMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastMisPollMsgDt"), null, "getLastMissPollMsgSec").toInteger() }
@@ -5604,8 +5593,6 @@ def getLastApiIssueMsgSec() { return !getTimestampVal("lastApiIssueMsgDt") ? 100
 def getLastLogRemindMsgSec() { return !getTimestampVal("lastLogRemindMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastLogRemindMsgDt"), null, "getLastLogRemindMsgSec").toInteger() }
 def getLastFailedCmdMsgSec() { return !getTimestampVal("lastFailedCmdMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastFailedCmdMsgDt"), null, "getLastFailedCmdMsgSec").toInteger() }
 def getDebugLogsOnSec() { return !getTimestampVal("debugEnableDt") ? 0 : GetTimeDiffSeconds(getTimestampVal("debugEnableDt"), null, "getDebugLogsOnSec").toInteger() }
-
-def getRecipientsSize() { return !settings.recipients ? 0 : settings?.recipients?.size() }
 
 def notificationCheck() {
 	LogTrace("notificationCheck")
@@ -5834,36 +5821,26 @@ def sendMsg(msgType, msg, showEvt=true, people = null, sms = null, push = null, 
 			}
 		} else {
 			if(!brdcast) {
-				if(location.contactBookEnabled) {
-					def who = people ? people : settings?.recipients
-					if(who) {
-						sentstr = "Pushing to Contacts $who"
-						sendNotificationToContacts(newMsg, people ? people : settings.recipients, [event: showEvt.toBoolean(), view: [name:"NSTMGR", data: [:]]])
-						//sendNotificationToContacts(newMsg, settings.recipients, [event: true])
-						sent = true
+				LogAction("ContactBook is NOT Enabled on your SmartThings Account", "warn", false)
+				if(push || settings?.usePush) {
+					sentstr = "Push Message"
+					if(showEvt) {
+						sendPush(newMsg)	// sends push and notification feed
+					} else {
+						sendPushMessage(newMsg)	// sends push
 					}
-				} else {
-					LogAction("ContactBook is NOT Enabled on your SmartThings Account", "warn", false)
-					if(push || settings?.usePush) {
-						sentstr = "Push Message"
-						if(showEvt) {
-							sendPush(newMsg)	// sends push and notification feed
-						} else {
-							sendPushMessage(newMsg)	// sends push
-						}
-						sent = true
+					sent = true
+				}
+				def thephone = sms ? sms.toString() : settings?.phone ? settings?.phone?.toString() : ""
+				if(thephone) {
+					sentstr = "Text Message to Phone $thephone"
+					def t0 = newMsg.take(140)
+					if(showEvt) {
+						sendSms(thephone as String, t0 as String)	// send SMS and notification feed
+					} else {
+						sendSmsMessage(thephone as String, t0 as String)	// send SMS
 					}
-					def thephone = sms ? sms.toString() : settings?.phone ? settings?.phone?.toString() : ""
-					if(thephone) {
-						sentstr = "Text Message to Phone $thephone"
-						def t0 = newMsg.take(140)
-						if(showEvt) {
-							sendSms(thephone as String, t0 as String)	// send SMS and notification feed
-						} else {
-							sendSmsMessage(thephone as String, t0 as String)	// send SMS
-						}
-						sent = true
-					}
+					sent = true
 				}
 			} else {
 				sentstr = "Broadcast"
@@ -7698,7 +7675,8 @@ def stateCleanup() {
 	atomicState?.workQrunInActive = false
 	atomicState.forceChildUpd = true
 	def remSettings = [ "showAwayAsAuto", "temperatures", "powers", "energies", "childDevDataPageDev", "childDevPageRfsh", "childDevDataRfshVal", "childDevDataStateFilter", "childDevPageShowAttr", 
-		"childDevPageShowCapab", "childDevPageShowCmds", "childDevPageShowState", "managAppPageRfsh", "managAppPageShowMeta", "managAppPageShowSet", "managAppPageShowState", "updChildOnNewOnly", "locDesiredButton", "locDesiredTempScale"
+		"childDevPageShowCapab", "childDevPageShowCmds", "childDevPageShowState", "managAppPageRfsh", "managAppPageShowMeta", "managAppPageShowSet", "managAppPageShowState", "updChildOnNewOnly", 
+		"locDesiredButton", "locDesiredTempScale", "recipients"
 	]
 	List camMotionSets = settings?.keySet()?.findAll { it?.toString()?.startsWith("camera_") && it?.toString()?.endsWith("_zones") }?.collect { it as String }
 	if(camMotionSets?.size()) {

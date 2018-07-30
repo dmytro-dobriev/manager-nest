@@ -1,8 +1,11 @@
-V5.3.9 (July 16th, 2018):
+V5.3.9 (July 30th, 2018):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
  • ADDED: Camera Motion Zone Filtering (Requires Nest Aware and NST Streaming Service)
- • FIXED: Bug fixes and Code Cleanups
+ • FIXED: Bug fixes and Code Cleanups/Optimizations
+
+Automation App 5.3.7:
+• REMOVED: Support for Contact Book
 
 V5.3.8 (July 4th, 2018):
 ▔▔▔▔▔▔▔▔▔▔▔

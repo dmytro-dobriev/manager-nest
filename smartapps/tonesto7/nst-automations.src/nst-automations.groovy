@@ -26,8 +26,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.6" }
-def appVerDate() { "07-22-2018" }
+def appVersion() { "5.3.7" }
+def appVerDate() { "07-30-2018" }
 
 preferences {
 	//startPage
@@ -1400,7 +1400,6 @@ def watchDogCheck() {
 
 def watchDogAlarmActions(dev, dni, actType) {
 	def pName = watchDogPrefix()
-	//def allowNotif = (settings["${pName}NotificationsOn"] && (settings["${pName}NotifRecips"] || settings["${pName}NotifPhones"] || settings["${pName}UsePush"])) ? true : false
 	def allowNotif = settings["${pName}NotificationsOn"] ? true : false
 	def allowSpeech = allowNotif && settings?."${pName}AllowSpeechNotif" ? true : false
 	def allowAlarm = allowNotif && settings?."${pName}AllowAlarmNotif" ? true : false
@@ -4053,7 +4052,7 @@ def nModePresenceDesc() {
 			cnt = cnt+1
 			def t0 = strCapitalize(dev?.currentPresence)
 			def presState = t0 ?: "No State"
-			str += "${(cnt >= 1) ? "${(cnt == cCnt) ? "\n└" : "\n├"}" : "\n└"} ${dev?.label}: ${(dev?.label?.toString()?.length() > 10) ? "\n${(cCnt == 1 || cnt == cCnt) ? "    " : "│"}└ " : ""}(${presState})"
+			str += "${(cnt >= 1) ? "${(cnt == cCnt) ? "\n└" : "\n├"}" : "\n└"} ${dev?.label}: ${(dev?.label?.toString()?.length() > 10) ? "\n${(cCnt == 1 || cnt == cCnt) ? "    " : " │"} └ " : ""}(${presState})"
 		}
 		return str
 	}
@@ -6365,19 +6364,14 @@ def setNotificationPage(params) {
 	}
 	dynamicPage(name: "setNotificationPage", title: "Configure Notification Options", uninstall: false) {
 		section("Notification Preferences:") {
-			input "${pName}NotificationsOn", "bool", title: "Enable Notifications?", description: (!settings["${pName}NotificationsOn"] ? "Enable Text, Voice, Ask Alexa, or Alarm Notifications" : ""), required: false, defaultValue: false, submitOnChange: true,
-						image: getAppImg("notification_icon.png")
+			input "${pName}NotificationsOn", "bool", title: "Enable Notifications?", description: (!settings["${pName}NotificationsOn"] ? "Enable Text, Voice, Ask Alexa, or Alarm Notifications" : ""), required: false, 
+					defaultValue: false, submitOnChange: true, image: getAppImg("notification_icon.png")
 		}
 		if(settings["${pName}NotificationsOn"]) {
 			def notifDesc = !location.contactBookEnabled ? "Enable Push Messages Below" : "(Manager App Recipients are used by default)"
-			section("${notifDesc}") {
-				if(!location.contactBookEnabled) {
-					input "${pName}UsePush", "bool", title: "Send Push Notitifications\n(Optional)", required: false, submitOnChange: true, defaultValue: false, image: getAppImg("notification_icon.png")
-				} else {
-					input("${pName}NotifRecips", "contact", title: "Select Recipients\n(Optional)", required: false, multiple: true, submitOnChange: true, image: getAppImg("recipient_icon.png")) {
-						input ("${pName}NotifPhones", "phone", title: "Phone Number to Send SMS to\n(Optional)", submitOnChange: true, required: false)
-					}
-				}
+			section("Enable Push Messages Below") {
+				input "${pName}UsePush", "bool", title: "Send Push Notitifications\n(Optional)", required: false, submitOnChange: true, defaultValue: false, image: getAppImg("notification_icon.png")
+				input "${pName}NotifPhones", "phone", title: "Send SMS to\n(Optional)", submitOnChange: true, required: false, image: getAppImg("notification_icon2.png")
 			}
 		}
 		if(allowSpeech && settings?."${pName}NotificationsOn") {
@@ -6514,28 +6508,14 @@ def voiceNotifString(phrase, pName) {
 	return phrase
 }
 
-/*
-def getNotificationOptionsConf(pName) {
-	LogTrace("getNotificationOptionsConf pName: $pName")
-	def res = (settings?."${pName}NotificationsOn" &&
-			(getRecipientDesc(pName) ||
-			(settings?."${pName}AllowSpeechNotif" && (settings?."${pName}SpeechDevices" || settings?."${pName}SpeechMediaPlayer")) ||
-			(settings?."${pName}AllowAlarmNofif" && settings?."${pName}AlarmDevices")
-		) ) ? true : false
-	return res
-}
-*/
-
 def getNotifConfigDesc(pName) {
 	LogTrace("getNotifConfigDesc pName: $pName")
 	def str = ""
 	if(settings?."${pName}NotificationsOn") {
-		//str += ( getRecipientDesc(pName) || (settings?."${pName}AllowSpeechNotif" && (settings?."${pName}SpeechDevices" || settings?."${pName}SpeechMediaPlayer"))) ?  "Notification Status:" : ""
 		str += "Notification Status:"
 		if(!getRecipientDesc(pName)) {
 			str += "\n • Contacts: Using Manager Settings"
 		}
-		str += (settings?."${pName}NotifRecips") ? "\n • Contacts: (${settings?."${pName}NotifRecips"?.size()})" : ""
 		str += (settings?."${pName}UsePush") ? "\n • Push Messages: Enabled" : ""
 		str += (settings?."${pName}NotifPhones") ? "\n • SMS: (${settings?."${pName}NotifPhones"?.size()})" : ""
 		def t0 = getVoiceNotifConfigDesc(pName)
@@ -6632,7 +6612,7 @@ def getRecipientsNames(val) {
 }
 
 def getRecipientDesc(pName) {
-	return ((settings?."${pName}NotifRecips") || (settings?."${pName}NotifPhones" || settings?."${pName}NotifUsePush")) ? getRecipientsNames(settings?."${pName}NotifRecips") : null
+	return (settings?."${pName}NotifPhones" || settings?."${pName}NotifUsePush") ? "" : null
 }
 
 def setDayModeTimePage(params) {
@@ -6774,20 +6754,8 @@ def sendNofificationMsg(msg, msgType, recips = null, sms = null, push = null) {
 def sendEventPushNotifications(message, type, pName) {
 	LogTrace("sendEventPushNotifications($message, $type, $pName)")
 	def allowNotif = settings?."${pName}NotificationsOn" ? true : false
-/*
-	if(settings["${pName}_Alert_1_Send_Push"] || settings["${pName}_Alert_2_Send_Push"]) {
-//TODO this portion is never reached
-		if(settings["${pName}_Alert_1_CustomPushMessage"]) {
-			sendNofificationMsg(settings["${pName}_Alert_1_CustomPushMessage"].toString(), type, settings?."${pName}NotifRecips", settings?."${pName}NotifPhones", settings?."${pName}UsePush")
-		} else {
-			sendNofificationMsg(message, type, settings?."${pName}NotifRecips", settings?."${pName}NotifPhones", settings?."${pName}UsePush")
-		}
-	} else {
-		sendNofificationMsg(message, type, settings?."${pName}NotifRecips", settings?."${pName}NotifPhones", settings?."${pName}UsePush")
-	}
-*/
 	if(allowNotif) {
-		sendNofificationMsg(message, type, settings?."${pName}NotifRecips", settings?."${pName}NotifPhones", settings?."${pName}UsePush")
+		sendNofificationMsg(message, type, null, settings?."${pName}NotifPhones", settings?."${pName}UsePush")
 	}
 }
 
