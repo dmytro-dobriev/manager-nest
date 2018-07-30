@@ -1156,7 +1156,7 @@ def automationsPage() {
 				}
 				href "automationStatisticsPage", title: "View Automation Statistics", description: "", image: getAppImg("app_analytics_icon.png")
 			}
-			section("Advanced Options: (Tap + to Show)                                                          ", hideable: true, hidden: true) {
+			section("Advanced Options: (Tap + to Show)                 ", hideable: true, hidden: true) {
 				def descStr = ""
 				descStr += (settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "Comfort Settings:" : ""
 				descStr += settings?.locDesiredHeatTemp ? "\n • Desired Heat Temp: (${settings?.locDesiredHeatTemp}${tUnitStr()})" : ""
