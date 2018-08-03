@@ -35,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.4.0" }
-def appVerDate() { "08-01-2018" }
+def appVerDate() { "08-03-2018" }
 def minVersions() {
 	return [
 		"automation":["val":536, "desc":"5.3.6"],
@@ -3515,7 +3515,9 @@ def finishPoll(str=null, dev=null) {
 			runIn(5, "updated", [overwrite: false]) // ensure it does not keep delaying
 			return
 		}
-		schedNextWorkQ();
+		if(getLastAnyCmdSentSeconds() > 75) { // if poll is blocked and we have not sent a command recently, try to kick the queues
+			schedNextWorkQ();
+		}
 		return
 	}
 	if(getLastChildForceUpdSec() > (15*60)-2) {   // if nest goes silent (no changes coming back)
@@ -5154,6 +5156,7 @@ def sendEcoActionDescToDevice(dev, desc) {
 	}
 }
 
+private getLastAnyCmdSentSeconds() { return getTimestampVal("lastCmdSentDt") ? GetTimeDiffSeconds(getTimestampVal("lastCmdSentDt"), null, "getLastAnyCmdSentSeconds") : 3601 }
 private getLastCmdSentSeconds(qnum) { return getTimestampVal("lastCmdSentDt${qnum}") ? GetTimeDiffSeconds(getTimestampVal("lastCmdSentDt${qnum}"), null, "getLastCmdSentSeconds") : 3601 }
 
 private setLastCmdSentSeconds(qnum, val) {
@@ -5207,7 +5210,7 @@ void workQueue() {
 	try {
 		if(cmdQueue?.size() > 0) {
 			LogAction("workQueue │ Run Queue: ${qnum} | ($metstr)", "trace", true)
-			runIn(60, "workQueue", [overwrite: true])  // lost schedule catchall
+			runIn(90, "workQueue", [overwrite: true])  // lost schedule catchall
 			if(!cmdIsProc()) {
 				cmdProcState(true)
 				atomicState?.pollBlocked = true
