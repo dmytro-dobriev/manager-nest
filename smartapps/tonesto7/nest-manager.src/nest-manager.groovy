@@ -380,9 +380,9 @@ def storageAppInst(available) {
 
 private getStorageApp() {
 	if(isAppLiteMode()) { return null }
-	def storApp = getChildApps()?.find{ it?.getAutomationType() == "storage" && it?.name == autoAppName() }
+	def storApp = getChildApps()?.find { it?.getAutomationType() == "storage" && it?.name == autoAppName() }
 	if(storApp) { 
-		if(storApp?.label != storageAppName()) { storApp?.updateLabel(storageAppName()) }
+		if(storApp?.label != getStorageAppChildLabel()) { storApp?.updateLabel(getStorageAppChildLabel()) }
 		storageAppInst(true)
 		return storApp 
 	} else { 
@@ -1884,6 +1884,14 @@ def diagnosticPage () {
 }
 
 def getRemDiagApp() {
+	def remDiagApp = getChildApps()?.find { it?.getAutomationType() == "remDiag" && it?.name == autoAppName() }
+	if(remDiagApp) { 
+		if(remDiagApp?.label != getRemDiagAppChildLabel()) { storApp?.updateLabel(getRemDiagAppChildLabel()) }
+		return remDiagApp
+	} else { 
+		return null 
+	}
+/*
 	def remDiagApp = null
 	def cApps = getChildApps()
 	cApps?.each { ca ->
@@ -1892,6 +1900,7 @@ def getRemDiagApp() {
 		}
 	}
 	return remDiagApp
+*/
 }
 
 void diagLogProcChange(setOn) {
@@ -2330,18 +2339,15 @@ def initBuiltin(btype) {
 			updTimestampMap("lastAnalyticUpdDt", null)
 			try {
 				if(btype == "initRemDiagApp") {
-					addChildApp(appNamespace(), autoAppName(), getRemDiagAppChildName(), [settings:[remDiagFlag:["type":"bool", "value":true]]])
+					addChildApp(appNamespace(), autoAppName(), getRemDiagAppChildLabel(), [settings:[remDiagFlag:["type":"bool", "value":true]]])
 				}
 				if(btype == "initWatchdogApp") {
-					addChildApp(appNamespace(), autoAppName(), getWatDogAppChildName(), [settings:[watchDogFlag:["type":"bool", "value":true]]])
+					addChildApp(appNamespace(), autoAppName(), getWatDogAppChildLabel(), [settings:[watchDogFlag:["type":"bool", "value":true]]])
 				}
 				if(btype == "initStorageApp") {
 					def storageApp = getStorageApp()
 					if(!storageApp) {
-						def name = storageAppName()
-						def setData = [:]
-						setData["storageFlag"] = [type:"bool", value:true]
-						addChildApp(appNamespace(), autoAppName(), name, [settings:setData])
+						addChildApp(appNamespace(), autoAppName(), getStorageAppChildLabel(), [settings:[storageFlag:[type:"bool", value:true]]])
 					}
 					storageAppInst(true)
 				}
@@ -3520,7 +3526,7 @@ def finishPoll(str=null, dev=null) {
 		}
 		return
 	}
-	if(getLastChildForceUpdSec() > (15*60)-2) {   // if nest goes silent (no changes coming back)
+	if(getLastChildForceUpdSec() > (15*60)-2) {   // if nest goes silent (no changes coming back); force all devices to get an update so they can check health
 		atomicState.forceChildUpd = true
 	}
 	if(dev || str || atomicState?.forceChildUpd || atomicState?.needChildUpd) { runIn(1, "updateChildData", [overwrite : true]) }
@@ -3582,7 +3588,7 @@ def forcedPoll(type = null) {
 		atomicState.needDevPoll = true
 	}
 	atomicState.forceChildUpd = true
-	runIn(1, "updateChildData", [overwrite : true])
+	//runIn(1, "updateChildData", [overwrite : true])
 	//updateChildData()
 }
 
@@ -7713,8 +7719,9 @@ def getWeatherChildName()	{ return getChildName("Nest Weather") }
 def getCameraChildName()	{ return getChildName("Nest Camera") }
 
 def getAutoAppChildName()	{ return getChildName(autoAppName()) }
-def getWatDogAppChildName()	{ return getChildName("Nest Location ${location.name} Watchdog") }
-def getRemDiagAppChildName()	{ return getChildName("NST Diagnostics") }
+def getWatDogAppChildLabel()	{ return getChildName("Nest Location ${location.name} Watchdog") }
+def getRemDiagAppChildLabel()	{ return getChildName("NST Location ${location.name} Diagnostics") }
+def getStorageAppChildLabel()	{ return getChildName("NST Location ${location.name} Storage") }
 
 def getChildName(str)		{ return "${str}${appDevName()}" }
 
@@ -10046,7 +10053,6 @@ def appLabel()		{ return "Nest Manager" }
 def appAuthor()		{ return "Anthony S." }
 def appNamespace()	{ return "tonesto7" }
 def autoAppName()	{ return "NST Automations" }
-def storageAppName()	{ return "NST Storage" }
 def gitRepo()		{ return "tonesto7/nest-manager"}
 def gitBranch()		{ return betaMarker() ? "beta" : "master" }
 def gitPath()		{ return "${gitRepo()}/${gitBranch()}"}
