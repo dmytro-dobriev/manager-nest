@@ -1429,39 +1429,44 @@ def automationKickStartPage() {
 def notifPrefPage() {
 	def execTime = now()
 	dynamicPage(name: "notifPrefPage", install: false) {
-		section("Enable push notifications below") {
-			input ("usePush", "bool", title: "Send Push Notitifications", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("notification_icon.png"))
-			input ("phone", "phone", title: "Phone Number to send SMS to", required: false, multiple: true, submitOnChange: true, image: getAppImg("notification_icon2.png"))
+		section("Enable Text Messaging:") {
+			input "phones", "phone", title: "Send SMS to Number\n(Optional)", required: false, submitOnChange: true, image: getAppImg("notification_icon2.png")
+		}
+		section("Enable Push Messages:") {
+			input "usePush", "bool", title: "Send Push Notitifications\n(Optional)", required: false, submitOnChange: true, defaultValue: false, image: getAppImg("notification_icon.png")
+		}
+		section("Enable Pushover Support:") {
 			input ("pushoverEnabled", "bool", title: "Use Pushover Integration", required: false, submitOnChange: true, image: getAppImg("pushover_icon.png"))
 			if(settings?.pushoverEnabled == true) {
-				if(!state?.pushoverManagerData) { 
-					if(atomicState?.isInstalled) {
-						paragraph "If this is your first time enabling Pushover leave this page and come back so the pushover devices can be populated"
-						pushover_init() 
-					} else { paragraph "Please complete the NST app install and configure later."}
-				}
-				input "pushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", groupedOptions: getPushoverDevices(), multiple: true, required: true, submitOnChange: true
-				if(settings?.pushoverDevices) {
-					input "pushoverSound", "enum", title: "Notification Sound (Optional)", description: "Tap to select", defaultValue: "pushover", required: false, multiple: false, submitOnChange: true, options: getPushoverSounds()
-				}
-			}
-			if(settings?.phone || settings?.usePush || (settings?.pushoverEnabled && settings?.pushoverDevices)) {
-				def t1 = getNotifSchedDesc()
-				href "setNotificationTimePage", title: "Notification Restrictions", description: (t1 ?: "Tap to configure"), state: (t1 ? "complete" : null), image: getAppImg("restriction_icon.png")
+				if(atomicState?.isInstalled) {
+					if(!atomicState?.pushoverManager) {
+						paragraph "If this is the first time enabling Pushover than leave this page and come back if the devices list is empty"
+						pushover_init()
+					} else {
+						input "pushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", groupedOptions: getPushoverDevices(), multiple: true, required: false, submitOnChange: true
+						if(settings?.pushoverDevices) {
+							input "pushoverSound", "enum", title: "Notification Sound (Optional)", description: "Tap to select", defaultValue: "pushover", required: false, multiple: false, submitOnChange: true, options: getPushoverSounds()
+						}
+					}
+				} else { paragraph "New Install Detected!!!\n\n1. Press Done to Finish the Install.\n2. Goto the Automations Tab at the Bottom\n3. Tap on the SmartApps Tab above\n4. Select ${app?.getLabel()} and Resume configuration", state: "complete" }
 			}
 		}
 		if(settings?.phone || settings?.usePush || (settings?.pushoverEnabled && settings?.pushoverDevices)) {
-			if((settings?.usePush || (settings?.pushoverEnabled && settings?.pushoverDevices)) && !atomicState?.pushTested) {
+			section("Notification Restrictions:") {
+				def t1 = getNotifSchedDesc()
+				href "setNotificationTimePage", title: "Notification Restrictions", description: (t1 ?: "Tap to configure"), state: (t1 ? "complete" : null), image: getAppImg("restriction_icon.png")
+			}
+			if((settings?.usePush || (settings?.pushoverEnabled && settings?.pushoverDevices)) && !atomicState?.pushTested && atomicState?.pushoverManager) {
 				if(sendMsg("Info", "Push Notification Test Successful. Notifications Enabled for ${appName()}", true)) {
 					atomicState.pushTested = true
 				}
 			}
 
-			section("Location Notifications:") {
+			section("Location Alerts:") {
 				paragraph "Get notified when the Location changes from Home/Away", state: "complete"
 				input name: "locPresChangeMsg", type: "bool", title: "Notify on Home/Away changes?", defaultValue: true, submitOnChange: true, image: getAppImg("presence_icon.png")
 			}
-			section("Alert Configurations:") {
+			section("Other Alerts:") {
 				def t1 = getAppNotifDesc()
 				def appDesc = t1 ? "${t1}\n\n" : ""
 				href "notifConfigPage", title: "App Notifications", description: "${appDesc}Tap to configure", params: [pType:"app"], state: (appDesc != "" ? "complete" : null),
@@ -1593,32 +1598,32 @@ def notifConfigPage(params) {
 
 def getAppNotifDesc() {
 	def str = ""
-	str += settings?.appApiIssuesMsg != false && settings?.appApiFailedCmdMsg != false ? "\n• API CMD Failures: (${strCapitalize(settings?.appApiFailedCmdMsg ?: "True")})" : ""
-	str += settings?.appApiIssuesMsg != false && settings?.appApiRateLimitMsg != false ? "\n• API Rate-Limiting: (${strCapitalize(settings?.appApiRateLimitMsg ?: "True")})" : ""
-	str += settings?.sendMissedPollMsg != false ? "\n• Missed Poll Alerts: (${strCapitalize(settings?.sendMissedPollMsg ?: "True")})" : ""
-	str += settings?.appDbgDiagRemindMsg != false ? "\n• Debug Log Reminder: (${strCapitalize(settings?.appDbgDiagRemindMsg ?: "True")})" : ""
-	str += settings?.sendAppUpdateMsg != false ? "\n• Code Updates: (${strCapitalize(settings?.sendAppUpdateMsg ?: "True")})" : ""
+	str += settings?.appApiIssuesMsg != false && settings?.appApiFailedCmdMsg != false ? "${str != "" ? "\n" : ""}• API CMD Failures: (${strCapitalize(settings?.appApiFailedCmdMsg ?: "True")})" : ""
+	str += settings?.appApiIssuesMsg != false && settings?.appApiRateLimitMsg != false ? "${str != "" ? "\n" : ""}• API Rate-Limiting: (${strCapitalize(settings?.appApiRateLimitMsg ?: "True")})" : ""
+	str += settings?.sendMissedPollMsg != false ? "${str != "" ? "\n" : ""}• Missed Poll Alerts: (${strCapitalize(settings?.sendMissedPollMsg ?: "True")})" : ""
+	str += settings?.appDbgDiagRemindMsg != false ? "${str != "" ? "\n" : ""}• Debug Log Reminder: (${strCapitalize(settings?.appDbgDiagRemindMsg ?: "True")})" : ""
+	str += settings?.sendAppUpdateMsg != false ? "${str != "" ? "\n" : ""}• Code Updates: (${strCapitalize(settings?.sendAppUpdateMsg ?: "True")})" : ""
 	return str != "" ? str : null
 }
 
 def getDevNotifDesc() {
 	def str = ""
-	str += settings?.devHealthNotifyMsg != false ? "\n• Health Alerts: (${strCapitalize(settings?.devHealthNotifyMsg ?: "True")})" : ""
-	str += settings?.camStreamNotifMsg != false ? "\n• Camera Stream Alerts: (${strCapitalize(settings?.camStreamNotifMsg ?: "True")})" : ""
-	str += settings?.weathAlertNotif != false ? "\n• Weather Alerts: (${strCapitalize(settings?.weathAlertNotif ?: "True")})" : ""
+	str += settings?.devHealthNotifyMsg != false ? "${str != "" ? "\n" : ""}• Health Alerts: (${strCapitalize(settings?.devHealthNotifyMsg ?: "True")})" : ""
+	str += settings?.camStreamNotifMsg != false ? "${str != "" ? "\n" : ""}• Camera Stream Alerts: (${strCapitalize(settings?.camStreamNotifMsg ?: "True")})" : ""
+	str += settings?.weathAlertNotif != false ? "${str != "" ? "\n" : ""}• Weather Alerts: (${strCapitalize(settings?.weathAlertNotif ?: "True")})" : ""
 	return str != "" ? str : null
 }
 
 def getAutoNotifDesc() {
 	def str = ""
-	str += settings?.watchDogNotifMissedEco ? "\n• WatchDog Eco Alerts: (${strCapitalize(settings?.watchDogNotifMissedEco)})" : ""
+	str += settings?.watchDogNotifMissedEco ? "${str != "" ? "\n" : ""}• WatchDog Eco Alerts: (${strCapitalize(settings?.watchDogNotifMissedEco)})" : ""
 	return str != "" ? str : null
 }
 
 def getAskAlexaDesc() {
 	def str = ""
-	str += settings?.allowAskAlexaMQ ? "\n• Ask Alexa Msg Queue: (${strCapitalize(settings?.allowAskAlexaMQ)})" : ""
-	str += getAskAlexaMultiQueueEn() && atomicState?.askAlexaMQList ? "\nMultiple Queues Available:\n• Queues: (${atomicState?.askAlexaMQList?.size()})" : ""
+	str += settings?.allowAskAlexaMQ ? "${str != "" ? "\n" : ""}• Ask Alexa Msg Queue: (${strCapitalize(settings?.allowAskAlexaMQ)})" : ""
+	str += getAskAlexaMultiQueueEn() && atomicState?.askAlexaMQList ? "${str != "" ? "\n" : ""}Multiple Queues Available:\n• Queues: (${atomicState?.askAlexaMQList?.size()})" : ""
 	return str != "" ? str : null
 }
 
@@ -1632,7 +1637,7 @@ def getAppNotifConfDesc() {
 		def au = getAutoNotifDesc()
 		def nd = getNotifSchedDesc()
 		str += (settings?.usePush) ? "${str != "" ? "\n" : ""}Sending via: (Push)" : ""
-		str += (settings?.pushoverEnabled) ? "${str != "" ? "\n" : ""}Pushover Messages: (Enabled)" : ""
+		str += (settings?.pushoverEnabled) ? "${str != "" ? "\n" : ""}Pushover: (Enabled)" : ""
 		str += (settings?.pushoverEnabled && settings?.pushoverSound) ? "${str != "" ? "\n" : ""}Pushover Sound: (${settings?.pushoverSound})" : ""
 		str += (settings?.phone) ? "${str != "" ? "\n" : ""}Sending via: (SMS)" : ""
 		str += (ap || de || au) ? "${str != "" ? "\n" : ""}Enabled Alerts:" : ""
@@ -5594,21 +5599,19 @@ def getLastFailedCmdMsgSec() { return !getTimestampVal("lastFailedCmdMsgDt") ? 1
 def getDebugLogsOnSec() { return !getTimestampVal("debugEnableDt") ? 0 : GetTimeDiffSeconds(getTimestampVal("debugEnableDt"), null, "getDebugLogsOnSec").toInteger() }
 
 //PushOver-Manager Input Generation Functions
-private getPushoverSounds(){return (Map) state?.pushoverManagerData?.sounds?:[:]}
-private getPushoverDevices(){List opts=[];Map pd=state?.pushoverManagerData?:[:];pd?.apps?.each{k,v->if(v&&v?.devices&&v?.appId){Map dm=[:];v?.devices?.sort{}?.each{i->dm["${i}_${v?.appId}"]=i};addInputGrp(opts,v?.appName,dm);}};return opts;}
+private getPushoverSounds(){return (Map) atomicState?.pushoverManager?.sounds?:[:]}
+private getPushoverDevices(){List opts=[];Map pmd=atomicState?.pushoverManager?:[:];pmd?.apps?.each{k,v->if(v&&v?.devices&&v?.appId){Map dm=[:];v?.devices?.sort{}?.each{i->dm["${i}_${v?.appId}"]=i};addInputGrp(opts,v?.appName,dm);}};return opts;}
 private inputOptGrp(List groups,String title){def group=[values:[],order:groups?.size()];group?.title=title?:"";groups<<group;return groups;}
 private addInputValues(List groups,String key,String value){def lg=groups[-1];lg["values"]<<[key:key,value:value,order:lg["values"]?.size()];return groups;}
 private listToMap(List original){original.inject([:]){r,v->r[v]=v;return r;}}
 private addInputGrp(List groups,String title,values){if(values instanceof List){values=listToMap(values)};values.inject(inputOptGrp(groups,title)){r,k,v->return addInputValues(r,k,v)};return groups;}
 private addInputGrp(values){addInputGrp([],null,values)}
-
 //PushOver-Manager Location Event Subscription Events, Polling, and Handlers
 public pushover_init(){subscribe(location,"pushoverManager",pushover_handler);pushover_poll()}
-public pushover_cleanup(){state?.remove("pushoverManagerData");unsubscribe("pushoverManager");}
-public pushover_poll(){sendLocationEvent(name:"pushoverManagerPoll",value:"poll",data:[empty:true],isStateChange:true,descriptionText:"Sending Poll Event to Pushover-Manager")}
+public pushover_cleanup(){state?.remove("pushoverManager");unsubscribe("pushoverManager");}
+public pushover_poll(){sendLocationEvent(name:"pushoverManagerCmd",value:"poll",data:[empty:true],isStateChange:true,descriptionText:"Sending Poll Event to Pushover-Manager")}
 public pushover_msg(List devs,Map data){if(devs&&data){sendLocationEvent(name:"pushoverManagerMsg",value:"sendMsg",data:data,isStateChange:true,descriptionText:"Sending Message to Pushover Devices: ${devs}");}}
-public pushover_handler(evt){switch(evt?.value){case"refresh":Map pD=state?.pushoverManagerData?:[:];pD?.apps=[:];pD?.apps["${evt?.jsonData?.id}"]=[:];pD?.apps["${evt?.jsonData?.id}"]?.devices=evt?.jsonData?.devices?:[];pD?.apps["${evt?.jsonData?.id}"]?.appName=evt?.jsonData?.appName;pD?.apps["${evt?.jsonData?.id}"]?.appId=evt?.jsonData?.id;pD?.sounds=evt?.jsonData?.sounds?:[];state?.pushoverManagerData=pD;break;case "reset":state?.pushoverManagerData=[:];break;}}
-
+public pushover_handler(evt){Map pmd=atomicState?.pushoverManager?:[:];switch(evt?.value){case"refresh":def ed = evt?.jsonData;String id = ed?.appId;Map pA = pmd?.apps?.size() ? pmd?.apps : [:];if(id){pA[id]=pA?."${id}"instanceof Map?pA[id]:[:];pA[id]?.devices=ed?.devices?:[];pA[id]?.appName=ed?.appName;pA[id]?.appId=id;pmd?.apps = pA;};pmd?.sounds=ed?.sounds;break;case "reset":pmd=[:];break;};atomicState?.pushoverManager=pmd;}
 //Builds Map Message object to send to Pushover Manager
 private buildPushMessage(List devices,Map msgData,timeStamp=false){if(!devices||!msgData){return};Map data=[:];data?.appId=app?.getId();data.devices=devices;data?.msgData=msgData;if(timeStamp){data?.msgData?.timeStamp=new Date().getTime()};pushover_msg(devices,data);}
 

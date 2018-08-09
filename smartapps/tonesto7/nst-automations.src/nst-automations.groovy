@@ -6365,16 +6365,17 @@ def setNotificationPage(params) {
 			section("Enable Pushover Support:") {
 				input "${pName}PushoverEnabled", "bool", title: "Use Pushover Integration", required: false, submitOnChange: true, image: getAppImg("pushover_icon.png")
 				if(settings?."${pName}PushoverEnabled" == true) {
-					if(!state?.pushoverManagerData) {
-						if(atomicState?.isInstalled) {
-							paragraph "If this is your first time enabling Pushover leave this page and come back so the pushover devices can be populated"
-							pushover_init() 
-						} else { paragraph "Please complete the NST app install and configure later."}
-					}
-					input "${pName}PushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", groupedOptions: getPushoverDevices(), multiple: true, required: true, submitOnChange: true
-					if(settings?."${pName}PushoverDevices") {
-						input "${pName}PushoverSound", "enum", title: "Notification Sound (Optional)", description: "Tap to select", defaultValue: "pushover", required: false, multiple: false, submitOnChange: true, options: getPushoverSounds()
-					}
+					if(atomicState?.isInstalled) {
+						if(!atomicState?.pushoverManager) {
+							paragraph "If this is the first time enabling Pushover than leave this page and come back if the devices list is empty"
+							pushover_init()
+						} else {
+							input "${pName}PushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", groupedOptions: getPushoverDevices(), multiple: true, required: true, submitOnChange: true
+							if(settings?."${pName}PushoverDevices") {
+								input "${pName}PushoverSound", "enum", title: "Notification Sound (Optional)", description: "Tap to select", defaultValue: "pushover", required: false, multiple: false, submitOnChange: true, options: getPushoverSounds()
+							}
+						}
+					} else { paragraph "New Install Detected!!!\n\nPlease complete the NST Automation Install. Then return later to resume Pushover configuration.", state: "complete" }
 				}
 			}
 			if(settings?."${pName}NotifPhones" || settings?."${pName}UsePush" || (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverDevices")) {
@@ -6512,7 +6513,6 @@ def setNotificationTimePage(params) {
 }
 
 String getNotifSchedDesc(pName) {
-	
 	def sun = getSunriseAndSunset()
 	def startInput = settings?."${pName}qStartInput"
 	def startTime = settings?."${pName}qStartTime"
@@ -6599,7 +6599,7 @@ def getNotifConfigDesc(pName) {
 		// }
 		str += (settings?."${pName}UsePush") ? "${str != "" ? "\n" : ""} • Push Messages: Enabled" : ""
 		str += (settings?."${pName}NotifPhones") ? "${str != "" ? "\n" : ""} • SMS: (${settings?."${pName}NotifPhones"?.size()})" : ""
-		str += (settings?."${pName}PushoverEnabled") ? "${str != "" ? "\n" : ""}Pushover Messages: (Enabled)" : ""
+		str += (settings?."${pName}PushoverEnabled") ? "${str != "" ? "\n" : ""}Pushover: (Enabled)" : ""
 		str += (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverSound") ? "${str != "" ? "\n" : ""}Pushover Sound: (${settings?."${pName}PushoverSound"})" : ""
 		def t0 = getNotifSchedDesc(pName)
 		str += t0 ? "\n\nAlert Restrictions:\n${t0}" : ""
@@ -6842,24 +6842,21 @@ def sendNofificationMsg(msg, msgType, pushoverMap=null, sms=null, push=null) {
 }
 
 //PushOver-Manager Input Generation Functions
-private getPushoverSounds(){return (Map) state?.pushoverManagerData?.sounds?:[:]}
-private getPushoverDevices(){List opts=[];Map pd=state?.pushoverManagerData?:[:];pd?.apps?.each{k,v->if(v&&v?.devices&&v?.appId){Map dm=[:];v?.devices?.sort{}?.each{i->dm["${i}_${v?.appId}"]=i};addInputGrp(opts,v?.appName,dm);}};return opts;}
+private getPushoverSounds(){return (Map) atomicState?.pushoverManager?.sounds?:[:]}
+private getPushoverDevices(){List opts=[];Map pmd=atomicState?.pushoverManager?:[:];pmd?.apps?.each{k,v->if(v&&v?.devices&&v?.appId){Map dm=[:];v?.devices?.sort{}?.each{i->dm["${i}_${v?.appId}"]=i};addInputGrp(opts,v?.appName,dm);}};return opts;}
 private inputOptGrp(List groups,String title){def group=[values:[],order:groups?.size()];group?.title=title?:"";groups<<group;return groups;}
 private addInputValues(List groups,String key,String value){def lg=groups[-1];lg["values"]<<[key:key,value:value,order:lg["values"]?.size()];return groups;}
 private listToMap(List original){original.inject([:]){r,v->r[v]=v;return r;}}
 private addInputGrp(List groups,String title,values){if(values instanceof List){values=listToMap(values)};values.inject(inputOptGrp(groups,title)){r,k,v->return addInputValues(r,k,v)};return groups;}
 private addInputGrp(values){addInputGrp([],null,values)}
-
 //PushOver-Manager Location Event Subscription Events, Polling, and Handlers
 public pushover_init(){subscribe(location,"pushoverManager",pushover_handler);pushover_poll()}
-public pushover_cleanup(){state?.remove("pushoverManagerData");unsubscribe("pushoverManager");}
-public pushover_poll(){sendLocationEvent(name:"pushoverManagerPoll",value:"poll",data:[empty:true],isStateChange:true,descriptionText:"Sending Poll Event to Pushover-Manager")}
+public pushover_cleanup(){state?.remove("pushoverManager");unsubscribe("pushoverManager");}
+public pushover_poll(){sendLocationEvent(name:"pushoverManagerCmd",value:"poll",data:[empty:true],isStateChange:true,descriptionText:"Sending Poll Event to Pushover-Manager")}
 public pushover_msg(List devs,Map data){if(devs&&data){sendLocationEvent(name:"pushoverManagerMsg",value:"sendMsg",data:data,isStateChange:true,descriptionText:"Sending Message to Pushover Devices: ${devs}");}}
-public pushover_handler(evt){switch(evt?.value){case"refresh":Map pD=state?.pushoverManagerData?:[:];pD?.apps=[:];pD?.apps["${evt?.jsonData?.id}"]=[:];pD?.apps["${evt?.jsonData?.id}"]?.devices=evt?.jsonData?.devices?:[];pD?.apps["${evt?.jsonData?.id}"]?.appName=evt?.jsonData?.appName;pD?.apps["${evt?.jsonData?.id}"]?.appId=evt?.jsonData?.id;pD?.sounds=evt?.jsonData?.sounds?:[];state?.pushoverManagerData=pD;break;case "reset":state?.pushoverManagerData=[:];break;}}
-
+public pushover_handler(evt){Map pmd=atomicState?.pushoverManager?:[:];switch(evt?.value){case"refresh":def ed = evt?.jsonData;String id = ed?.appId;Map pA = pmd?.apps?.size() ? pmd?.apps : [:];if(id){pA[id]=pA?."${id}"instanceof Map?pA[id]:[:];pA[id]?.devices=ed?.devices?:[];pA[id]?.appName=ed?.appName;pA[id]?.appId=id;pmd?.apps = pA;};pmd?.sounds=ed?.sounds;break;case "reset":pmd=[:];break;};atomicState?.pushoverManager=pmd;}
 //Builds Map Message object to send to Pushover Manager
 private buildPushMessage(List devices,Map msgData,timeStamp=false){if(!devices||!msgData){return};Map data=[:];data?.appId=app?.getId();data.devices=devices;data?.msgData=msgData;if(timeStamp){data?.msgData?.timeStamp=new Date().getTime()};pushover_msg(devices,data);}
-
 /************************************************************************************************
 |							GLOBAL Code | Logging AND Diagnostic							    |
 *************************************************************************************************/
@@ -6915,7 +6912,6 @@ def removeAskAlexaQueueMsg(msgId, queue=null) {
 		}
 	}
 }
-
 
 def scheduleAlarmOn(autoType) {
 	LogAction("scheduleAlarmOn: autoType: $autoType a1DelayVal: ${getAlert1DelayVal(autoType)}", "debug", true)
