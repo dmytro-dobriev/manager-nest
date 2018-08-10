@@ -1444,6 +1444,8 @@ def notifPrefPage() {
 					} else {
 						input "pushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", groupedOptions: getPushoverDevices(), multiple: true, required: false, submitOnChange: true
 						if(settings?.pushoverDevices) {
+							def t0 = [(-2):"Lowest", (-1):"Low", 0:"Normal", 1:"High", 2:"Emergency"]
+							input "pushoverPriority", "enum", title: "Notification Priority (Optional)", description: "Tap to select", defaultValue: 0, required: false, multiple: false, submitOnChange: true, options: t0
 							input "pushoverSound", "enum", title: "Notification Sound (Optional)", description: "Tap to select", defaultValue: "pushover", required: false, multiple: false, submitOnChange: true, options: getPushoverSounds()
 						}
 					}
@@ -1637,6 +1639,7 @@ def getAppNotifConfDesc() {
 		def nd = getNotifSchedDesc()
 		str += (settings?.usePush) ? "${str != "" ? "\n" : ""}Sending via: (Push)" : ""
 		str += (settings?.pushoverEnabled) ? "${str != "" ? "\n" : ""}Pushover: (Enabled)" : ""
+		str += (settings?.pushoverEnabled && settings?.pushoverPriority) ? "${str != "" ? "\n" : ""}Pushover Priority: (${settings?.pushoverPriority})" : ""
 		str += (settings?.pushoverEnabled && settings?.pushoverSound) ? "${str != "" ? "\n" : ""}Pushover Sound: (${settings?.pushoverSound})" : ""
 		str += (settings?.phone) ? "${str != "" ? "\n" : ""}Sending via: (SMS)" : ""
 		str += (ap || de || au) ? "${str != "" ? "\n" : ""}Enabled Alerts:" : ""
@@ -5852,7 +5855,7 @@ def sendMsg(String msgType, String msg, Boolean showEvt=true, Map pushoverMap=nu
 				if(settings?.pushoverEnabled && settings?.pushoverDevices) {
 					sentstr = "Pushover Message"
 					Map msgObj = [:]
-					msgObj = pushoverMap ?: [title: msgType, message: msg, priority: 0]
+					msgObj = pushoverMap ?: [title: msgType, message: msg, priority: (settings?.pushoverPriority?:0)]
 					if(settings?.pushoverSound) { msgObj?.sound = settings?.pushoverSound }
 					buildPushMessage(settings?.pushoverDevices, msgObj, true)
 					sent = true

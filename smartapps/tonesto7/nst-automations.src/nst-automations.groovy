@@ -6372,6 +6372,8 @@ def setNotificationPage(params) {
 						} else {
 							input "${pName}PushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", groupedOptions: getPushoverDevices(), multiple: true, required: true, submitOnChange: true
 							if(settings?."${pName}PushoverDevices") {
+								def t0 = [(-2):"Lowest", (-1):"Low", 0:"Normal", 1:"High", 2:"Emergency"]
+								input "${pName}PushoverPriority", "enum", title: "Notification Priority (Optional)", description: "Tap to select", defaultValue: 0, required: false, multiple: false, submitOnChange: true, options: t0
 								input "${pName}PushoverSound", "enum", title: "Notification Sound (Optional)", description: "Tap to select", defaultValue: "pushover", required: false, multiple: false, submitOnChange: true, options: getPushoverSounds()
 							}
 						}
@@ -6600,6 +6602,7 @@ def getNotifConfigDesc(pName) {
 		str += (settings?."${pName}UsePush") ? "${str != "" ? "\n" : ""} • Push Messages: Enabled" : ""
 		str += (settings?."${pName}NotifPhones") ? "${str != "" ? "\n" : ""} • SMS: (${settings?."${pName}NotifPhones"?.size()})" : ""
 		str += (settings?."${pName}PushoverEnabled") ? "${str != "" ? "\n" : ""}Pushover: (Enabled)" : ""
+		str += (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverPriority") ? "${str != "" ? "\n" : ""}Pushover Priority: (${settings?."${pName}PushoverPriority"})" : ""
 		str += (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverSound") ? "${str != "" ? "\n" : ""}Pushover Sound: (${settings?."${pName}PushoverSound"})" : ""
 		def t0 = getNotifSchedDesc(pName)
 		str += t0 ? "\n\nAlert Restrictions:\n${t0}" : ""
@@ -6832,7 +6835,7 @@ def sendNofificationMsg(msg, msgType, pushoverMap=null, sms=null, push=null) {
 			//LogAction("Send Push Notification to $recips", "info", true)
 		} else if(settings?."${getAutoType()}PushoverEnabled" && settings?."${getAutoType()}PushoverDevices") {
 			Map msgObj = [:]
-			msgObj = pushoverMap ?: [title: msgType, message: msg, priority: 0]
+			msgObj = pushoverMap ?: [title: msgType, message: msg, priority: (settings?."${getAutoType()}PushoverPriority" ?: 0)]
 			if(settings?."${getAutoType()}PushoverSound") { msgObj?.sound = settings?."${getAutoType()}PushoverSound" }
 			buildPushMessage(settings?."${getAutoType()}PushoverDevices", msgObj, true)
 		} else {
