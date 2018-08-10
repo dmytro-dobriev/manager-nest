@@ -26,8 +26,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.3.6" }
-def appVerDate() { "07-30-2018" }
+def appVersion() { "5.4.0" }
+def appVerDate() { "08-10-2018" }
 
 preferences {
 	//startPage
@@ -533,8 +533,6 @@ def stateRemove(key) {
 
 def initAutoApp() {
 	//log.debug "${app.label} initAutoApp..."			// Must be log.debug
-	//def restoreId = settings["restoreId"]
-	//def restoreComplete = settings["restoreCompleted"] == true ? true : false
 	if(settings["watchDogFlag"]) {
 		atomicState?.automationType = "watchDog"
 	} else if(settings["storageFlag"]) {
@@ -544,17 +542,6 @@ def initAutoApp() {
 		atomicState?.automationType = "remDiag"
 		parent?.remDiagAppAvail(true)
 	}
-/*
-	else if (restoreId != null && restoreComplete == false) {
-		LogAction("Restored AutomationType: (${settings?.automationTypeFlag})", "info", true)
-		if(parent?.callRestoreState(app, restoreId)) {
-			finishFixState(true)
-			parent?.postChildRestore(restoreId)
-			if(parent?.keepBackups() != true) { parent?.removeAutomationBackupData(restoreId) }
-			settingUpdate("restoreCompleted", true, "bool")
-		}
-	}
-*/
 
 	def autoType = getAutoType()
 	if(autoType == "nMode") {
@@ -649,8 +636,9 @@ def initAutoApp() {
 	}
 	app.updateLabel(getAutoTypeLabel())
 	LogAction("Automation Label: ${getAutoTypeLabel()}", "info", true)
-
-	//if(settings["backedUpData"] && atomicState?.restoreCompleted) { }
+	if(settings?."${autoType}PushoverEnabled" == true) {
+		pushover_init()
+	} else { pushover_cleanup() }
 
 	state.remove("motionnullLastisBtwn")
 	state.remove("motion1InBtwn")
@@ -782,8 +770,8 @@ def getAutomationsInstalled() {
 			if(isHumCtrlConfigured()) 		{ tmp[aType].push("humCtrl") }
 			if(isExtTmpConfigured()) 		{ tmp[aType].push("extTmp") }
 			if(isRemSenConfigured())		{ tmp[aType].push("remSen") }
-			if(isTstatSchedConfigured()) 		{ tmp[aType].push("tSched") }
-			if(isFanCtrlSwConfigured()) 		{ tmp[aType].push("fanCtrl") }
+			if(isTstatSchedConfigured()) 	{ tmp[aType].push("tSched") }
+			if(isFanCtrlSwConfigured()) 	{ tmp[aType].push("fanCtrl") }
 			if(isFanCircConfigured()) 		{ tmp[aType].push("fanCirc") }
 			if(tmp?.size()) { list.push(tmp) }
 			break
@@ -4031,7 +4019,7 @@ def nestModePresPage() {
 				def t0 = getNotifConfigDesc(pName)
 				def pageDesc = t0 ? "${t0}\n\nTap to modify" : ""
 				href "setNotificationPage", title: "Configured Alerts", description: pageDesc, params: ["pName":"${pName}", "allowSpeech":false, "allowAlarm":false, "showSchedule":true],
-					state: (pageDesc ? "complete" : null), image: getAppImg("notification_icon.png")
+						state: (pageDesc ? "complete" : null), image: getAppImg("notification_icon.png")
 			}
 		}
 		if(atomicState?.showHelp) {
@@ -6352,7 +6340,7 @@ def getAverageValue(items) {
 *************************************************************************************************/
 
 def setNotificationPage(params) {
-	def pName = params.pName
+	def pName = params?.pName
 	def allowSpeech = false
 	def allowAlarm = false
 	def showSched = false
@@ -6368,11 +6356,40 @@ def setNotificationPage(params) {
 					defaultValue: false, submitOnChange: true, image: getAppImg("notification_icon.png")
 		}
 		if(settings["${pName}NotificationsOn"]) {
-			def notifDesc = !location.contactBookEnabled ? "Enable Push Messages Below" : "(Manager App Recipients are used by default)"
-			section("Enable Push Messages Below") {
-				input "${pName}UsePush", "bool", title: "Send Push Notitifications\n(Optional)", required: false, submitOnChange: true, defaultValue: false, image: getAppImg("notification_icon.png")
+			section("Enable Text Messaging:") {
 				input "${pName}NotifPhones", "phone", title: "Send SMS to\n(Optional)", submitOnChange: true, required: false, image: getAppImg("notification_icon2.png")
 			}
+			section("Enable Push Messages:") {
+				input "${pName}UsePush", "bool", title: "Send Push Notitifications\n(Optional)", required: false, submitOnChange: true, defaultValue: false, image: getAppImg("notification_icon.png")
+			}
+			section("Enable Pushover Support:") {
+				input "${pName}PushoverEnabled", "bool", title: "Use Pushover Integration", required: false, submitOnChange: true, image: getAppImg("pushover_icon.png")
+				if(settings?."${pName}PushoverEnabled" == true) {
+					if(atomicState?.isInstalled) {
+						if(!atomicState?.pushoverManager) {
+							paragraph "If this is the first time enabling Pushover than leave this page and come back if the devices list is empty"
+							pushover_init()
+						} else {
+							input "${pName}PushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", groupedOptions: getPushoverDevices(), multiple: true, required: true, submitOnChange: true
+							if(settings?."${pName}PushoverDevices") {
+								def t0 = [(-2):"Lowest", (-1):"Low", 0:"Normal", 1:"High", 2:"Emergency"]
+								input "${pName}PushoverPriority", "enum", title: "Notification Priority (Optional)", description: "Tap to select", defaultValue: 0, required: false, multiple: false, submitOnChange: true, options: t0
+								input "${pName}PushoverSound", "enum", title: "Notification Sound (Optional)", description: "Tap to select", defaultValue: "pushover", required: false, multiple: false, submitOnChange: true, options: getPushoverSounds()
+							}
+						}
+					} else { paragraph "New Install Detected!!!\n\nPlease complete the NST Automation Install. Then return later to resume Pushover configuration.", state: "complete" }
+				}
+			}
+			if(settings?."${pName}NotifPhones" || settings?."${pName}UsePush" || (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverDevices")) {
+				section("Notification Restrictions:") {
+					input "${pName}UseParentNotifRestrictions", "bool", title: "Use Notification Schedule From Manager", required: false, defaultValue: true, submitOnChange: true
+					if(!settings?."${pName}UseParentNotifRestrictions") {
+						def t1 = getNotifSchedDesc(pName)
+						href "setNotificationTimePage", title: "Notification Restrictions", description: (t1 ?: "Tap to configure"), params: ["pName": pName], state: (t1 ? "complete" : null), image: getAppImg("restriction_icon.png")
+					}
+				}
+			}
+			
 		}
 		if(allowSpeech && settings?."${pName}NotificationsOn") {
 			section("Voice Notification Preferences:") {
@@ -6414,7 +6431,7 @@ def setNotificationPage(params) {
 							}
 
 							input "${pName}SpeechOnRestore", "bool", title: "Speak when restoring HVAC on (${desc})?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png")
-		// TODO There are more messages and errors than ON / OFF
+							// TODO: There are more messages and errors than ON / OFF
 							input "${pName}UseCustomSpeechNotifMsg", "bool", title: "Customize Notitification Message?", required: false, defaultValue: (settings?."${pName}AllowSpeechNotif" ? false : true), submitOnChange: true,
 								image: getAppImg("speech_icon.png")
 							if(settings["${pName}UseCustomSpeechNotifMsg"]) {
@@ -6475,6 +6492,72 @@ def setNotificationPage(params) {
 	}
 }
 
+def setNotificationTimePage(params) {
+	def pName = params?.pName
+	if(params?.pName) {
+		atomicState.curNotifTimePageData = params
+	} else { pName = atomicState?.curNotifTimePageData?.pName }
+	dynamicPage(name: "setNotificationTimePage", title: "Prevent Notifications\nDuring these Days, Times or Modes", uninstall: false) {
+		def timeReq = (settings["${pName}qStartTime"] || settings["${pName}qStopTime"]) ? true : false
+		section() {
+			input "${pName}qStartInput", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: null, submitOnChange: true, required: false, image: getAppImg("start_time_icon.png")
+			if(settings["${pName}qStartInput"] == "A specific time") {
+				input "${pName}qStartTime", "time", title: "Start time", required: timeReq, image: getAppImg("start_time_icon.png")
+			}
+			input "${pName}qStopInput", "enum", title: "Stopping at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: null, submitOnChange: true, required: false, image: getAppImg("stop_time_icon.png")
+			if(settings?."${pName}qStopInput" == "A specific time") {
+				input "${pName}qStopTime", "time", title: "Stop time", required: timeReq, image: getAppImg("stop_time_icon.png")
+			}
+			input "${pName}quietDays", "enum", title: "Prevent during these days of the week", multiple: true, required: false, image: getAppImg("day_calendar_icon.png"), options: timeDayOfWeekOptions()
+			input "${pName}quietModes", "mode", title: "Prevent when these Modes are Active", multiple: true, submitOnChange: true, required: false, image: getAppImg("mode_icon.png")
+		}
+	}
+}
+
+String getNotifSchedDesc(pName) {
+	def sun = getSunriseAndSunset()
+	def startInput = settings?."${pName}qStartInput"
+	def startTime = settings?."${pName}qStartTime"
+	def stopInput = settings?."${pName}qStopInput"
+	def stopTime = settings?."${pName}qStopTime"
+	def dayInput = settings?."${pName}quietDays"
+	def modeInput = settings?."${pName}quietModes"
+	def notifDesc = ""
+	if(settings?."${pName}UseParentNotifRestrictions" == false) {
+		def getNotifTimeStartLbl = ( (startInput == "Sunrise" || startInput == "Sunset") ? ( (startInput == "Sunset") ? epochToTime(sun?.sunset.time) : epochToTime(sun?.sunrise.time) ) : (startTime ? time2Str(startTime) : "") )
+		def getNotifTimeStopLbl = ( (stopInput == "Sunrise" || stopInput == "Sunset") ? ( (stopInput == "Sunset") ? epochToTime(sun?.sunset.time) : epochToTime(sun?.sunrise.time) ) : (stopTime ? time2Str(stopTime) : "") )
+		notifDesc += (getNotifTimeStartLbl && getNotifTimeStopLbl) ? "• Silent Time: ${getNotifTimeStartLbl} - ${getNotifTimeStopLbl}" : ""
+		def days = getInputToStringDesc(dayInput)
+		def modes = getInputToStringDesc(modeInput)
+		notifDesc += days ? "${(getNotifTimeStartLbl || getNotifTimeStopLbl) ? "\n" : ""}• Silent Day${isPluralString(dayInput)}: ${days}" : ""
+		notifDesc += modes ? "${(getNotifTimeStartLbl || getNotifTimeStopLbl || days) ? "\n" : ""}• Silent Mode${isPluralString(modeInput)}: ${modes}" : ""
+	} else {
+		notifDesc += "• Using Manager Restrictions"
+	}
+	return (notifDesc != "") ? "${notifDesc}" : null
+}
+
+def getOk2Notify(pName) { return (settings?."${pName}NotificationsOn" && daysOk(settings?."${pName}quietDays") && notificationTimeOk(pName) && modesOk(settings?."${pName}quietModes")) }
+
+def notificationTimeOk(pName) {
+	def strtTime = null
+	def stopTime = null
+	def now = new Date()
+	def sun = getSunriseAndSunset() // current based on geofence, previously was: def sun = getSunriseAndSunset(zipCode: zipCode)
+	if(settings?."${pName}qStartTime" && settings?."${pName}qStopTime") {
+		if(settings?."${pName}qStartInput" == "sunset") { strtTime = sun.sunset }
+		else if(settings?."${pName}qStartInput" == "sunrise") { strtTime = sun.sunrise }
+		else if(settings?."${pName}qStartInput" == "A specific time" && settings?."${pName}qStartTime") { strtTime = settings?."${pName}qStartTime" }
+
+		if(settings?."${pName}qStopInput" == "sunset") { stopTime = sun.sunset }
+		else if(settings?."${pName}qStopInput" == "sunrise") { stopTime = sun.sunrise }
+		else if(settings?."${pName}qStopInput" == "A specific time" && settings?."${pName}qStopTime") { stopTime = settings?."${pName}qStopTime" }
+	} else { return true }
+	if(strtTime && stopTime) {
+		return timeOfDayIsBetween(strtTime, stopTime, new Date(), getTimeZone()) ? false : true
+	} else { return true }
+}
+
 def getNotifVariables(pName) {
 	def str = ""
 	str += "\n • DeviceName: %devicename%"
@@ -6512,18 +6595,23 @@ def getNotifConfigDesc(pName) {
 	LogTrace("getNotifConfigDesc pName: $pName")
 	def str = ""
 	if(settings?."${pName}NotificationsOn") {
-		str += "Notification Status:"
-		if(!getRecipientDesc(pName)) {
-			str += "\n • Contacts: Using Manager Settings"
-		}
-		str += (settings?."${pName}UsePush") ? "\n • Push Messages: Enabled" : ""
-		str += (settings?."${pName}NotifPhones") ? "\n • SMS: (${settings?."${pName}NotifPhones"?.size()})" : ""
-		def t0 = getVoiceNotifConfigDesc(pName)
+		// str += "Notification Status:"
+		// if(!getRecipientDesc(pName)) {
+		// 	str += "\n • Contacts: Using Manager Settings"
+		// }
+		str += (settings?."${pName}UsePush") ? "${str != "" ? "\n" : ""} • Push Messages: Enabled" : ""
+		str += (settings?."${pName}NotifPhones") ? "${str != "" ? "\n" : ""} • SMS: (${settings?."${pName}NotifPhones"?.size()})" : ""
+		str += (settings?."${pName}PushoverEnabled") ? "${str != "" ? "\n" : ""}Pushover: (Enabled)" : ""
+		str += (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverPriority") ? "${str != "" ? "\n" : ""} • Priority: (${settings?."${pName}PushoverPriority"})" : ""
+		str += (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverSound") ? "${str != "" ? "\n" : ""} • Sound: (${settings?."${pName}PushoverSound"})" : ""
+		def t0 = getNotifSchedDesc(pName)
+		str += t0 ? "\n\nAlert Restrictions:\n${t0}" : ""
+		t0 = getVoiceNotifConfigDesc(pName)
 		str += t0 ? "\n\nVoice Status:${t0}" : ""
-		def t1 = getAlarmNotifConfigDesc(pName)
-		str += t1 ?  "\n\nAlarm Status:${t1}" : ""
-		def t2 = getAlertNotifConfigDesc(pName)
-		str += t2 ? "\n\n${t2}" : ""
+		t0 = getAlarmNotifConfigDesc(pName)
+		str += t0 ?  "\n\nAlarm Status:${t0}" : ""
+		t0 = getAlertNotifConfigDesc(pName)
+		str += t0 ? "\n\n${t0}" : ""
 	}
 	return (str != "") ? "${str}" : null
 }
@@ -6534,12 +6622,12 @@ def getVoiceNotifConfigDesc(pName) {
 		def speaks = settings?."${pName}SpeechDevices"
 		def medias = settings?."${pName}SpeechMediaPlayer"
 		str += settings["${pName}SendToAskAlexaQueue"] ? "\n• Send to Ask Alexa: (True)" : ""
-		str += speaks ? "\n• Speech Devices:" : ""
+		str += speaks ? "\n • Speech Devices:" : ""
 		if(speaks) {
 			def cnt = 1
 			speaks?.each { str += it ? "\n ${cnt < speaks.size() ? "├" : "└"} $it" : ""; cnt = cnt+1; }
 		}
-		str += medias ? "${speaks ? "\n\n" : "\n"}• Media Players:" : ""
+		str += medias ? "${speaks ? "\n\n" : "\n"} • Media Players:" : ""
 		if(medias) {
 			def cnt = 1
 			medias?.sort { it?.displayName }?.each { str += it ? "\n│${cnt < medias.size() ? "├" : "└"} $it" : ""; cnt = cnt+1; }
@@ -6598,10 +6686,9 @@ def isPluralString(obj) {
 }
 
 def getRecipientsNames(val) {
-	def n = ""
-	def i = 0
+	String n = ""
+	Integer i = 0
 	if(val) {
-		//def valLabel =
 		//log.debug "val: $val"
 		val?.each { r ->
 			i = i + 1
@@ -6612,7 +6699,7 @@ def getRecipientsNames(val) {
 }
 
 def getRecipientDesc(pName) {
-	return (settings?."${pName}NotifPhones" || settings?."${pName}NotifUsePush") ? "" : null
+	return (settings?."${pName}NotifPhones" || settings?."${pName}NotifUsePush" || (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverDevices")) ? settings?."${pName}PushoverDevices" : null
 }
 
 def setDayModeTimePage(params) {
@@ -6737,24 +6824,49 @@ def autoScheduleOk(autoType) {
 /************************************************************************************************
 |					      SEND NOTIFICATIONS VIA PARENT APP								|
 *************************************************************************************************/
-def sendNofificationMsg(msg, msgType, recips = null, sms = null, push = null) {
+def sendNofificationMsg(msg, msgType, pushoverMap=null, sms=null, push=null) {
 	LogAction("sendNofificationMsg($msg, $msgType, $recips, $sms, $push)", "trace", false)
-	if(recips || sms || push) {
-		parent?.sendMsg(msgType, msg, true, recips, sms, push)
-		//LogAction("Send Push Notification to $recips", "info", true)
+	def ok2Notify = setting?."${getAutoType()}UseParentNotifRestrictions" != false ? getOk2Notify(getAutoType()) : parent?.getOk2Notify()
+	if(!ok2Notify) {
+		LogAction("sendMsg: Message Skipped During Quiet Time ($msg)", "info", true)
 	} else {
-		parent?.sendMsg(msgType, msg, true)
+		if(sms || push) {
+			parent?.sendMsg(msgType, msg, true, null, sms, push)
+			//LogAction("Send Push Notification to $recips", "info", true)
+		} else if(settings?."${getAutoType()}PushoverEnabled" && settings?."${getAutoType()}PushoverDevices") {
+			Map msgObj = [:]
+			msgObj = pushoverMap ?: [title: msgType, message: msg, priority: (settings?."${getAutoType()}PushoverPriority" ?: 0)]
+			if(settings?."${getAutoType()}PushoverSound") { msgObj?.sound = settings?."${getAutoType()}PushoverSound" }
+			buildPushMessage(settings?."${getAutoType()}PushoverDevices", msgObj, true)
+		} else {
+			parent?.sendMsg(msgType, msg, true)
+		}
 	}
 }
 
+//PushOver-Manager Input Generation Functions
+private getPushoverSounds(){return (Map) atomicState?.pushoverManager?.sounds?:[:]}
+private getPushoverDevices(){List opts=[];Map pmd=atomicState?.pushoverManager?:[:];pmd?.apps?.each{k,v->if(v&&v?.devices&&v?.appId){Map dm=[:];v?.devices?.sort{}?.each{i->dm["${i}_${v?.appId}"]=i};addInputGrp(opts,v?.appName,dm);}};return opts;}
+private inputOptGrp(List groups,String title){def group=[values:[],order:groups?.size()];group?.title=title?:"";groups<<group;return groups;}
+private addInputValues(List groups,String key,String value){def lg=groups[-1];lg["values"]<<[key:key,value:value,order:lg["values"]?.size()];return groups;}
+private listToMap(List original){original.inject([:]){r,v->r[v]=v;return r;}}
+private addInputGrp(List groups,String title,values){if(values instanceof List){values=listToMap(values)};values.inject(inputOptGrp(groups,title)){r,k,v->return addInputValues(r,k,v)};return groups;}
+private addInputGrp(values){addInputGrp([],null,values)}
+//PushOver-Manager Location Event Subscription Events, Polling, and Handlers
+public pushover_init(){subscribe(location,"pushoverManager",pushover_handler);pushover_poll()}
+public pushover_cleanup(){state?.remove("pushoverManager");unsubscribe("pushoverManager");}
+public pushover_poll(){sendLocationEvent(name:"pushoverManagerCmd",value:"poll",data:[empty:true],isStateChange:true,descriptionText:"Sending Poll Event to Pushover-Manager")}
+public pushover_msg(List devs,Map data){if(devs&&data){sendLocationEvent(name:"pushoverManagerMsg",value:"sendMsg",data:data,isStateChange:true,descriptionText:"Sending Message to Pushover Devices: ${devs}");}}
+public pushover_handler(evt){Map pmd=atomicState?.pushoverManager?:[:];switch(evt?.value){case"refresh":def ed = evt?.jsonData;String id = ed?.appId;Map pA = pmd?.apps?.size() ? pmd?.apps : [:];if(id){pA[id]=pA?."${id}"instanceof Map?pA[id]:[:];pA[id]?.devices=ed?.devices?:[];pA[id]?.appName=ed?.appName;pA[id]?.appId=id;pmd?.apps = pA;};pmd?.sounds=ed?.sounds;break;case "reset":pmd=[:];break;};atomicState?.pushoverManager=pmd;}
+//Builds Map Message object to send to Pushover Manager
+private buildPushMessage(List devices,Map msgData,timeStamp=false){if(!devices||!msgData){return};Map data=[:];data?.appId=app?.getId();data.devices=devices;data?.msgData=msgData;if(timeStamp){data?.msgData?.timeStamp=new Date().getTime()};pushover_msg(devices,data);}
 /************************************************************************************************
 |							GLOBAL Code | Logging AND Diagnostic							    |
 *************************************************************************************************/
-// parent has  res["msgDefaultWait"] = (settings?.notifyMsgWaitVal == null ? 3600 : settings?.notifyMsgWaitVal.toInteger())
 def sendEventPushNotifications(message, type, pName) {
 	LogTrace("sendEventPushNotifications($message, $type, $pName)")
-	def allowNotif = settings?."${pName}NotificationsOn" ? true : false
-	if(allowNotif) {
+	if(settings?."${pName}NotificationsOn" == true) {
+		//TODO: Build out Pushover priorities 
 		sendNofificationMsg(message, type, null, settings?."${pName}NotifPhones", settings?."${pName}UsePush")
 	}
 }
@@ -6762,7 +6874,7 @@ def sendEventPushNotifications(message, type, pName) {
 def sendEventVoiceNotifications(vMsg, pName, msgId, rmAAMsg=false, rmMsgId) {
 	def allowNotif = settings?."${pName}NotificationsOn" ? true : false
 	def allowSpeech = allowNotif && settings?."${pName}AllowSpeechNotif" ? true : false
-	def ok2Notify = parent.getOk2Notify()
+	def ok2Notify = setting?."${getAutoType()}UseParentNotifRestrictions" != false ? getOk2Notify(getAutoType()) : parent?.getOk2Notify()
 
 	LogAction("sendEventVoiceNotifications($vMsg, $pName) ok2Notify: $ok2Notify", "trace", false)
 	if(allowNotif && allowSpeech) {
@@ -6804,11 +6916,10 @@ def removeAskAlexaQueueMsg(msgId, queue=null) {
 	}
 }
 
-
 def scheduleAlarmOn(autoType) {
 	LogAction("scheduleAlarmOn: autoType: $autoType a1DelayVal: ${getAlert1DelayVal(autoType)}", "debug", true)
 	def timeVal = getAlert1DelayVal(autoType).toInteger()
-	def ok2Notify = parent.getOk2Notify()
+	def ok2Notify = setting?."${getAutoType()}UseParentNotifRestrictions" != false ? getOk2Notify(getAutoType()) : parent?.getOk2Notify()
 
 	LogAction("scheduleAlarmOn timeVal: $timeVal ok2Notify: $ok2Notify", "info", true)
 	if(canSchedule() && ok2Notify) {
