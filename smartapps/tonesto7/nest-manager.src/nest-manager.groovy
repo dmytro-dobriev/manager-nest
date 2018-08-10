@@ -1599,31 +1599,31 @@ def notifConfigPage(params) {
 
 def getAppNotifDesc() {
 	def str = ""
-	str += settings?.appApiIssuesMsg != false && settings?.appApiFailedCmdMsg != false ? "${str != "" ? "\n" : ""}• API CMD Failures: (${strCapitalize(settings?.appApiFailedCmdMsg ?: "True")})" : ""
-	str += settings?.appApiIssuesMsg != false && settings?.appApiRateLimitMsg != false ? "${str != "" ? "\n" : ""}• API Rate-Limiting: (${strCapitalize(settings?.appApiRateLimitMsg ?: "True")})" : ""
-	str += settings?.sendMissedPollMsg != false ? "${str != "" ? "\n" : ""}• Missed Poll Alerts: (${strCapitalize(settings?.sendMissedPollMsg ?: "True")})" : ""
-	str += settings?.appDbgDiagRemindMsg != false ? "${str != "" ? "\n" : ""}• Debug Log Reminder: (${strCapitalize(settings?.appDbgDiagRemindMsg ?: "True")})" : ""
-	str += settings?.sendAppUpdateMsg != false ? "${str != "" ? "\n" : ""}• Code Updates: (${strCapitalize(settings?.sendAppUpdateMsg ?: "True")})" : ""
+	str += settings?.appApiIssuesMsg != false && settings?.appApiFailedCmdMsg != false ? "${str != "" ? "\n" : ""} • API CMD Failures: (${strCapitalize(settings?.appApiFailedCmdMsg ?: "True")})" : ""
+	str += settings?.appApiIssuesMsg != false && settings?.appApiRateLimitMsg != false ? "${str != "" ? "\n" : ""} • API Rate-Limiting: (${strCapitalize(settings?.appApiRateLimitMsg ?: "True")})" : ""
+	str += settings?.sendMissedPollMsg != false ? "${str != "" ? "\n" : ""} • Missed Poll Alerts: (${strCapitalize(settings?.sendMissedPollMsg ?: "True")})" : ""
+	str += settings?.appDbgDiagRemindMsg != false ? "${str != "" ? "\n" : ""} • Debug Log Reminder: (${strCapitalize(settings?.appDbgDiagRemindMsg ?: "True")})" : ""
+	str += settings?.sendAppUpdateMsg != false ? "${str != "" ? "\n" : ""} • Code Updates: (${strCapitalize(settings?.sendAppUpdateMsg ?: "True")})" : ""
 	return str != "" ? str : null
 }
 
 def getDevNotifDesc() {
 	def str = ""
-	str += settings?.devHealthNotifyMsg != false ? "${str != "" ? "\n" : ""}• Health Alerts: (${strCapitalize(settings?.devHealthNotifyMsg ?: "True")})" : ""
-	str += settings?.camStreamNotifMsg != false ? "${str != "" ? "\n" : ""}• Camera Stream Alerts: (${strCapitalize(settings?.camStreamNotifMsg ?: "True")})" : ""
-	str += settings?.weathAlertNotif != false ? "${str != "" ? "\n" : ""}• Weather Alerts: (${strCapitalize(settings?.weathAlertNotif ?: "True")})" : ""
+	str += settings?.devHealthNotifyMsg != false ? "${str != "" ? "\n" : ""} • Health Alerts: (${strCapitalize(settings?.devHealthNotifyMsg ?: "True")})" : ""
+	str += settings?.camStreamNotifMsg != false ? "${str != "" ? "\n" : ""} • Camera Stream Alerts: (${strCapitalize(settings?.camStreamNotifMsg ?: "True")})" : ""
+	str += settings?.weathAlertNotif != false ? "${str != "" ? "\n" : ""} • Weather Alerts: (${strCapitalize(settings?.weathAlertNotif ?: "True")})" : ""
 	return str != "" ? str : null
 }
 
 def getAutoNotifDesc() {
 	def str = ""
-	str += settings?.watchDogNotifMissedEco ? "${str != "" ? "\n" : ""}• WatchDog Eco Alerts: (${strCapitalize(settings?.watchDogNotifMissedEco)})" : ""
+	str += settings?.watchDogNotifMissedEco ? "${str != "" ? "\n" : ""} • WatchDog Eco Alerts: (${strCapitalize(settings?.watchDogNotifMissedEco)})" : ""
 	return str != "" ? str : null
 }
 
 def getAskAlexaDesc() {
 	def str = ""
-	str += settings?.allowAskAlexaMQ ? "${str != "" ? "\n" : ""}• Ask Alexa Msg Queue: (${strCapitalize(settings?.allowAskAlexaMQ)})" : ""
+	str += settings?.allowAskAlexaMQ ? "${str != "" ? "\n" : ""} • Ask Alexa Msg Queue: (${strCapitalize(settings?.allowAskAlexaMQ)})" : ""
 	str += getAskAlexaMultiQueueEn() && atomicState?.askAlexaMQList ? "${str != "" ? "\n" : ""}Multiple Queues Available:\n• Queues: (${atomicState?.askAlexaMQList?.size()})" : ""
 	return str != "" ? str : null
 }
@@ -1639,13 +1639,13 @@ def getAppNotifConfDesc() {
 		def nd = getNotifSchedDesc()
 		str += (settings?.usePush) ? "${str != "" ? "\n" : ""}Sending via: (Push)" : ""
 		str += (settings?.pushoverEnabled) ? "${str != "" ? "\n" : ""}Pushover: (Enabled)" : ""
-		str += (settings?.pushoverEnabled && settings?.pushoverPriority) ? "${str != "" ? "\n" : ""}Pushover Priority: (${settings?.pushoverPriority})" : ""
-		str += (settings?.pushoverEnabled && settings?.pushoverSound) ? "${str != "" ? "\n" : ""}Pushover Sound: (${settings?.pushoverSound})" : ""
+		str += (settings?.pushoverEnabled && settings?.pushoverPriority) ? "${str != "" ? "\n" : ""} • Priority: (${settings?.pushoverPriority})" : ""
+		str += (settings?.pushoverEnabled && settings?.pushoverSound) ? "${str != "" ? "\n" : ""} • Sound: (${settings?.pushoverSound})" : ""
 		str += (settings?.phone) ? "${str != "" ? "\n" : ""}Sending via: (SMS)" : ""
-		str += (ap || de || au) ? "${str != "" ? "\n" : ""}Enabled Alerts:" : ""
-		str += (ap) ? "${str != "" ? "\n" : ""}• App Alerts (True)" : ""
-		str += (de) ? "${str != "" ? "\n" : ""}• Device Alerts (True)" : ""
-		str += (au) ? "${str != "" ? "\n" : ""}• Automation Alerts (True)" : ""
+		str += (ap || de || au) ? "${str != "" ? "\n" : ""}\nEnabled Alerts:" : ""
+		str += (ap) ? "${str != "" ? "\n" : ""} • App Alerts (True)" : ""
+		str += (de) ? "${str != "" ? "\n" : ""} • Device Alerts (True)" : ""
+		str += (au) ? "${str != "" ? "\n" : ""} • Automation Alerts (True)" : ""
 		str += (nd) ? "${str != "" ? "\n" : ""}\nAlert Restrictions:\n${nd}" : ""
 	}
 	return str != "" ? str : null
