@@ -34,11 +34,11 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.4.0" }
-def appVerDate() { "08-10-2018" }
+def appVersion() { "5.4.1" }
+def appVerDate() { "08-13-2018" }
 def minVersions() {
 	return [
-		"automation":["val":540, "desc":"5.4.0"],
+		"automation":["val":541, "desc":"5.4.1"],
 		"thermostat":["val":536, "desc":"5.3.6"],
 		"protect":["val":536, "desc":"5.3.6"],
 		"presence":["val":536, "desc":"5.3.6"],
@@ -5842,7 +5842,6 @@ def sendMsg(String msgType, String msg, Boolean showEvt=true, Map pushoverMap=nu
 			if(showEvt) { sendNotificationEvent(newMsg) }
 		} else {
 			if(!brdcast) {
-				LogAction("ContactBook is NOT Enabled on your SmartThings Account", "warn", false)
 				if(push || settings?.usePush) {
 					sentstr = "Push Message"
 					if(showEvt) {
