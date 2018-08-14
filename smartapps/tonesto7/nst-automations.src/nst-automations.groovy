@@ -26,8 +26,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.4.0" }
-def appVerDate() { "08-10-2018" }
+def appVersion() { "5.4.1" }
+def appVerDate() { "08-13-2018" }
 
 preferences {
 	//startPage
@@ -6355,41 +6355,69 @@ def setNotificationPage(params) {
 			input "${pName}NotificationsOn", "bool", title: "Enable Notifications?", description: (!settings["${pName}NotificationsOn"] ? "Enable Text, Voice, Ask Alexa, or Alarm Notifications" : ""), required: false, 
 					defaultValue: false, submitOnChange: true, image: getAppImg("notification_icon.png")
 		}
+		def fixSettings = false
 		if(settings["${pName}NotificationsOn"]) {
-			section("Enable Text Messaging:") {
-				input "${pName}NotifPhones", "phone", title: "Send SMS to\n(Optional)", submitOnChange: true, required: false, image: getAppImg("notification_icon2.png")
+			section("Use NST Manager Settings:") {
+				input "${pName}UseMgrNotif", "bool", title: "Use Manager Settings?", defaultValue: true, submitOnChange: true, required: false, image: getAppImg("notification_icon2.png")
 			}
-			section("Enable Push Messages:") {
-				input "${pName}UsePush", "bool", title: "Send Push Notitifications\n(Optional)", required: false, submitOnChange: true, defaultValue: false, image: getAppImg("notification_icon.png")
-			}
-			section("Enable Pushover Support:") {
-				input "${pName}PushoverEnabled", "bool", title: "Use Pushover Integration", required: false, submitOnChange: true, image: getAppImg("pushover_icon.png")
-				if(settings?."${pName}PushoverEnabled" == true) {
-					if(atomicState?.isInstalled) {
-						if(!atomicState?.pushoverManager) {
-							paragraph "If this is the first time enabling Pushover than leave this page and come back if the devices list is empty"
-							pushover_init()
-						} else {
-							input "${pName}PushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", groupedOptions: getPushoverDevices(), multiple: true, required: true, submitOnChange: true
-							if(settings?."${pName}PushoverDevices") {
-								def t0 = [(-2):"Lowest", (-1):"Low", 0:"Normal", 1:"High", 2:"Emergency"]
-								input "${pName}PushoverPriority", "enum", title: "Notification Priority (Optional)", description: "Tap to select", defaultValue: 0, required: false, multiple: false, submitOnChange: true, options: t0
-								input "${pName}PushoverSound", "enum", title: "Notification Sound (Optional)", description: "Tap to select", defaultValue: "pushover", required: false, multiple: false, submitOnChange: true, options: getPushoverSounds()
-							}
-						}
-					} else { paragraph "New Install Detected!!!\n\nPlease complete the NST Automation Install. Then return later to resume Pushover configuration.", state: "complete" }
+			if(!settings?."${pName}UseMgrNotif") {
+
+				section("Enable Text Messaging:") {
+					input "${pName}NotifPhones", "phone", title: "Send SMS to\n(Optional)", submitOnChange: true, required: false, image: getAppImg("notification_icon2.png")
 				}
-			}
-			if(settings?."${pName}NotifPhones" || settings?."${pName}UsePush" || (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverDevices")) {
-				section("Notification Restrictions:") {
-					input "${pName}UseParentNotifRestrictions", "bool", title: "Use Notification Schedule From Manager", required: false, defaultValue: true, submitOnChange: true
-					if(!settings?."${pName}UseParentNotifRestrictions") {
-						def t1 = getNotifSchedDesc(pName)
-						href "setNotificationTimePage", title: "Notification Restrictions", description: (t1 ?: "Tap to configure"), params: ["pName": pName], state: (t1 ? "complete" : null), image: getAppImg("restriction_icon.png")
+				section("Enable Push Messages:") {
+					input "${pName}UsePush", "bool", title: "Send Push Notitifications\n(Optional)", required: false, submitOnChange: true, defaultValue: false, image: getAppImg("notification_icon.png")
+				}
+				section("Enable Pushover Support:") {
+					input "${pName}PushoverEnabled", "bool", title: "Use Pushover Integration", required: false, submitOnChange: true, image: getAppImg("pushover_icon.png")
+					if(settings?."${pName}PushoverEnabled" == true) {
+						if(atomicState?.isInstalled) {
+							if(!atomicState?.pushoverManager) {
+								paragraph "If this is the first time enabling Pushover than leave this page and come back if the devices list is empty"
+								pushover_init()
+							} else {
+								input "${pName}PushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", groupedOptions: getPushoverDevices(), multiple: true, required: true, submitOnChange: true
+								if(settings?."${pName}PushoverDevices") {
+									def t0 = [(-2):"Lowest", (-1):"Low", 0:"Normal", 1:"High", 2:"Emergency"]
+									input "${pName}PushoverPriority", "enum", title: "Notification Priority (Optional)", description: "Tap to select", defaultValue: 0, required: false, multiple: false, submitOnChange: true, options: t0
+									input "${pName}PushoverSound", "enum", title: "Notification Sound (Optional)", description: "Tap to select", defaultValue: "pushover", required: false, multiple: false, submitOnChange: true, options: getPushoverSounds()
+								}
+							}
+						} else { paragraph "New Install Detected!!!\n\nPlease complete the NST Automation Install. Then return later to resume Pushover configuration.", state: "complete" }
 					}
 				}
-			}
+				if(settings?."${pName}NotifPhones" || settings?."${pName}UsePush" || (settings?."${pName}PushoverEnabled" /* && settings?."${pName}PushoverDevices" */)) {
+					section("Notification Restrictions:") {
+						input "${pName}UseParentNotifRestrictions", "bool", title: "Use Notification Schedule From Manager", required: false, defaultValue: true, submitOnChange: true
+						if(!settings?."${pName}UseParentNotifRestrictions") {
+							def t1 = getNotifSchedDesc(pName)
+							href "setNotificationTimePage", title: "Notification Restrictions", description: (t1 ?: "Tap to configure"), params: ["pName": pName], state: (t1 ? "complete" : null), image: getAppImg("restriction_icon.png")
+						}
+					}
+				}
 			
+			} else {
+				fixSettings = true
+			}
+		} else {
+			fixSettings = true
+		}
+		if(fixSettings) {
+			settingRemove("${pName}NotifPhones")
+			settingRemove("${pName}UsePush")
+			settingRemove("${pName}PushoverEnabled")
+			settingRemove("${pName}PushoverDevices")
+			settingRemove("${pName}PushoverPriority")
+			settingRemove("${pName}PushoverSound")
+			settingRemove("${pName}UseParentNotifRestrictions")
+			settingRemove("${pName}qStartInput")
+			settingRemove("${pName}qStartTime")
+			settingRemove("${pName}qStopInput")
+			settingRemove("${pName}qStopTime")
+			settingRemove("${pName}quietDays")
+			settingRemove("${pName}quietModes")
+			settingRemove("${pName}NotifRecips")
+			stateRemove("pushoverManager")
 		}
 		if(allowSpeech && settings?."${pName}NotificationsOn") {
 			section("Voice Notification Preferences:") {
@@ -6599,13 +6627,23 @@ def getNotifConfigDesc(pName) {
 		// if(!getRecipientDesc(pName)) {
 		// 	str += "\n • Contacts: Using Manager Settings"
 		// }
-		str += (settings?."${pName}UsePush") ? "${str != "" ? "\n" : ""} • Push Messages: Enabled" : ""
-		str += (settings?."${pName}NotifPhones") ? "${str != "" ? "\n" : ""} • SMS: (${settings?."${pName}NotifPhones"?.size()})" : ""
-		str += (settings?."${pName}PushoverEnabled") ? "${str != "" ? "\n" : ""}Pushover: (Enabled)" : ""
-		str += (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverPriority") ? "${str != "" ? "\n" : ""} • Priority: (${settings?."${pName}PushoverPriority"})" : ""
-		str += (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverSound") ? "${str != "" ? "\n" : ""} • Sound: (${settings?."${pName}PushoverSound"})" : ""
-		def t0 = getNotifSchedDesc(pName)
-		str += t0 ? "\n\nAlert Restrictions:\n${t0}" : ""
+		def t0
+		if(settings?."${pName}UseMgrNotif" == false) {
+			str += (settings?."${pName}UsePush") ? "${str != "" ? "\n" : ""} • Push Messages: Enabled" : ""
+			str += (settings?."${pName}NotifPhones") ? "${str != "" ? "\n" : ""} • SMS: (${settings?."${pName}NotifPhones"?.size()})" : ""
+			str += (settings?."${pName}PushoverEnabled") ? "${str != "" ? "\n" : ""}Pushover: (Enabled)" : ""
+			str += (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverDevices") ? "${str != "" ? "\n" : ""} • Pushover Devices: (${settings?."${pName}PushoverDevices"})" : ""
+			str += (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverPriority") ? "${str != "" ? "\n" : ""} • Priority: (${settings?."${pName}PushoverPriority"})" : ""
+			str += (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverSound") ? "${str != "" ? "\n" : ""} • Sound: (${settings?."${pName}PushoverSound"})" : ""
+			t0 = getNotifSchedDesc(pName)
+			str += t0 ? "\n\nAlert Restrictions:\n${t0}" : ""
+		} else {
+			str += " • Enabled Using Manager Settings"
+		}
+		t0 = str
+		if(t0) {
+			str = "Notification Settings\n${t0}"
+		}
 		t0 = getVoiceNotifConfigDesc(pName)
 		str += t0 ? "\n\nVoice Status:${t0}" : ""
 		t0 = getAlarmNotifConfigDesc(pName)
@@ -6699,7 +6737,7 @@ def getRecipientsNames(val) {
 }
 
 def getRecipientDesc(pName) {
-	return (settings?."${pName}NotifPhones" || settings?."${pName}NotifUsePush" || (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverDevices")) ? settings?."${pName}PushoverDevices" : null
+	return (settings?."${pName}NotifPhones" || settings?."${pName}NotifUsePush" || (settings?."${pName}PushoverEnabled" && settings?."${pName}PushoverDevices")) ? true : false
 }
 
 def setDayModeTimePage(params) {
@@ -6825,22 +6863,31 @@ def autoScheduleOk(autoType) {
 |					      SEND NOTIFICATIONS VIA PARENT APP								|
 *************************************************************************************************/
 def sendNofificationMsg(msg, msgType, pushoverMap=null, sms=null, push=null) {
-	LogAction("sendNofificationMsg($msg, $msgType, $recips, $sms, $push)", "trace", false)
-	def ok2Notify = setting?."${getAutoType()}UseParentNotifRestrictions" != false ? getOk2Notify(getAutoType()) : parent?.getOk2Notify()
-	if(!ok2Notify) {
-		LogAction("sendMsg: Message Skipped During Quiet Time ($msg)", "info", true)
-	} else {
-		if(sms || push) {
-			parent?.sendMsg(msgType, msg, true, null, sms, push)
-			//LogAction("Send Push Notification to $recips", "info", true)
-		} else if(settings?."${getAutoType()}PushoverEnabled" && settings?."${getAutoType()}PushoverDevices") {
-			Map msgObj = [:]
-			msgObj = pushoverMap ?: [title: msgType, message: msg, priority: (settings?."${getAutoType()}PushoverPriority" ?: 0)]
-			if(settings?."${getAutoType()}PushoverSound") { msgObj?.sound = settings?."${getAutoType()}PushoverSound" }
-			buildPushMessage(settings?."${getAutoType()}PushoverDevices", msgObj, true)
+	LogAction("sendNofificationMsg($msg, $msgType, $pushoverMap, $sms, $push)", "trace", false)
+	if(settings?."${pName}NotificationsOn" == true) {
+		if(settings?."${pName}UseMgrNotif" == false) {
+			def ok2Notify = setting?."${getAutoType()}UseParentNotifRestrictions" != false ? getOk2Notify(getAutoType()) : true //parent?.getOk2Notify()
+			if(!ok2Notify) {
+				LogAction("sendMsg: Message Skipped During Quiet Time ($msg)", "info", true)
+			} else {
+				def mySms = sms ?: settings?."${pName}NotifPhones"
+				def myPush = push ?: settings?."${pName}UsePush"
+				if(mySms || myPush) {
+					parent?.sendMsg(msgType, msg, true, null, myPhone, myPush)
+					//LogAction("Send Push Notification to $recips", "info", true)
+				}
+				if(settings?."${getAutoType()}PushoverEnabled" && settings?."${getAutoType()}PushoverDevices") {
+					Map msgObj = [:]
+					msgObj = pushoverMap ?: [title: msgType, message: msg, priority: (settings?."${getAutoType()}PushoverPriority" ?: 0)]
+					if(settings?."${getAutoType()}PushoverSound") { msgObj?.sound = settings?."${getAutoType()}PushoverSound" }
+					parent?.buildPushMessage(settings?."${getAutoType()}PushoverDevices", msgObj, true)
+				}
+			}
 		} else {
 			parent?.sendMsg(msgType, msg, true)
 		}
+	} else {
+		LogAction("sendMsg: Message Skipped as notifications off ($msg)", "info", true)
 	}
 }
 
@@ -6865,10 +6912,16 @@ private buildPushMessage(List devices,Map msgData,timeStamp=false){if(!devices||
 *************************************************************************************************/
 def sendEventPushNotifications(message, type, pName) {
 	LogTrace("sendEventPushNotifications($message, $type, $pName)")
+/*
 	if(settings?."${pName}NotificationsOn" == true) {
-		//TODO: Build out Pushover priorities 
-		sendNofificationMsg(message, type, null, settings?."${pName}NotifPhones", settings?."${pName}UsePush")
-	}
+		if(settings?."${pName}UseMgrNotif" == false) {
+			//TODO: Build out Pushover priorities 
+			sendNofificationMsg(message, type, null, settings?."${pName}NotifPhones", settings?."${pName}UsePush")
+		} else {
+*/
+			sendNofificationMsg(message, type, null)
+//		}
+//	}
 }
 
 def sendEventVoiceNotifications(vMsg, pName, msgId, rmAAMsg=false, rmMsgId) {
