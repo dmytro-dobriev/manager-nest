@@ -5842,7 +5842,6 @@ def sendMsg(String msgType, String msg, Boolean showEvt=true, Map pushoverMap=nu
 			if(showEvt) { sendNotificationEvent(newMsg) }
 		} else {
 			if(!brdcast) {
-				LogAction("ContactBook is NOT Enabled on your SmartThings Account", "warn", false)
 				if(push || settings?.usePush) {
 					sentstr = "Push Message"
 					if(showEvt) {
