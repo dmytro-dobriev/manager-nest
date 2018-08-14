@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.4.1" }
-def appVerDate() { "08-13-2018" }
+def appVerDate() { "08-14-2018" }
 
 preferences {
 	//startPage
@@ -1418,7 +1418,7 @@ def watchDogAlarmActions(dev, dni, actType) {
 			}
 			atomicState?."lastWatDogSafetyAlertDt${dni?.key}" = getDtNow()
 		} else {
-			//sendNofificationMsg(evtNotifMsg, "Warning")
+			//sendNofificationMsg(evtNotifMsg, "Warning", watchDogPrefix())
 		}
 	}
 }
@@ -4093,7 +4093,7 @@ def adjustCameras(on, sendAutoType=null) {
 				}
 				catch (ex) {
 					log.error "adjustCameras() Exception: ${dev?.label} does not support commands on / off", ex
-					sendNofificationMsg("Camera commands not found, check IDE logs and installation instructions", "Warning")
+					sendEventPushNotifications("Camera commands not found, check IDE logs and installation instructions", "Warning", nModePrefix())
 					parent?.sendExceptionData(ex, "adjustCameras", true, getAutoType())
 				}
 				return dev
@@ -6862,8 +6862,8 @@ def autoScheduleOk(autoType) {
 /************************************************************************************************
 |					      SEND NOTIFICATIONS VIA PARENT APP								|
 *************************************************************************************************/
-def sendNofificationMsg(msg, msgType, pushoverMap=null, sms=null, push=null) {
-	LogAction("sendNofificationMsg($msg, $msgType, $pushoverMap, $sms, $push)", "trace", false)
+def sendNofificationMsg(msg, msgType, pName, pushoverMap=null, sms=null, push=null) {
+	LogAction("sendNofificationMsg($msg, $msgType, $pName, $pushoverMap, $sms, $push)", "trace", false)
 	if(settings?."${pName}NotificationsOn" == true) {
 		if(settings?."${pName}UseMgrNotif" == false) {
 			def ok2Notify = setting?."${getAutoType()}UseParentNotifRestrictions" != false ? getOk2Notify(getAutoType()) : true //parent?.getOk2Notify()
@@ -6916,10 +6916,10 @@ def sendEventPushNotifications(message, type, pName) {
 	if(settings?."${pName}NotificationsOn" == true) {
 		if(settings?."${pName}UseMgrNotif" == false) {
 			//TODO: Build out Pushover priorities 
-			sendNofificationMsg(message, type, null, settings?."${pName}NotifPhones", settings?."${pName}UsePush")
+			sendNofificationMsg(message, type, pName, null, settings?."${pName}NotifPhones", settings?."${pName}UsePush")
 		} else {
 */
-			sendNofificationMsg(message, type, null)
+			sendNofificationMsg(message, type, pName)
 //		}
 //	}
 }
