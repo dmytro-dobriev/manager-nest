@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.4.1" }
-def appVerDate() { "08-13-2018" }
+def appVerDate() { "08-14-2018" }
 
 preferences {
 	//startPage
@@ -1418,7 +1418,7 @@ def watchDogAlarmActions(dev, dni, actType) {
 			}
 			atomicState?."lastWatDogSafetyAlertDt${dni?.key}" = getDtNow()
 		} else {
-			//sendNofificationMsg(evtNotifMsg, "Warning")
+			//sendNofificationMsg(evtNotifMsg, "Warning", watchDogPrefix())
 		}
 	}
 }
@@ -2080,7 +2080,7 @@ def getRemSenCoolSetTemp(curMode=null, useCurrent=true) {
 	def theMode = curMode != null ? curMode : null
 	if(theMode == null) {
 		def tstat = schMotTstat
-		theMode = tstat ? tstat?.currentnestThermostatMode?.toString() : null
+		theMode = tstat ? tstat?.currentnestThermostatMode.toString() : null
 	}
 	if(theMode != "eco") {
 		if(getLastOverrideCoolSec() < (3600 * 4)) {
@@ -2121,7 +2121,7 @@ def getRemSenHeatSetTemp(curMode=null, useCurrent=true) {
 	def theMode = curMode != null ? curMode : null
 	if(theMode == null) {
 		def tstat = schMotTstat
-		theMode = tstat ? tstat?.currentnestThermostatMode?.toString() : null
+		theMode = tstat ? tstat?.currentnestThermostatMode.toString() : null
 	}
 	if(theMode != "eco") {
 		if(getLastOverrideHeatSec() < (3600 * 4)) {
@@ -2335,7 +2335,7 @@ def fanCtrlCheck() {
 		if(isFanCircConfigured()) {
 			def adjust = (getTemperatureScale() == "C") ? 0.5 : 1.0
 			def threshold = !fanCtrlTempDiffDegrees ? adjust : fanCtrlTempDiffDegrees.toDouble()
-			def hvacMode = schMotTstat ? schMotTstat?.currentnestThermostatMode?.toString() : null
+			def hvacMode = schMotTstat ? schMotTstat?.currentnestThermostatMode.toString() : null
 /*
 			def curTstatFanMode = schMotTstat?.currentThermostatFanMode.toString()
 			def fanOn = (curTstatFanMode == "on" || curTstatFanMode == "circulate") ? true : false
@@ -2416,9 +2416,9 @@ def doFanOperation(tempDiff, curTstatTemp, curHeatSetpoint, curCoolSetpoint) {
 		def curCoolSetpoint = getRemSenCoolSetTemp()
 		def curHeatSetpoint = getRemSenHeatSetTemp()
 */
-		def hvacMode = tstat ? tstat?.currentnestThermostatMode?.toString() : null
-		def curTstatOperState = tstat?.currentThermostatOperatingState?.toString()
-		def curTstatFanMode = tstat?.currentThermostatFanMode?.toString()
+		def hvacMode = tstat ? tstat?.currentnestThermostatMode.toString() : null
+		def curTstatOperState = tstat?.currentThermostatOperatingState.toString()
+		def curTstatFanMode = tstat?.currentThermostatFanMode.toString()
 		LogAction("doFanOperation: Thermostat Info - ( Temperature: (${curTstatTemp}) | HeatSetpoint: (${curHeatSetpoint}) | CoolSetpoint: (${curCoolSetpoint}) | HvacMode: (${hvacMode}) | OperatingState: (${curTstatOperState}) | FanMode: (${curTstatFanMode}) )", "info", false)
 
 		if(atomicState?.haveRunFan == null) { atomicState.haveRunFan = false }
@@ -2548,8 +2548,8 @@ def circulateFanControl(operType, Double curSenTemp, Double reqSetpointTemp, Dou
 	def tstatsMir = schMotTstatMir
 
 	def theFanIsOn = false
-	def hvacMode = tstat ? tstat?.currentnestThermostatMode?.toString() : null
-	def curTstatFanMode = tstat?.currentThermostatFanMode?.toString()
+	def hvacMode = tstat ? tstat?.currentnestThermostatMode.toString() : null
+	def curTstatFanMode = tstat?.currentThermostatFanMode.toString()
 	def fanOn = (curTstatFanMode == "on" || curTstatFanMode == "circulate") ? true : false
 
 	def returnToAuto = can_Circ ? false : true
@@ -2570,7 +2570,7 @@ def circulateFanControl(operType, Double curSenTemp, Double reqSetpointTemp, Dou
 		returnToAuto = true
 	}
 
-	def curOperState = tstat?.currentnestThermostatOperatingState?.toString()
+	def curOperState = tstat?.currentnestThermostatOperatingState.toString()
 
 	def tstatOperStateOk = (curOperState == "idle") ? true : false
 	// if ac or heat is on, we should put fan back to auto
@@ -2823,9 +2823,9 @@ def humCtrlCheck() {
 		def execTime = now()
 
 		def tstat = schMotTstat
-		def hvacMode = tstat ? tstat?.currentnestThermostatMode?.toString() : null
-		def curTstatOperState = tstat?.currentThermostatOperatingState?.toString()
-		def curTstatFanMode = tstat?.currentThermostatFanMode?.toString()
+		def hvacMode = tstat ? tstat?.currentnestThermostatMode.toString() : null
+		def curTstatOperState = tstat?.currentThermostatOperatingState.toString()
+		def curTstatFanMode = tstat?.currentThermostatFanMode.toString()
 		//def curHum = humCtrlHumidity?.currentHumidity
 		def curHum = getDeviceVarAvg(settings.humCtrlHumidity, "currentHumidity")
 		def curExtTemp = getHumCtrlTemperature()
@@ -3505,7 +3505,7 @@ def conWatCheck(cTimeOut = false) {
 			if(!atomicState?."${pName}timeOutOn") { atomicState."${pName}timeOutOn" = false }
 			if(cTimeOut) { atomicState."${pName}timeOutOn" = true }
 			def timeOut = atomicState."${pName}timeOutOn" ?: false
-			def curMode = conWatTstat ? conWatTstat?.currentnestThermostatMode?.toString() : null
+			def curMode = conWatTstat ? conWatTstat?.currentnestThermostatMode.toString() : null
 			def modeEco = (curMode in ["eco"]) ? true : false
 			//def curNestPres = getTstatPresence(conWatTstat)
 			def modeOff = (curMode in ["off", "eco"]) ? true : false
@@ -4093,7 +4093,7 @@ def adjustCameras(on, sendAutoType=null) {
 				}
 				catch (ex) {
 					log.error "adjustCameras() Exception: ${dev?.label} does not support commands on / off", ex
-					sendNofificationMsg("Camera commands not found, check IDE logs and installation instructions", "Warning")
+					sendEventPushNotifications("Camera commands not found, check IDE logs and installation instructions", "Warning", nModePrefix())
 					parent?.sendExceptionData(ex, "adjustCameras", true, getAutoType())
 				}
 				return dev
@@ -4760,7 +4760,7 @@ def setTstatTempCheck() {
 
 		def pName = schMotPrefix()
 
-		def curMode = tstat ? tstat?.currentnestThermostatMode?.toString() : null
+		def curMode = tstat ? tstat?.currentnestThermostatMode.toString() : null
 
 		def lastMode = atomicState?."${pName}lastMode"
 		def samemode = lastMode == curMode ? true : false
@@ -6862,8 +6862,8 @@ def autoScheduleOk(autoType) {
 /************************************************************************************************
 |					      SEND NOTIFICATIONS VIA PARENT APP								|
 *************************************************************************************************/
-def sendNofificationMsg(msg, msgType, pushoverMap=null, sms=null, push=null) {
-	LogAction("sendNofificationMsg($msg, $msgType, $pushoverMap, $sms, $push)", "trace", false)
+def sendNofificationMsg(msg, msgType, pName, pushoverMap=null, sms=null, push=null) {
+	LogAction("sendNofificationMsg($msg, $msgType, $pName, $pushoverMap, $sms, $push)", "trace", false)
 	if(settings?."${pName}NotificationsOn" == true) {
 		if(settings?."${pName}UseMgrNotif" == false) {
 			def ok2Notify = setting?."${getAutoType()}UseParentNotifRestrictions" != false ? getOk2Notify(getAutoType()) : true //parent?.getOk2Notify()
@@ -6916,10 +6916,10 @@ def sendEventPushNotifications(message, type, pName) {
 	if(settings?."${pName}NotificationsOn" == true) {
 		if(settings?."${pName}UseMgrNotif" == false) {
 			//TODO: Build out Pushover priorities 
-			sendNofificationMsg(message, type, null, settings?."${pName}NotifPhones", settings?."${pName}UsePush")
+			sendNofificationMsg(message, type, pName, null, settings?."${pName}NotifPhones", settings?."${pName}UsePush")
 		} else {
 */
-			sendNofificationMsg(message, type, null)
+			sendNofificationMsg(message, type, pName)
 //		}
 //	}
 }
@@ -7446,7 +7446,7 @@ def setTstatAutoTemps(tstat, coolSetpoint, heatSetpoint, pName, mir=null) {
 	def curHeatSetpoint
 
 	if(tstat) {
-		hvacMode = tstat?.currentnestThermostatMode?.toString()
+		hvacMode = tstat?.currentnestThermostatMode.toString()
 		LogAction("setTstatAutoTemps: [tstat: ${tstat?.displayName} | Mode: ${hvacMode} | coolSetpoint: ${coolSetpoint}${tUnitStr()} | heatSetpoint: ${heatSetpoint}${tUnitStr()}]", "info", true)
 
 		retVal = true
