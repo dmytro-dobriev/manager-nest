@@ -6863,7 +6863,7 @@ def addRemoveDevices(uninst = null) {
 	def retVal = false
 	if( /* atomicState?.resetAllData ||*/ settings?.resetAllData) {
 		LogAction("addRemoveDevices: found fixState in progress", "debug", true)
-		return
+		return true
 	}
 	try {
 		def devsInUse = []
@@ -7028,7 +7028,7 @@ def addRemoveDevices(uninst = null) {
 			delete.each { deleteChildDevice(it.deviceNetworkId, true) }
 			noDeleteErr = true
 		}
-		retVal = ((unist && noDeleteErr) || (!uninst && (noCreates && noDeletes))) ? true : false // it worked = no delete errors on uninstall; or no creates or deletes done
+		retVal = ((uninst && noDeleteErr) || (!uninst && (noCreates && noDeletes))) ? true : false // it worked = no delete errors on uninstall; or no creates or deletes done
 		//retVal = true
 		//currentDevMap(true)
 	} catch (ex) {
