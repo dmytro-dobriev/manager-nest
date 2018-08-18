@@ -2416,7 +2416,6 @@ def initManagerApp() {
 		atomicState?.isInstalled = true
 	} else { atomicState.isInstalled = false }
 	subscriber()
-	setPollingState()
 	startStopStream()
 	runIn(21, "finishInitManagerApp", [overwrite: true])
 }
@@ -2424,6 +2423,7 @@ def initManagerApp() {
 def finishInitManagerApp() {
 	LogTrace("finishInitManagerApp")
 	//atomicState?.appCodeIdData = [:]
+	setPollingState()
 	if(atomicState?.isInstalled && atomicState?.installData?.usingNewAutoFile) {
 		createSavedNest()
 		if(app.label == "Nest Manager") { app.updateLabel("NST Manager") }
@@ -4143,6 +4143,7 @@ def updateChildData(force = false) {
 		def locPresence = getLocationPresence()
 		def locSecurityState = getSecurityState()
 		def locEtaBegin = getEtaBegin()
+		if(atomicState?.notificationPrefs == null) { atomicState?.notificationPrefs = buildNotifPrefMap() }
 		def nPrefs = atomicState?.notificationPrefs
 		def devBannerData = atomicState?.devBannerData ?: null
 		def streamingActive = atomicState?.restStreamingOn == true ? true : false
@@ -5619,6 +5620,7 @@ private buildPushMessage(List devices,Map msgData,timeStamp=false){if(!devices||
 
 def notificationCheck() {
 	LogTrace("notificationCheck")
+	if(atomicState?.notificationPrefs == null) { atomicState?.notificationPrefs = buildNotifPrefMap() }
 	def nPrefs = atomicState?.notificationPrefs
 	if(!getOk2Notify()) { return }
 	apiIssueNotify(nPrefs?.app?.api?.issueMsg, nPrefs?.app?.api?.rateLimitMsg, nPrefs?.app?.api?.issueMsgWait)
@@ -5709,7 +5711,7 @@ def apiIssueNotify(msgOn, rateOn, wait) {
 
 def failedCmdNotify(failData, tstr) {
 	if(!(getLastFailedCmdMsgSec() > 300)) { return }
-	def nPrefs = atomicState?.notificationPrefs
+	def nPrefs = atomicState?.notificationPrefs ?: buildNotifPrefMap()
 	def cmdFail = (nPrefs?.app?.api?.cmdFailMsg && failData?.msg != null) ? true : false
 	def cmdstr = tstr ?: atomicState?.lastCmdSent
 	def msg = "\nThe (${cmdstr}) CMD sent to the API has failed.\nStatus Code: ${failData?.code}\nErrorMsg: ${failData?.msg}\nDT: ${failData?.dt}"
@@ -7564,6 +7566,7 @@ void finishFixState() {
 	LogAction("finishFixState", "info", false)
 	if(!parent) {
 		if(atomicState?.resetAllData) {
+			if(atomicState?.notificationPrefs == null) { atomicState?.notificationPrefs = buildNotifPrefMap() }
 			atomicState.devNameOverride = settings?.devNameOverride ? true : false
 			atomicState.useAltNames = settings?.useAltNames ? true : false
 			atomicState.custLabelUsed = settings?.useCustDevNames ? true : false
