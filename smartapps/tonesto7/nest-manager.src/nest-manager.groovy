@@ -4184,7 +4184,7 @@ def updateChildData(force = false) {
 				def tData = ["data":atomicState?.deviceData?.thermostats[devId], "mt":useMt, "debug":dbg, "tz":nestTz, "apiIssues":api, "safetyTemps":safetyTemps, "comfortHumidity":comfortHumidity,
 						"comfortDewpoint":comfortDewpoint, "pres":locPresence, "childWaitVal":getChildWaitVal().toInteger(), "htmlInfo":htmlInfo, "allowDbException":allowDbException,
 						"latestVer":latestTstatVer()?.ver?.toString(), "vReportPrefs":vRprtPrefs, "clientBl":clientBl, "curWeatherData":curWeatherData, "logPrefix":logNamePrefix, "hcTimeout":hcTstatTimeout,
-						"mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "autoSchedData":autoSchedData, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg, "showGraphs":showGraphs,
+						"mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "autoSchedData":autoSchedData, "healthNotify":nPrefs?.dev?.devHealth, "showGraphs":showGraphs,
 						"devBannerData":devBannerData, "restStreaming":streamingActive, "isBeta":isBeta, "hcRepairEnabled":hcRepairEnabled, "etaBegin":locEtaBegin ]
 				def oldTstatData = atomicState?."oldTstatData${devId}"
 				def tDataChecksum = generateMD5_A(tData.toString())
@@ -4216,7 +4216,7 @@ def updateChildData(force = false) {
 				//devCodeIds["protect"] = it?.getDevTypeId()
 				def pData = ["data":atomicState?.deviceData?.smoke_co_alarms[devId], "mt":useMt, "debug":dbg, "showProtActEvts":(!showProtActEvts ? false : true), "logPrefix":logNamePrefix,
 						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestProtVer()?.ver?.toString(), "clientBl":clientBl,
-						"hcWireTimeout":hcProtWireTimeout, "hcBattTimeout":hcProtBattTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg,
+						"hcWireTimeout":hcProtWireTimeout, "hcBattTimeout":hcProtBattTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth,
 						"devBannerData":devBannerData, "restStreaming":streamingActive, "isBeta":isBeta, "hcRepairEnabled":hcRepairEnabled ]
 				def oldProtData = atomicState?."oldProtData${devId}"
 				def pDataChecksum = generateMD5_A(pData.toString())
@@ -4249,7 +4249,7 @@ def updateChildData(force = false) {
 				List camMotionZones = (settings?.camEnMotionZoneFltr && settings?."camera_${devId}_zones"?.size()) ? settings?."camera_${devId}_zones" : []
 				def camData = ["data":atomicState?.deviceData?.cameras[devId], "mt":useMt, "debug":dbg, "logPrefix":logNamePrefix, "camMotionZones": camMotionZones,
 						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestCamVer()?.ver?.toString(), "clientBl":clientBl,
-						"hcTimeout":hcCamTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg,
+						"hcTimeout":hcCamTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth,
 						"streamNotify":nPrefs?.dev?.camera?.streamMsg, "devBannerData":devBannerData, "restStreaming":streamingActive, "motionSndChgWaitVal":motionSndChgWaitVal,
 						"isBeta":isBeta, "camTakeSnapOnEvt": camTakeSnapOnEvt, "hcRepairEnabled":hcRepairEnabled, "secState":locSecurityState ]
 				def oldCamData = atomicState?."oldCamData${devId}"
@@ -4282,7 +4282,7 @@ def updateChildData(force = false) {
 				//devCodeIds["presence"] = it?.getDevTypeId()
 				def pData = ["debug":dbg, "logPrefix":logNamePrefix, "tz":nestTz, "mt":useMt, "pres":locPresence, "apiIssues":api, "allowDbException":allowDbException,
 							"latestVer":latestPresVer()?.ver?.toString(), "clientBl":clientBl, "hcTimeout":hcLongTimeout, "mobileClientType":mobClientType, "hcRepairEnabled":hcRepairEnabled,
-							"enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg, "lastStrucDataUpd": getTimestampVal("lastStrucDataUpd"), "isBeta":isBeta ]
+							"enRemDiagLogging":remDiag, "healthNotify":nPrefs?.dev?.devHealth, "lastStrucDataUpd": getTimestampVal("lastStrucDataUpd"), "isBeta":isBeta ]
 				def oldPresData = atomicState?."oldPresData${devId}"
 				def pDataChecksum = generateMD5_A(pData.toString())
 				atomicState."oldPresData${devId}" = pDataChecksum
@@ -4314,7 +4314,7 @@ def updateChildData(force = false) {
 				def wData = ["data":wData1, "tz":nestTz, "mt":useMt, "debug":dbg, "logPrefix":logNamePrefix, "apiIssues":api, "htmlInfo":htmlInfo,
 							"allowDbException":allowDbException, "weathAlertNotif":settings?.weathAlertNotif, "latestVer":latestWeathVer()?.ver?.toString(),
 							"clientBl":clientBl, "hcTimeout":hcLongTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "hcRepairEnabled":hcRepairEnabled,
-							"healthNotify":nPrefs?.dev?.devHealth?.healthMsg, "showGraphs":showGraphs, "devBannerData":devBannerData, "isBeta":isBeta ]
+							"healthNotify":nPrefs?.dev?.devHealth, "showGraphs":showGraphs, "devBannerData":devBannerData, "isBeta":isBeta ]
 				def oldWeatherData = atomicState?."oldWeatherData${devId}"
 				def wDataChecksum = generateMD5_A(wData.toString())
 				def showWGraphs = settings?.weatherShowGraph == false ? false : true
@@ -4405,7 +4405,7 @@ def updateChildData(force = false) {
 					def tData = ["data":data, "mt":useMt, "debug":dbg, "tz":nestTz, "apiIssues":api, "safetyTemps":safetyTemps, "comfortHumidity":comfortHumidity,
 						"comfortDewpoint":comfortDewpoint, "pres":locPresence, "childWaitVal":getChildWaitVal().toInteger(), "htmlInfo":htmlInfo, "allowDbException":allowDbException,
 						"latestVer":latestvStatVer()?.ver?.toString(), "vReportPrefs":vRprtPrefs, "clientBl":clientBl, "curWeatherData":curWeatherData, "logPrefix":logNamePrefix, "hcTimeout":hcTstatTimeout,
-						"mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "autoSchedData":autoSchedData, "healthNotify":nPrefs?.dev?.devHealth?.healthMsg, "showGraphs":showGraphs,
+						"mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "autoSchedData":autoSchedData, "healthNotify":nPrefs?.dev?.devHealth, "showGraphs":showGraphs,
 						"devBannerData":devBannerData, "restStreaming":streamingActive, "isBeta":isBeta, "hcRepairEnabled":hcRepairEnabled, "etaBegin":locEtaBegin ]
 
 					def oldTstatData = atomicState?."oldvStatData${devId}"
@@ -6846,6 +6846,10 @@ def getLocHub() {
 def addRemoveDevices(uninst = null) {
 	LogTrace("addRemoveDevices")
 	def retVal = false
+	if( /* atomicState?.resetAllData ||*/ settings?.resetAllData) {
+		LogAction("addRemoveDevices: found fixState in progress", "debug", true)
+		return
+	}
 	try {
 		def devsInUse = []
 		def tstats
@@ -7084,7 +7088,7 @@ def addRemoveVthermostat(tstatdni, tval, myID) {
 			def vtlist = atomicState?.vThermostats ?: [:]
 			vtlist[devId] = "${tstat.label.toString()}"
 			atomicState.vThermostats = vtlist
-			if(!migrate) { runIn(10, "updated", [overwrite: true]) }  // create what is needed
+			if(!settings?.resetAllData) { runIn(10, "updated", [overwrite: true]) }  // create what is needed
 
 		} else if(!tval && atomicState?."vThermostatChildAppId${devId}") {
 			LogAction("addRemoveVthermostat() marking for remove virtual thermostat tracking ${tstat}", "trace", true)
@@ -7108,12 +7112,11 @@ def addRemoveVthermostat(tstatdni, tval, myID) {
 			}
 			vtlist = newlist
 			atomicState.vThermostats = vtlist
-			if(!migrate) { runIn(10, "updated", [overwrite: true]) }  // create what is needed
+			if(!settings?.resetAllData) { runIn(10, "updated", [overwrite: true]) }  // create what is needed
 		} else {
 			LogAction("addRemoveVthermostat() unexpected operation state ${myID} ${atomicState?."vThermostat${devId}"} ${atomicState?."vThermostatChildAppId${devId}"}", "warn", true)
 			return false
 		}
-		updTimestampMap("lastAnalyticUpdDt", null)
 		return true
 	}
 }
