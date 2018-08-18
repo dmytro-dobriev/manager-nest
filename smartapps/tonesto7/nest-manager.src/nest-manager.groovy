@@ -2249,7 +2249,7 @@ def installed() {
 def updated() {
 	LogAction("${app.label} Updated...with settings: ${settings}", "debug", true)
 	atomicState?.pollBlocked = true
-	atomicState?.pollBlockedReason = "Software Update pending"
+	atomicState?.pollBlockedReason = "Running updated"
 	restStreamHandler(true)   // stop the rest stream
 	atomicState?.restStreamingOn = false
 	atomicState.ssdpOn = false
@@ -2268,6 +2268,11 @@ def uninstalled() {
 
 def initialize() {
 	//LogTrace("initialize")
+	atomicState?.pollBlocked = true
+	atomicState?.pollBlockedReason = "Running Initialize"
+	restStreamHandler(true)   // stop the rest stream
+	atomicState?.restStreamingOn = false
+	atomicState.ssdpOn = false
 	if(!atomicState?.tsMigration) { timestampMigration() }
 	if(atomicState?.resetAllData || settings?.resetAllData) {
 		if(fixState()) { return }	// runIn of fixState will call initManagerApp()
@@ -2394,9 +2399,6 @@ def initManagerApp() {
 
 	atomicState.pollingOn = false
 	initStorageApp()
-	updTimestampMap("lastChildUpdDt", null) // force child update on next poll
-	updTimestampMap("lastChildForceUpdDt", null)
-	updTimestampMap("lastForcePoll", null)
 	def sData = atomicState?.swVer ?: [:]
 	sData["mgrVer"] = appVersion()
 	atomicState?.swVer = sData
@@ -2422,8 +2424,13 @@ def initManagerApp() {
 
 def finishInitManagerApp() {
 	LogTrace("finishInitManagerApp")
+// polling is still blocked coming into this
 	//atomicState?.appCodeIdData = [:]
-	setPollingState()
+	setPollingState() // polling is unblocked
+	updTimestampMap("lastChildUpdDt", null) // force child update on next poll
+	updTimestampMap("lastDevDataUpd", null)
+	updTimestampMap("lastChildForceUpdDt", null)
+	updTimestampMap("lastForcePoll", null)
 	if(atomicState?.isInstalled && atomicState?.installData?.usingNewAutoFile) {
 		createSavedNest()
 		if(app.label == "Nest Manager") { app.updateLabel("NST Manager") }
@@ -5630,6 +5637,7 @@ def notificationCheck() {
 }
 
 def cameraStreamNotify(child, Boolean streaming) {
+	if(atomicState?.notificationPrefs == null) { atomicState?.notificationPrefs = buildNotifPrefMap() }
 	if(streaming == null || atomicState?.notificationPrefs?.dev?.camera?.streamMsg != true) { return }
 	sendMsg("${child?.device?.displayName} Info", "Streaming is now '${streaming ? "ON" : "OFF"}'", false)
 }
@@ -5638,6 +5646,7 @@ def getLastDevHealthMsgSec(timeVal) { return !timeVal ? 100000 : GetTimeDiffSeco
 
 def deviceHealthNotify(child, Boolean isHealthy) {
 	// log.trace "deviceHealthNotify(${child?.device?.displayName}, $isHealthy)"
+	if(atomicState?.notificationPrefs == null) { atomicState?.notificationPrefs = buildNotifPrefMap() }
 	def nPrefs = atomicState?.notificationPrefs?.dev?.devHealth
 	if(isHealthy == true || nPrefs?.healthMsg != true) {
 		return
@@ -5686,6 +5695,7 @@ def getLocationPresence() {
 def locationPresNotify(pres) {
 	log.trace "locationPresNotify($pres)"
 	if(pres == null) { return }
+	if(atomicState?.notificationPrefs == null) { atomicState?.notificationPrefs = buildNotifPrefMap() }
 	if(atomicState?.notificationPrefs?.locationChg == true) {
 		def lastStatus = atomicState?.curNestLocStatus
 		if(lastStatus != null && lastStatus?.toString() != pres?.toString()) {
@@ -5711,7 +5721,8 @@ def apiIssueNotify(msgOn, rateOn, wait) {
 
 def failedCmdNotify(failData, tstr) {
 	if(!(getLastFailedCmdMsgSec() > 300)) { return }
-	def nPrefs = atomicState?.notificationPrefs ?: buildNotifPrefMap()
+	if(atomicState?.notificationPrefs == null) { atomicState?.notificationPrefs = buildNotifPrefMap() }
+	def nPrefs = atomicState?.notificationPrefs
 	def cmdFail = (nPrefs?.app?.api?.cmdFailMsg && failData?.msg != null) ? true : false
 	def cmdstr = tstr ?: atomicState?.lastCmdSent
 	def msg = "\nThe (${cmdstr}) CMD sent to the API has failed.\nStatus Code: ${failData?.code}\nErrorMsg: ${failData?.msg}\nDT: ${failData?.dt}"
@@ -5751,6 +5762,7 @@ def missPollNotify(on) {
 			restStreamHandler(true)   // close the stream if we have not heard from it in a while
 			atomicState?.restStreamingOn = false
 		}
+		if(atomicState?.notificationPrefs == null) { atomicState?.notificationPrefs = buildNotifPrefMap() }
 		def msgWait = atomicState?.notificationPrefs?.msgDefaultWait ?: 3600
 		if(on && getLastMissPollMsgSec() > msgWait.toInteger()) {
 			if(sendMsg("${app.label} Nest Data update Issue", msg)) {
@@ -5772,6 +5784,7 @@ def minVersionsOk() {
 }
 
 def appUpdateNotify(badFile=false, badType=null) {
+	if(atomicState?.notificationPrefs == null) { atomicState?.notificationPrefs = buildNotifPrefMap() }
 	def on = atomicState?.notificationPrefs?.app?.updates?.updMsg
 	def wait = atomicState?.notificationPrefs?.app?.updates?.updMsgWait
 	if(!badFile && (!on || !wait || !minVersionsOk())) { return }
@@ -7547,6 +7560,8 @@ def fixState() {
 			atomicState.pollingOn = false
 			atomicState?.pollBlocked = true
 			atomicState?.pollBlockedReason = "Repairing State"
+			updTimestampMap("lastChildUpdDt", getDtNow()) // make sure we don't try to force child update too soon
+			updTimestampMap("lastDevDataUpd", getDtNow())
 			result = true
 		} else if(atomicState?.resetAllData && !resetAllData) {
 			LogAction("fixState: resetting ALL toggle", "info", true)
