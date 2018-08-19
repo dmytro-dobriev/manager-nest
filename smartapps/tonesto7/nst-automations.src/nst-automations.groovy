@@ -235,7 +235,7 @@ def fixState() {
 		data.each { item ->
 			state.remove(item?.key.toString())
 		}
-		setAutomationStatus(settings?.disableAutomationreq == true ? true : false)
+		setAutomationStatus()
 		unschedule()
 		unsubscribe()
 		result = true
@@ -386,7 +386,7 @@ def mainAutoPage(params) {
 				if(atomicState?.isInstalled && (isNestModesConfigured() || isWatchdogConfigured() || isSchMotConfigured())) {
 					//paragraph title:"Enable/Disable this Automation", ""
 					input "disableAutomationreq", "bool", title: "Disable this Automation?", required: false, defaultValue: false /* atomicState?.disableAutomation */, submitOnChange: true, image: getAppImg("disable_icon2.png")
-					setAutomationStatus(settings?.disableAutomationreq == true ? true : false)
+					setAutomationStatus()
 				}
 				input ("showDebug", "bool", title: "Debug Option", description: "Show Automation Logs in the IDE?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("debug_icon.png"))
 				if(showDebug) {
@@ -432,8 +432,8 @@ def getSchMotConfigDesc(retAsList=false) {
 	}
 }
 
-def setAutomationStatus(disabled, upd=false) {
-	def myDis = disabled == true ? true : false
+def setAutomationStatus(upd=false) {
+	def myDis = settings?.disableAutomationreq == true ? true : false)
 	def settingsReset = parent?.settings?.disableAllAutomations
 	def storAutoType = getAutoType() == "storage" ? true : false
 	if(settingsReset == true && !storAutoType) {
@@ -562,7 +562,7 @@ def initAutoApp() {
 	unschedule()
 	unsubscribe()
 	def autoDisabled = getIsAutomationDisabled()
-	setAutomationStatus(settings?.disableAutomationreq == true ? true : false)
+	setAutomationStatus()
 
 	//if(!autoDisabled && (restoreId && restoreComplete == false ? false : true)) {
 

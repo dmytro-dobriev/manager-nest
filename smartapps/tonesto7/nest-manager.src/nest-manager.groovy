@@ -1164,12 +1164,12 @@ def automationsPage() {
 				href "automationGlobalPrefsPage", title: "Global Automation Preferences", description: prefDesc, state: (descStr != "" ? "complete" : null), image: getAppImg("global_prefs_icon.png")
 				input "disableAllAutomations", "bool", title: "Disable All Automations?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("disable_icon2.png")
 				if(atomicState?.disableAllAutomations == false && settings?.disableAllAutomations) {
-					toggleAllAutomations(settings?.disableAllAutomations, true)
+					toggleAllAutomations(true)
 
 				} else if (atomicState?.disableAllAutomations && !settings?.disableAllAutomations) {
-					toggleAllAutomations(settings?.disableAllAutomations, true)
+					toggleAllAutomations(true)
 				}
-				atomicState?.disableAllAutomations = settings?.disableAllAutomations
+				atomicState?.disableAllAutomations = settings?.disableAllAutomations == true ? true : false
 				//input "enTstatAutoSchedInfoReq", "bool", title: "Allow Other Smart Apps to Retrieve Thermostat automation Schedule info?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("info_icon2.png")
 				href "automationKickStartPage", title: "Re-Initialize All Automations", description: "Tap to Update All Automations", image: getAppImg("reset_icon.png")
 			}
@@ -1683,15 +1683,14 @@ def buildNotifPrefMap() {
 	return res
 }
 
-def toggleAllAutomations(disable=false, upd = false) {
-	def dis = disable == null ? false : disable
-	def disStr = dis ? "Enabling" : "Disabling"
+def toggleAllAutomations(upd = false) {
+	def t0 = settings?.disableAllAutomations == true ? true : false
+	atomicState?.disableAllAutomations = t0
+	def disStr = t0 ? "Returning control to" : "Disabling"
 	def cApps = getChildApps()
 	cApps.each { ca ->
-		if(ca?.getAutomationType() != "storage") {
-			LogAction("toggleAllAutomations: ${disStr} automation  ${ca?.label}", "info", true)
-			ca?.setAutomationStatus(dis, upd)
-		}
+		LogAction("toggleAllAutomations: ${disStr} automation  ${ca?.label}", "info", true)
+		ca?.setAutomationStatus(upd)
 	}
 }
 
@@ -7625,9 +7624,7 @@ def fixState() {
 			atomicState.pollingOn = false
 			atomicState?.pollBlocked = true
 			atomicState?.pollBlockedReason = "Repairing State"
-			def t0 = settings?.disableAllAutomations == true ? true : false
-			atomicState?.disableAllAutomations = t0
-			if(t0) { toggleAllAutomations(t0) }
+			toggleAllAutomations()
 			updTimestampMap("lastChildUpdDt", getDtNow()) // make sure we don't try to force child update too soon
 			updTimestampMap("lastDevDataUpd", getDtNow())
 			result = true
