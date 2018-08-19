@@ -235,6 +235,7 @@ def fixState() {
 		data.each { item ->
 			state.remove(item?.key.toString())
 		}
+		setAutomationStatus(settings?.disableAutomationreq == true ? true : false)
 		unschedule()
 		unsubscribe()
 		result = true
@@ -384,8 +385,8 @@ def mainAutoPage(params) {
 			section("Automation Options:") {
 				if(atomicState?.isInstalled && (isNestModesConfigured() || isWatchdogConfigured() || isSchMotConfigured())) {
 					//paragraph title:"Enable/Disable this Automation", ""
-					input "disableAutomationreq", "bool", title: "Disable this Automation?", required: false, defaultValue: atomicState?.disableAutomation, submitOnChange: true, image: getAppImg("disable_icon2.png")
-					setAutomationStatus(settings?.disableAutomationreq)
+					input "disableAutomationreq", "bool", title: "Disable this Automation?", required: false, defaultValue: false /* atomicState?.disableAutomation */, submitOnChange: true, image: getAppImg("disable_icon2.png")
+					setAutomationStatus(settings?.disableAutomationreq == true ? true : false)
 				}
 				input ("showDebug", "bool", title: "Debug Option", description: "Show Automation Logs in the IDE?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("debug_icon.png"))
 				if(showDebug) {
@@ -432,14 +433,25 @@ def getSchMotConfigDesc(retAsList=false) {
 }
 
 def setAutomationStatus(disabled, upd=false) {
-	if(!atomicState?.disableAutomation && disabled) {
+	def myDis = disabled == true ? true : false
+	def settingsReset = parent?.settings?.disableAllAutomations
+	def storAutoType = getAutoType() == "storage" ? true : false
+	if(settingsReset == true && !storAutoType) {
+		if(!myDis && settingsReset) {
+			 LogAction("setAutomationStatus: NST Manager forcing disable")
+		}
+		myDis = true
+	} else if(storAutoType) {
+		myDis = false
+	}
+	if(!atomicState?.disableAutomation && myDis) {
 		LogAction("Automation Disabled at (${getDtNow()})", "info", true)
 		atomicState?.disableAutomationDt = getDtNow()
-	} else if(atomicState?.disableAutomation && !disabled) {
+	} else if(atomicState?.disableAutomation && !myDis) {
 		LogAction("Automation Enabled at (${getDtNow()})", "info", true)
 		atomicState?.disableAutomationDt = null
 	}
-	atomicState?.disableAutomation = disabled
+	atomicState?.disableAutomation = myDis
 	if(upd) { app.update() }
 }
 
@@ -550,6 +562,7 @@ def initAutoApp() {
 	unschedule()
 	unsubscribe()
 	def autoDisabled = getIsAutomationDisabled()
+	setAutomationStatus(settings?.disableAutomationreq == true ? true : false)
 
 	//if(!autoDisabled && (restoreId && restoreComplete == false ? false : true)) {
 
@@ -619,7 +632,7 @@ def initAutoApp() {
 				else { atomicState."${sLbl}MotionInActiveDt" = getDtNow() }
 
 				atomicState."${sLbl}oldMotionActive" = newact
-				atomicState?."motion${cnt}UseMotionSettings" = null 		// clear automation state of schedule in use motion state
+				atomicState?."motion${cnt}UseMotionSettings" = null		// clear automation state of schedule in use motion state
 				atomicState?."motion${cnt}LastisBtwn" = false
 
 				timersActive = (timersActive || atomicState."schedule${cnt}TimeActive") ? true : false
@@ -739,19 +752,19 @@ def getStateVal(var) {
 
 def automationsInst() {
 	atomicState.isNestModesConfigured = isNestModesConfigured() ? true : false
-	atomicState.isWatchdogConfigured = 	isWatchdogConfigured() ? true : false
+	atomicState.isWatchdogConfigured =	isWatchdogConfigured() ? true : false
 	atomicState.isDiagnosticsConfigured = isDiagnosticsConfigured() ? true : false
 	atomicState.isStorageConfigured = isStorageConfigured() ? true : false
-	atomicState.isSchMotConfigured = 	isSchMotConfigured() ? true : false
+	atomicState.isSchMotConfigured =	isSchMotConfigured() ? true : false
 
-	atomicState.isLeakWatConfigured = 	isLeakWatConfigured() ? true : false
-	atomicState.isConWatConfigured = 	isConWatConfigured() ? true : false
-	atomicState.isHumCtrlConfigured = 	isHumCtrlConfigured() ? true : false
-	atomicState.isExtTmpConfigured = 	isExtTmpConfigured() ? true : false
+	atomicState.isLeakWatConfigured =	isLeakWatConfigured() ? true : false
+	atomicState.isConWatConfigured =	isConWatConfigured() ? true : false
+	atomicState.isHumCtrlConfigured =	isHumCtrlConfigured() ? true : false
+	atomicState.isExtTmpConfigured =	isExtTmpConfigured() ? true : false
 	atomicState.isRemSenConfigured =	isRemSenConfigured() ? true : false
-	atomicState.isTstatSchedConfigured = 	isTstatSchedConfigured() ? true : false
-	atomicState.isFanCtrlConfigured = 	isFanCtrlSwConfigured() ? true : false
-	atomicState.isFanCircConfigured = 	isFanCircConfigured() ? true : false
+	atomicState.isTstatSchedConfigured =	isTstatSchedConfigured() ? true : false
+	atomicState.isFanCtrlConfigured =	isFanCtrlSwConfigured() ? true : false
+	atomicState.isFanCircConfigured =	isFanCircConfigured() ? true : false
 	atomicState?.isInstalled = true
 }
 
@@ -765,14 +778,14 @@ def getAutomationsInstalled() {
 		case "schMot":
 			def tmp = [:]
 			tmp[aType] = []
-			if(isLeakWatConfigured()) 		{ tmp[aType].push("leakWat") }
-			if(isConWatConfigured()) 		{ tmp[aType].push("conWat") }
-			if(isHumCtrlConfigured()) 		{ tmp[aType].push("humCtrl") }
-			if(isExtTmpConfigured()) 		{ tmp[aType].push("extTmp") }
+			if(isLeakWatConfigured())		{ tmp[aType].push("leakWat") }
+			if(isConWatConfigured())		{ tmp[aType].push("conWat") }
+			if(isHumCtrlConfigured())		{ tmp[aType].push("humCtrl") }
+			if(isExtTmpConfigured())		{ tmp[aType].push("extTmp") }
 			if(isRemSenConfigured())		{ tmp[aType].push("remSen") }
-			if(isTstatSchedConfigured()) 	{ tmp[aType].push("tSched") }
-			if(isFanCtrlSwConfigured()) 	{ tmp[aType].push("fanCtrl") }
-			if(isFanCircConfigured()) 		{ tmp[aType].push("fanCirc") }
+			if(isTstatSchedConfigured())		{ tmp[aType].push("tSched") }
+			if(isFanCtrlSwConfigured())		{ tmp[aType].push("fanCtrl") }
+			if(isFanCircConfigured())		{ tmp[aType].push("fanCirc") }
 			if(tmp?.size()) { list.push(tmp) }
 			break
 		case "watchDog":
@@ -4708,7 +4721,7 @@ def checkOnMotion(mySched) {
 
 		LogAction("checkOnMotion: [ActiveDt: ${lastActiveMotionDt} (${lastActiveMotionSec} sec) | InActiveDt: ${lastInactiveMotionDt} (${lastInactiveMotionSec} sec) | MotionOn: ($motionOn)", "trace", false)
 
-		def ontimedelay = (settings."${sLbl}MDelayValOn"?.toInteger() ?: 60) * 1000 		// default to 60s
+		def ontimedelay = (settings."${sLbl}MDelayValOn"?.toInteger() ?: 60) * 1000		// default to 60s
 		def offtimedelay = (settings."${sLbl}MDelayValOff"?.toInteger() ?: 30*60) * 1000	// default to 30 min
 
 		def ontimeNum = lastActiveMotionDt + ontimedelay
@@ -5965,15 +5978,15 @@ def getScheduleDesc(num = null) {
 			str += schData?.p1 ?	"\n │ ${(schData?.p0 || isSw) ? "│" : "   "} └ (${schData?.p1.size()} Selected)" : ""
 			str += schData?.p0 ?	"\n │ ${isSw ? "├" : "└"} Presence Away:${!isSomebodyHome(settings["${sLbl}restrictionPresAway"]) ? " (${okSym()})" : " (${notOkSym()})"}" : ""
 			//str += schData?.p0 ? "$p0Str" : ""
-			str += schData?.p0 ? 	"\n │ ${isSw ? "│" : "   "} └ (${schData?.p0.size()} Selected)" : ""
+			str += schData?.p0 ?	"\n │ ${isSw ? "│" : "   "} └ (${schData?.p0.size()} Selected)" : ""
 
 			str += schData?.s1 ?	"\n │ ${schData?.s0 ? "├" : "└"} Switches On:${isSwitchOn(settings["${sLbl}restrictionSwitchOn"]) ? " (${okSym()})" : " (${notOkSym()})"}" : ""
 			str += schData?.s1 ?	"\n │ ${schData?.s0 ? "│" : "   "} └ (${schData?.s1.size()} Selected)" : ""
 			str += schData?.s0 ?	"\n │ └ Switches Off:${!isSwitchOn(settings["${sLbl}restrictionSwitchOff"]) ? " (${okSym()})" : " (${notOkSym()})"}" : ""
-			str += schData?.s0 ? 	"\n │      └ (${schData?.s0.size()} Selected)" : ""
+			str += schData?.s0 ?	"\n │      └ (${schData?.s0.size()} Selected)" : ""
 
 			//Temp Setpoints
-			str += isTemp  ? 	"${isRestrict ? "\n │\n" : "\n"} ${(isMot || isRemSen) ? "├" : "└"} Temp Setpoints:" : ""
+			str += isTemp  ?	"${isRestrict ? "\n │\n" : "\n"} ${(isMot || isRemSen) ? "├" : "└"} Temp Setpoints:" : ""
 			str += schData?.ctemp ? "\n ${tempPreBar}  ${schData?.htemp ? "├" : "└"} Cool Setpoint: (${fixTempSetting(schData?.ctemp)}${tempScaleStr})" : ""
 			str += schData?.htemp ? "\n ${tempPreBar}  ${schData?.hvacm ? "├" : "└"} Heat Setpoint: (${fixTempSetting(schData?.htemp)}${tempScaleStr})" : ""
 			str += schData?.hvacm ? "\n ${tempPreBar}  └ HVAC Mode: (${strCapitalize(schData?.hvacm)})" : ""
@@ -7672,7 +7685,7 @@ def getDevOpt() {
 def devPageFooter(var, eTime) {
 	def res = []
 	if(getDevOpt()) {
-		res += 	section() {
+		res +=	section() {
 					paragraph "   Page Loads: (${atomicState?.usageMetricsStore["${var}"] ?: 0}) | LoadTime: (${eTime ? (now()-eTime) : 0}ms)"
 				}
 	}

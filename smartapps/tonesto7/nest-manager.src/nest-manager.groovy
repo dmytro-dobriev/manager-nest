@@ -1164,10 +1164,10 @@ def automationsPage() {
 				href "automationGlobalPrefsPage", title: "Global Automation Preferences", description: prefDesc, state: (descStr != "" ? "complete" : null), image: getAppImg("global_prefs_icon.png")
 				input "disableAllAutomations", "bool", title: "Disable All Automations?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("disable_icon2.png")
 				if(atomicState?.disableAllAutomations == false && settings?.disableAllAutomations) {
-					toggleAllAutomations(settings?.disableAllAutomations)
+					toggleAllAutomations(settings?.disableAllAutomations, true)
 
 				} else if (atomicState?.disableAllAutomations && !settings?.disableAllAutomations) {
-					toggleAllAutomations(settings?.disableAllAutomations)
+					toggleAllAutomations(settings?.disableAllAutomations, true)
 				}
 				atomicState?.disableAllAutomations = settings?.disableAllAutomations
 				//input "enTstatAutoSchedInfoReq", "bool", title: "Allow Other Smart Apps to Retrieve Thermostat automation Schedule info?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("info_icon2.png")
@@ -1683,12 +1683,14 @@ def buildNotifPrefMap() {
 	return res
 }
 
-def toggleAllAutomations(disable=false) {
+def toggleAllAutomations(disable=false, upd = false) {
 	def dis = disable == null ? false : disable
+	def disStr = dis ? "Enabling" : "Disabling"
 	def cApps = getChildApps()
 	cApps.each { ca ->
 		if(ca?.getAutomationType() != "storage") {
-			ca?.setAutomationStatus(dis, true)
+			LogAction("toggleAllAutomations: ${disStr} automation  ${ca?.label}", "info", true)
+			ca?.setAutomationStatus(dis, upd)
 		}
 	}
 }
@@ -7613,7 +7615,7 @@ def fixState() {
 	def before = getStateSizePerc()
 	if(!parent) {
 		if(!atomicState?.resetAllData && resetAllData) {
-			def data = getState()?.findAll { !(it?.key in ["accessToken", "authToken", "authTokenExpires", "timestampDtMap", "authTokenNum", "enRemDiagLogging", "installationId", "installData", "remDiagLogDataStore", "remDiagDataSentDt", "resetAllData", "pollingOn", "pollBlocked", "ssdpOn", "pollBLockedReason", "resetAllData", "autoMigrationComplete", "tsMigration", "savedNestSettings", "apiCommandCnt", "apiStrReqCnt", "apiDevReqCnt", "apiMetaReqCnt", "apiRestStrEvtCnt", "appNotifSentCnt", "structData", "deviceData" ]) }
+			def data = getState()?.findAll { !(it?.key in ["accessToken", "authToken", "authTokenExpires", "timestampDtMap", "authTokenNum", "enRemDiagLogging", "installationId", "installData", "remDiagLogDataStore", "remDiagDataSentDt", "resetAllData", "pollingOn", "pollBlocked", "ssdpOn", "pollBLockedReason", "resetAllData", "autoMigrationComplete", "tsMigration", "savedNestSettings", "apiCommandCnt", "apiStrReqCnt", "apiDevReqCnt", "apiMetaReqCnt", "apiRestStrEvtCnt", "appNotifSentCnt", "structData", "deviceData", "disableAllAutomations" ]) }
 			data.each { item ->
 				state.remove(item?.key.toString())
 			}
@@ -7623,6 +7625,9 @@ def fixState() {
 			atomicState.pollingOn = false
 			atomicState?.pollBlocked = true
 			atomicState?.pollBlockedReason = "Repairing State"
+			def t0 = settings?.disableAllAutomations == true ? true : false
+			atomicState?.disableAllAutomations = t0
+			if(t0) { toggleAllAutomations(t0) }
 			updTimestampMap("lastChildUpdDt", getDtNow()) // make sure we don't try to force child update too soon
 			updTimestampMap("lastDevDataUpd", getDtNow())
 			result = true
