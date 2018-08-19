@@ -5760,8 +5760,8 @@ def schMotSchedulePage(params) {
 
 def getScheduleList() {
 	def cnt = parent ? parent?.state?.appData?.schedules?.count : null
-	def maxCnt = cnt ? cnt.toInteger() : 4
-	maxCnt = Math.min( Math.max(cnt,4), 8)
+	def maxCnt = cnt ? cnt.toInteger() : 8
+	maxCnt = Math.min( Math.max(maxCnt,4), 8)
 	if(maxCnt < atomicState?.lastScheduleList?.size()) {
 		maxCnt = atomicState?.lastScheduleList?.size()
 		LogAction("A schedule size issue has occurred. The configured schedule size is smaller than the previous configuration restoring previous schedule size.", "warn", true)

@@ -377,14 +377,14 @@ private getStorageApp(honorState = true) {
 	if(honorState && stateSz < 55) { return null }
 	if(isAppLiteMode()) { return null }
 	def storApp = getChildApps()?.find { it?.getAutomationType() == "storage" && it?.name == autoAppName() }
-	if(storApp) { 
+	if(storApp) {
 		if(storApp?.label != getStorageAppChildLabel()) { storApp?.updateLabel(getStorageAppChildLabel()) }
 		storageAppInst(true)
-		return storApp 
-	} else { 
+		return storApp
+	} else {
 		//runIn(5, "initStorageApp", [overwrite: true])
 		storageAppInst(false)
-		return null 
+		return null
 	}
 }
 
@@ -1906,11 +1906,11 @@ def diagnosticPage () {
 
 def getRemDiagApp() {
 	def remDiagApp = getChildApps()?.find { it?.getAutomationType() == "remDiag" && it?.name == autoAppName() }
-	if(remDiagApp) { 
+	if(remDiagApp) {
 		if(remDiagApp?.label != getRemDiagAppChildLabel()) { storApp?.updateLabel(getRemDiagAppChildLabel()) }
 		return remDiagApp
-	} else { 
-		return null 
+	} else {
+		return null
 	}
 /*
 	def remDiagApp = null
@@ -2972,19 +2972,19 @@ def startStopStream() {
 		return
 	}
 	if(strEn && settings?.restStreaming && atomicState?.restStreamingOn) {
-		runIn(25, "restStreamCheck", [overwrite: true])
+		runIn(45, "restStreamCheck", [overwrite: true])
 		return
 	}
 	if(strEn && settings?.restStreaming && !atomicState?.restStreamingOn) {
 		//LogAction("Sending restStreamHandler(Start) Event to local node service", "debug", true)
 		restStreamHandler()
-		runIn(25, "restStreamCheck", [overwrite: true])
+		runIn(45, "restStreamCheck", [overwrite: true])
 	}
 	else if ((!settings?.restStreaming || !strEn) && atomicState?.restStreamingOn) {
 		//LogAction("Sending restStreamHandler(Stop) Event to local node service", "debug", true)
 		restStreamHandler(true)
 		atomicState?.restStreamingOn = false
-		runIn(25, "restStreamCheck", [overwrite: true])
+		runIn(45, "restStreamCheck", [overwrite: true])
 	}
 }
 
@@ -3097,7 +3097,7 @@ def receiveStreamStatus() {
 			//LogAction("Sending restStreamHandler(Stop) Event to local node service", "debug", false)
 			restStreamHandler(true)
 		} else if (settings?.restStreaming && !atomicState?.restStreamingOn) {		// suppose to be on
-			runIn(31, "startStopStream", [overwrite: true])
+			runIn(45, "startStopStream", [overwrite: true])
 		}
 		if(settings?.restStreaming && t0) {		// All good
 			updTimestampMap("lastHeardFromNestDt", getDtNow())
@@ -3531,10 +3531,14 @@ def poll(force = false, type = null) {
 def finishPoll(str=null, dev=null) {
 	LogTrace("finishPoll($str, $dev) received")
 	def lastDevUpd = getLastChildUpdSec()
+	if(!atomicState?.pollingOn) {
+		LogAction("finishPoll: Polling not ON", "warn", true);
+		return
+	}
 	if(atomicState?.pollBlocked) {
-		LogAction("Polling BLOCKED | Reason: (${atomicState?.pollBlockedReason})", "warn", true);
+		LogAction("finishPoll: Polling BLOCKED | Reason: (${atomicState?.pollBlockedReason})", "warn", true);
 		if( (atomicState?.apiRateLimited && lastDevUpd > 35*60) || (lastDevUpd > 45*60 && (atomicState?.needChildUpd || atomicState?.forceChildUpd) ) ) {
-			LogAction("ReRunning Updated() | Polling blocked | Last device update ${lastDevUpd} | Rate Limited: ${atomicState?.apiRateLimited}", "warn", true);
+			LogAction("finishPoll: ReRunning Updated() | Polling blocked | Last device update ${lastDevUpd} | Rate Limited: ${atomicState?.apiRateLimited}", "warn", true);
 			runIn(5, "updated", [overwrite: false]) // ensure it does not keep delaying
 			return
 		}
@@ -3565,7 +3569,9 @@ def resetPolling() {
 }
 
 def schedFinishPoll(devChg) {
-	finishPoll(false, devChg)
+	if(isPollAllowed()) {
+		finishPoll(false, devChg)
+	}
 	return
 }
 
@@ -3798,7 +3804,9 @@ def procNestResponse(resp, data) {
 			atomicState.qdevRequested = false
 		}
 		if((atomicState?.qdevRequested == false && atomicState?.qstrRequested == false) && (dev || atomicState?.forceChildUpd || atomicState?.needChildUpd)) {
-			finishPoll(true, true)
+			if(isPollAllowed()) {
+				finishPoll(true, true)
+			}
 		}
 
 	} catch (ex) {
@@ -5707,7 +5715,7 @@ def deviceHealthNotify(child, Boolean isHealthy) {
 	def t0 =  atomicState?.lastDevHealthMsgMap ?: [:]
 	def lastTime = t0 && devId && t0?."${devId}" ? t0["${devId}"].dt : null
 	if(!devId || getLastDevHealthMsgSec(lastTime) <= nPrefs?.healthMsgWait?.toInteger() ) {
-		return 
+		return
 	}
 	sendMsg("$devLbl Health Warning", "\nDevice is OFFLINE. Please check your logs for possible issues.")
 	t0["${devId}"] = ["device":"$devLbl", "dt":getDtNow()]
@@ -6056,7 +6064,7 @@ def getWeatherConditions(force = false) {
 				}
 				if(storageApp) {
 					updStorageVal("curAlerts", curAlerts)
-				} else { 
+				} else {
 					atomicState?.curAlerts = curAlerts
 				}
 				
@@ -7742,7 +7750,7 @@ def stateCleanup() {
 		"swVersion", "dashSetup", "dashboardUrl", "apiIssues", "stateSize", "haveRun", "lastStMode", "lastPresSenAway", "devCodeIdData", "appCodeIdData",
 		"automationsActive", "temperatures", "powers", "energies", "use24Time", "useMilitaryTime", "advAppDebug", "appDebug", "awayModes", "homeModes", "childDebug", "updNotifyWaitVal",
 		"appApiIssuesWaitVal", "misPollNotifyWaitVal", "misPollNotifyMsgWaitVal", "devHealthMsgWaitVal", "nestLocAway", "heardFromRestDt", "autoSaVer", "lastHeardFromRestDt",
-		"remDiagApp", "remDiagClientId", "restorationInProgress", "diagManagAppStateFilters", "diagChildAppStateFilters", "lastFinishedPoll","tDevVer", "pDevVer", "camDevVer", "presDevVer", "weatDevVer", "vtDevVer", "streamDevVer", 
+		"remDiagApp", "remDiagClientId", "restorationInProgress", "diagManagAppStateFilters", "diagChildAppStateFilters", "lastFinishedPoll","tDevVer", "pDevVer", "camDevVer", "presDevVer", "weatDevVer", "vtDevVer", "streamDevVer",
 		/* "curAlerts", "curAstronomy", "curForecast", "curWeather", */ "detailEventHistory", "detailExecutionHistory", "evalExecutionHistory", "lastForecastUpdDt", "lastWeatherUpdDt",
 		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName", "ReallyChanged", "tsMigrationDone", "pushTested", "lastDevHealthMsgData"
  	]
@@ -7765,13 +7773,13 @@ def stateCleanup() {
 		data = [ "cmdQ0", "cmdQ1", "cmdQ2", "cmdQ3", "cmdQ4", "cmdQ5", "cmdQ6", "cmdQ7", "cmdQ8", "cmdQ9", "cmdQ10", "cmdQ11", "cmdQ12", "cmdQ13", "cmdQ14", "cmdQ15" ]
 		data.each { item ->
 			//if(state?.containsKey(item)) { state.remove(item?.toString()) }
-			state.remove(item?.toString()) 
+			state.remove(item?.toString())
 		}
 	}
 	atomicState?.workQrunInActive = false
 	atomicState.forceChildUpd = true
-	def remSettings = [ "showAwayAsAuto", "temperatures", "powers", "energies", "childDevDataPageDev", "childDevPageRfsh", "childDevDataRfshVal", "childDevDataStateFilter", "childDevPageShowAttr", 
-		"childDevPageShowCapab", "childDevPageShowCmds", "childDevPageShowState", "managAppPageRfsh", "managAppPageShowMeta", "managAppPageShowSet", "managAppPageShowState", "updChildOnNewOnly", 
+	def remSettings = [ "showAwayAsAuto", "temperatures", "powers", "energies", "childDevDataPageDev", "childDevPageRfsh", "childDevDataRfshVal", "childDevDataStateFilter", "childDevPageShowAttr",
+		"childDevPageShowCapab", "childDevPageShowCmds", "childDevPageShowState", "managAppPageRfsh", "managAppPageShowMeta", "managAppPageShowSet", "managAppPageShowState", "updChildOnNewOnly",
 		"locDesiredButton", "locDesiredTempScale", "recipients", "enableDashboard"
 	]
 	List camMotionSets = settings?.keySet()?.findAll { it?.toString()?.startsWith("camera_") && it?.toString()?.endsWith("_zones") }?.collect { it as String }
@@ -8411,14 +8419,14 @@ def createInstallDataJson(returnMap=false) {
 		if(settings?.optInAppAnalytics || settings?.optInAppAnalytics == null) {
 			data =	[
 				"guid":atomicState?.installationId, "beta":betaMarker(), "versions":versions, "thermostats":tstatCnt, "protects":protCnt, "vthermostats":vstatCnt, "cameras":camCnt, "appErrorCnt":appErrCnt, "devErrorCnt":devErrCnt,
-				"installDt": atomicState?.installData?.dt, "updatedDt": atomicState?.installData?.updatedDt, "automations":automations, "timeZone":tz, "apiCmdCnt":apiCmdCnt, "apiStrReqCnt":apiStrReqCnt, "apiDevReqCnt":apiDevReqCnt, 
-				"apiMetaReqCnt":apiMetaReqCnt, "appNotifSentCnt":appNotifSentCnt, "apiRestStrEvtCnt":apiRestStrEvtCnt, "appUseMetCnt":appUseMetCnt, "devUseMetCnt":devUseMetCnt,"stateUsage":"${getStateSizePerc()}%", "mobileClient":cltType, 
+				"installDt": atomicState?.installData?.dt, "updatedDt": atomicState?.installData?.updatedDt, "automations":automations, "timeZone":tz, "apiCmdCnt":apiCmdCnt, "apiStrReqCnt":apiStrReqCnt, "apiDevReqCnt":apiDevReqCnt,
+				"apiMetaReqCnt":apiMetaReqCnt, "appNotifSentCnt":appNotifSentCnt, "apiRestStrEvtCnt":apiRestStrEvtCnt, "appUseMetCnt":appUseMetCnt, "devUseMetCnt":devUseMetCnt,"stateUsage":"${getStateSizePerc()}%", "mobileClient":cltType,
 				"liteAppMode": isAppLiteMode(), "datetime":getDtNow()?.toString(), "optOut":false
 			]
 		} else {
 			data = [
 				"guid":atomicState?.installationId, "beta":betaMarker(), "versions":versions, "thermostats":tstatCnt, "protects":protCnt, "vthermostats":vstatCnt, "cameras":camCnt, "appErrorCnt":appErrCnt, "devErrorCnt":devErrCnt,
-				"apiStrReqCnt":apiStrReqCnt, "apiDevReqCnt":apiDevReqCnt, "apiMetaReqCnt":apiMetaReqCnt, "installDt": atomicState?.installData?.dt, "updatedDt": atomicState?.installData?.updatedDt,"automations":automations, 
+				"apiStrReqCnt":apiStrReqCnt, "apiDevReqCnt":apiDevReqCnt, "apiMetaReqCnt":apiMetaReqCnt, "installDt": atomicState?.installData?.dt, "updatedDt": atomicState?.installData?.updatedDt,"automations":automations,
 				"liteAppMode": isAppLiteMode(), "timeZone":tz, "apiCmdCnt":apiCmdCnt, "apiRestStrEvtCnt":apiRestStrEvtCnt, "stateUsage":"${getStateSizePerc()}%", "datetime":getDtNow()?.toString(), "optOut":true
 			]
 		}
