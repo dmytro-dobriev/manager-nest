@@ -26,8 +26,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.4.1" }
-def appVerDate() { "08-14-2018" }
+def appVersion() { "5.4.2" }
+def appVerDate() { "08-19-2018" }
 
 preferences {
 	//startPage
@@ -5044,7 +5044,7 @@ def schMotModePage() {
 			section("Remote Sensor:") {
 				if(tStatPhys || settings?.schMotRemoteSensor) {
 					def desc = ""
-					input (name: "schMotRemoteSensor", type: "bool", title: "Use Alternate Temp Sensors Control Zone temperature?", description: desc, required: false, defaultValue: false, submitOnChange: true,
+					input (name: "schMotRemoteSensor", type: "bool", title: "Use Alternate Temp Sensors to Control Zone temperature?", description: desc, required: false, defaultValue: false, submitOnChange: true,
 							image: getAppImg("remote_sensor_icon.png"))
 					if(settings?.schMotRemoteSensor) {
 						def remSenDescStr = ""

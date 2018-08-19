@@ -35,15 +35,15 @@ definition(
 }
 
 def appVersion() { "5.4.2" }
-def appVerDate() { "08-18-2018" }
+def appVerDate() { "08-19-2018" }
 def minVersions() {
 	return [
-		"automation":["val":541, "desc":"5.4.1"],
-		"thermostat":["val":536, "desc":"5.3.7"],
-		"protect":["val":536, "desc":"5.3.7"],
-		"presence":["val":536, "desc":"5.3.7"],
-		"weather":["val":536, "desc":"5.3.7"],
-		"camera":["val":538, "desc":"5.3.9"],
+		"automation":["val":542, "desc":"5.4.2"],
+		"thermostat":["val":537, "desc":"5.3.7"],
+		"protect":["val":537, "desc":"5.3.7"],
+		"presence":["val":537, "desc":"5.3.7"],
+		"weather":["val":537, "desc":"5.3.7"],
+		"camera":["val":539, "desc":"5.3.9"],
 		"stream":["val":106, "desc":"1.0.6"]
 	]
 }
@@ -7157,7 +7157,7 @@ def addRemoveVthermostat(tstatdni, tval, myID) {
 			def vtlist = atomicState?.vThermostats ?: [:]
 			vtlist[devId] = "${tstat.label.toString()}"
 			atomicState.vThermostats = vtlist
-			if(!settings?.resetAllData) { runIn(10, "updated", [overwrite: true]) }  // create what is needed
+			if(!settings?.resetAllData) { runIn(120, "updated", [overwrite: true]) }  // create what is needed
 
 		} else if(!tval && atomicState?."vThermostatChildAppId${devId}") {
 			LogAction("addRemoveVthermostat() marking for remove virtual thermostat tracking ${tstat}", "trace", true)
@@ -7181,7 +7181,7 @@ def addRemoveVthermostat(tstatdni, tval, myID) {
 			}
 			vtlist = newlist
 			atomicState.vThermostats = vtlist
-			if(!settings?.resetAllData) { runIn(10, "updated", [overwrite: true]) }  // create what is needed
+			if(!settings?.resetAllData) { runIn(120, "updated", [overwrite: true]) }  // create what is needed
 		} else {
 			LogAction("addRemoveVthermostat() unexpected operation state ${myID} ${atomicState?."vThermostat${devId}"} ${atomicState?."vThermostatChildAppId${devId}"}", "warn", true)
 			return false
