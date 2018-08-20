@@ -5395,10 +5395,12 @@ def queueProcNestApiCmd(uri, typeId, type, obj, objVal, qnum, cmd, redir = false
 }
 
 def adjThrottle(qnum, redir, callerStr) {
-	def t0 = getRecentSendCmd(qnum)
-	if(!redir && (t0 > 0) /* && (getLastCmdSentSeconds(qnum) < 60) */ ) {
+	if(!redir) {
+		def t0 = getRecentSendCmd(qnum)
 		def val = t0
-		val -= 1
+		if(t0 > 0 /* && (getLastCmdSentSeconds(qnum) < 60) */ ) {
+			val -= 1
+		}
 		def t1 = getLastCmdSentSeconds(qnum)
 		if(t1 > 120 && t1 < 60*45 && val < 2) {
 			val += 1
