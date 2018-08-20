@@ -227,7 +227,7 @@ def getMyLockId() {
 
 def fixState() {
 	def result = false
-	LogAction("fixState", "info", false)
+	LogTrace("fixState")
 	def before = getStateSizePerc()
 	if(!atomicState?.resetAllData && parent?.settings?.resetAllData) { // automation cleanup called from update() -> initAutoApp()
 		def data = getState()?.findAll { !(it?.key in [ "automationType", "disableAutomation", "lastScheduleList", "oldremSenTstat", "leakWatRestoreMode", "conWatRestoreMode", "extTmpRestoreMode", "extTmpTstatOffRequested", "conWatTstatOffRequested", "leakWatTstatOffRequested", "resetAllData", "extTmpLastDesiredTemp", "restoreId", "restoredFromBackup", "restoreCompleted", "automationTypeFlag", "newAutomationFile", "installData", "remDiagLogDataStore" ]) }
@@ -253,7 +253,7 @@ def fixState() {
 }
 
 void finishFixState(migrate=false) {
-	LogAction("finishFixState", "info", false)
+	LogTrace("finishFixState")
 	if(atomicState?.resetAllData || migrate) {
 		def tstat = settings?.schMotTstat
 		if(tstat) {
@@ -433,12 +433,12 @@ def getSchMotConfigDesc(retAsList=false) {
 }
 
 def setAutomationStatus(upd=false) {
-	def myDis = settings?.disableAutomationreq == true ? true : false)
+	def myDis = settings?.disableAutomationreq == true ? true : false
 	def settingsReset = parent?.settings?.disableAllAutomations
 	def storAutoType = getAutoType() == "storage" ? true : false
 	if(settingsReset == true && !storAutoType) {
 		if(!myDis && settingsReset) {
-			 LogAction("setAutomationStatus: NST Manager forcing disable")
+			 LogAction("setAutomationStatus: NST Manager forcing disable", "info", true)
 		}
 		myDis = true
 	} else if(storAutoType) {
@@ -1140,7 +1140,7 @@ def heartbeatAutomation() {
 		val = 220
 	}
 	if(getLastAutomationSchedSec() > val) {
-		LogAction("${autoType} Heartbeat run", "trace", false)
+		LogTrace("${autoType} Heartbeat run")
 		runAutomationEval()
 	}
 }
@@ -2088,7 +2088,7 @@ def setRemoteSenTstat(val) {
 	atomicState.remSenTstat = val
 }
 
-def getRemSenCoolSetTemp(curMode=null, useCurrent=true) {
+def getRemSenCoolSetTemp(curMode=null, isEco=false, useCurrent=true) {
 	def coolTemp
 	def theMode = curMode != null ? curMode : null
 	if(theMode == null) {
@@ -2108,6 +2108,9 @@ def getRemSenCoolSetTemp(curMode=null, useCurrent=true) {
 				def useMotion = atomicState?."motion${mySched}UseMotionSettings"
 				def hvacSettings = atomicState?."sched${mySched}restrictions"
 				coolTemp = !useMotion ? hvacSettings?.ctemp : hvacSettings?.mctemp ?: hvacSettings?.ctemp
+			}
+			if(theMode == "cool" && coolTemp == null && isEco) {
+				if(atomicState?.extTmpLastDesiredTemp) { coolTemp = atomicState?.extTmpLastDesiredTemp }
 			}
 			if(coolTemp == null && remSenDayCoolTemp) {
 				coolTemp = remSenDayCoolTemp.toDouble()
@@ -2129,7 +2132,7 @@ def getRemSenCoolSetTemp(curMode=null, useCurrent=true) {
 	return coolTemp
 }
 
-def getRemSenHeatSetTemp(curMode=null, useCurrent=true) {
+def getRemSenHeatSetTemp(curMode=null, isEco=false, useCurrent=true) {
 	def heatTemp
 	def theMode = curMode != null ? curMode : null
 	if(theMode == null) {
@@ -2149,6 +2152,9 @@ def getRemSenHeatSetTemp(curMode=null, useCurrent=true) {
 				def useMotion = atomicState?."motion${mySched}UseMotionSettings"
 				def hvacSettings = atomicState?."sched${mySched}restrictions"
 				heatTemp = !useMotion ? hvacSettings?.htemp : hvacSettings?.mhtemp ?: hvacSettings?.htemp
+			}
+			if(theMode == "heat" && heatTemp == null && isEco) {
+				if(atomicState?.extTmpLastDesiredTemp) { heatTemp = atomicState?.extTmpLastDesiredTemp }
 			}
 			if(heatTemp == null && remSenDayHeatTemp) {
 				heatTemp = remSenDayHeatTemp.toDouble()
@@ -3027,8 +3033,10 @@ def getDesiredTemp() {
 			//atomicState?.extTmpLastDesiredTemp
 		}
 		if(lastMode) {
-			desiredHeatTemp = getRemSenHeatSetTemp(lastMode, false)
-			desiredCoolTemp = getRemSenCoolSetTemp(lastMode, false)
+			desiredHeatTemp = getRemSenHeatSetTemp(lastMode, modeEco, false)
+			desiredCoolTemp = getRemSenCoolSetTemp(lastMode, modeEco, false)
+			if(!desiredHeatTemp) { desiredHeatTemp = atomicState?.extTmpLastDesiredHTemp }
+			if(!desiredCoolTemp) { desiredCoolTemp = atomicState?.extTmpLastDesiredCTemp }
 			LogAction("getDesiredTemp: Using lastMode: ${lastMode} | extTmpTstatOffRequested: ${atomicState?.extTmpTstatOffRequested} | curMode: ${curMode}", "debug", false)
 			modeOff = (lastMode in ["off"]) ? true : false
 			modeCool = (lastMode == "cool") ? true : false
@@ -3122,8 +3130,8 @@ def extTmpTempOk(disp=false, last=false) {
 			}
 			if(lastMode) {
 				LogAction("extTmpTempOk: Resetting mode curMode: ${curMode} | to previous mode lastMode: ${lastMode} | extTmpTstatOffRequested: ${atomicState?.extTmpTstatOffRequested}", "debug", false)
-				desiredHeatTemp = getRemSenHeatSetTemp(lastMode, false)
-				desiredCoolTemp = getRemSenCoolSetTemp(lastMode, false)
+				desiredHeatTemp = getRemSenHeatSetTemp(lastMode, modeEco, false)
+				desiredCoolTemp = getRemSenCoolSetTemp(lastMode, modeEco, false)
 				if(!desiredHeatTemp) { desiredHeatTemp = atomicState?.extTmpLastDesiredHTemp }
 				if(!desiredCoolTemp) { desiredCoolTemp = atomicState?.extTmpLastDesiredCTemp }
 				//modeOff = (lastMode == "off") ? true : false
@@ -4460,7 +4468,9 @@ def getCurrentSchedule() {
 	}
 	if(ccnt > schedList?.size()) { noSched = true }
 	else { mySched = ccnt }
-	LogTrace("getCurrentSchedule: mySched: $mySched noSched: $noSched ccnt: $ccnt res1: $res1")
+	if(mySched != null) {
+		LogTrace("getCurrentSchedule: mySched: $mySched noSched: $noSched ccnt: $ccnt res1: $res1")
+	}
 	return mySched
 }
 
