@@ -35,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.4.2" }
-def appVerDate() { "08-19-2018" }
+def appVerDate() { "08-20-2018" }
 def minVersions() {
 	return [
 		"automation":["val":542, "desc":"5.4.2"],
@@ -5357,7 +5357,8 @@ def finishWorkQ(cmd, result) {
 }
 
 def queueProcNestApiCmd(uri, typeId, type, obj, objVal, qnum, cmd, redir = false) {
-	LogTrace("queueProcNestApiCmd: typeId: ${typeId}, type: ${type}, obj: ${obj}, objVal: ${objVal}, qnum: ${qnum},  isRedirUri: ${redir}")
+	def myStr = "queueProcNestApiCmd"
+	LogTrace("${myStr}: typeId: ${typeId}, type: ${type}, obj: ${obj}, objVal: ${objVal}, qnum: ${qnum},  isRedirUri: ${redir}")
 	def result = false
 	if(!atomicState?.authToken) { return result }
 
@@ -5371,18 +5372,11 @@ def queueProcNestApiCmd(uri, typeId, type, obj, objVal, qnum, cmd, redir = false
 			headers: ["Content-Type": "application/json", "Authorization": "Bearer ${atomicState?.authToken}"],
 			body: data.toString()
 		]
-		LogTrace("queueProcNestApiCmd Url: $uri | params: ${params}")
+		LogTrace("${myStr} Url: $uri | params: ${params}")
 		LogAction("Processing Queued Cmd: [ObjId: ${typeId} | ObjType: ${type} | ObjKey: ${obj} | ObjVal: ${objVal} | QueueNum: ${qnum} | Redirect: ${redir}]", "trace", true)
 		atomicState?.lastCmdSent = "$type: (${obj}: ${objVal})"
 
-		if(!redir && (getRecentSendCmd(qnum) > 0) /* && (getLastCmdSentSeconds(qnum) < 60) */ ) {
-			def val = getRecentSendCmd(qnum)
-			val -= 1
-			setRecentSendCmd(qnum, val)
-		}
-		setLastCmdSentSeconds(qnum, getDtNow())
-
-		LogTrace("queueProcNestApiCmd time update recentSendCmd:  ${getRecentSendCmd(qnum)}  last seconds:${getLastCmdSentSeconds(qnum)} queue: ${qnum}")
+		adjThrottle(qnum, redir, myStr)
 
 		def asyncargs = [
 			typeId: typeId,
@@ -5395,9 +5389,27 @@ def queueProcNestApiCmd(uri, typeId, type, obj, objVal, qnum, cmd, redir = false
 		asynchttp_v1.put(nestCmdResponse, params, asyncargs)
 
 	} catch(ex) {
-		log.error "queueProcNestApiCmd (command: $cmd) Exception:", ex
-		sendExceptionData(ex, "queueProcNestApiCmd")
+		log.error "${myStr} (command: $cmd) Exception:", ex
+		sendExceptionData(ex, myStr)
 	}
+}
+
+def adjThrottle(qnum, redir, callerStr) {
+	def t0 = getRecentSendCmd(qnum)
+	if(!redir && (t0 > 0) /* && (getLastCmdSentSeconds(qnum) < 60) */ ) {
+		def val = t0
+		val -= 1
+		def t1 = getLastCmdSentSeconds(qnum)
+		if(t1 > 120 && t1 < 60*45 && val < 2) {
+			val += 1
+		}
+		if(t1 > 60*30 && t1 < 60*45 && val < 2) {
+			val += 1
+		}
+		LogTrace("${callerStr} adjThrottle orig recentSendCmd: ${t0} | new: ${val} | last seconds: ${t1} queue: ${qnum}")
+		setRecentSendCmd(qnum, val)
+	}
+	setLastCmdSentSeconds(qnum, getDtNow())
 }
 
 def nestCmdResponse(resp, data) {
@@ -5470,7 +5482,8 @@ def nestCmdResponse(resp, data) {
 }
 
 def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, origcmd, redir = false) {
-	LogTrace("procNestApiCmd: typeId: ${typeId}, type: ${type}, obj: ${obj}, objVal: ${objVal}, qnum: ${qnum},  isRedirUri: ${redir}")
+	def myStr = "procNestApiCmd"
+	LogTrace("${myStr}: typeId: ${typeId}, type: ${type}, obj: ${obj}, objVal: ${objVal}, qnum: ${qnum},  isRedirUri: ${redir}")
 	def result = false
 	if(!atomicState?.authToken) { return result }
 
@@ -5484,17 +5497,10 @@ def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, origcmd, redir = false)
 			query: [ "auth": atomicState?.authToken ],
 			body: data.toString()
 		]
-		LogAction("procNestApiCmd Url: $uri | params: ${params}", "trace", true)
+		LogAction("${myStr} Url: $uri | params: ${params}", "trace", true)
 		atomicState?.lastCmdSent = "$type: (${obj}: ${objVal})"
 
-		if(!redir && (getRecentSendCmd(qnum) > 0) /* && (getLastCmdSentSeconds(qnum) < 60)*/ ) {
-			def val = getRecentSendCmd(qnum)
-			val -= 1
-			setRecentSendCmd(qnum, val)
-		}
-		setLastCmdSentSeconds(qnum, getDtNow())
-
-		LogTrace("procNestApiCmd time update recentSendCmd:  ${getRecentSendCmd(qnum)}  last seconds:${getLastCmdSentSeconds(qnum)} queue: ${qnum}")
+		adjThrottle(qnum, redir, myStr)
 
 		httpPutJson(params) { resp ->
 			def rCode = resp?.status ?: null
@@ -5507,7 +5513,7 @@ def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, origcmd, redir = false)
 				return result
 			}
 			else if(resp?.status == 200) {
-				LogAction("procNestApiCmd Processed queue: ${qnum} ($type{$obj:$objVal}) SUCCESSFULLY!", "info", true)
+				LogAction("${myStr} Processed queue: ${qnum} ($type{$obj:$objVal}) SUCCESSFULLY!", "info", true)
 				apiIssueEvent(false)
 				incCmdCnt()
 				atomicState?.lastCmdSentStatus = "ok"
@@ -5534,7 +5540,7 @@ def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, origcmd, redir = false)
 			apiIssueEvent(true)
 			atomicState?.lastCmdSentStatus = "failed"
 			result = false
-			apiRespHandler(resp?.status, resp?.data, "procNestApiCmd", "procNestApiCmd ${qnum} ($type{$obj:$objVal})", true)
+			apiRespHandler(resp?.status, resp?.data, myStr, "${myStr} ${qnum} ($type{$obj:$objVal})", true)
 /*
 			if(resp?.status == 429) {
 				result = true // we requeued the command
