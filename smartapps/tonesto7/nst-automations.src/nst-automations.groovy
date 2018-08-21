@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.4.2" }
-def appVerDate() { "08-19-2018" }
+def appVerDate() { "08-20-2018" }
 
 preferences {
 	//startPage
@@ -112,8 +112,9 @@ def uninstallPage() {
  *#########################	NATIVE ST APP METHODS ############################*
  ******************************************************************************/
 def installed() {
-	log.debug "${app.label} Installed with settings: ${settings}"		// MUST BE log.debug
+	log.debug "${app.getLabel()} Installed with settings: ${settings}"		// MUST BE log.debug
 	atomicState?.installData = ["initVer":appVersion(), "dt":getDtNow().toString()]
+	atomicState?.isInstalled = true
 	initialize()
 	if(settings["storageFlag"]) {
 		atomicState?.automationType = "storage"
@@ -123,9 +124,8 @@ def installed() {
 }
 
 def updated() {
-	LogAction("${app.label} Updated...with settings: ${settings}", "debug", true)
+	LogAction("${app.getLabel()} Updated...with settings: ${settings}", "debug", true)
 	initialize()
-	//sendNotificationEvent("${appName()} has updated settings")
 	atomicState?.lastUpdatedDt = getDtNow()
 }
 
@@ -138,6 +138,7 @@ def initialize() {
 	//log.debug "${app.label} Initialize..."			// Must be log.debug
 	if(!atomicState?.newAutomationFile) { atomicState?.newAutomationFile = true }
 	if(!atomicState?.installData) { atomicState?.installData = ["initVer":appVersion(), "dt":getDtNow().toString()] }
+	if(!atomicState?.isInstalled) { atomicState?.isInstalled = true }
 	def settingsReset = parent?.settings?.resetAllData
 	if(atomicState?.resetAllData || settingsReset) {
 		if(fixState()) { return }	// runIn of fixState will call initAutoApp()
@@ -176,19 +177,19 @@ def helpHandler() {
 	}
 }
 
-def incMetricCntVal(item) {
-	def data = atomicState?.usageMetricsStore ?: [:]
+private incMetricCntVal(String item) {
+	Map data = atomicState?.usageMetricsStore ?: [:]
 	data[item] = (data[item] == null) ? 1 : data[item].toInteger()+1
 	atomicState?.usageMetricsStore = data
 }
 
 def incAutoGlobPrefLoadCnt() { incMetricCntVal("autoGlobPrefLoadCnt") }
 
-def isCodeUpdateAvailable(newVer, curVer, type) {
-	def result = false
+Boolean isCodeUpdateAvailable(String newVer, String curVer, String type) {
+	Boolean result = false
 	def latestVer
 	if(newVer && curVer) {
-		def versions = [newVer, curVer]
+		List versions = [newVer, curVer]
 		if(newVer != curVer) {
 			latestVer = versions?.max { a, b ->
 				def verA = a?.tokenize('.')
@@ -202,7 +203,7 @@ def isCodeUpdateAvailable(newVer, curVer, type) {
 				}
 				verA?.size() <=> verB?.size()
 			}
-			result = (latestVer == newVer) ? true : false
+			result = (latestVer == newVer)
 		}
 	}
 	//log.debug "type: $type | newVer: $newVer | curVer: $curVer | newestVersion: ${latestVer} | result: $result"
@@ -306,7 +307,7 @@ def mainAutoPage(params) {
 	def autoType = null
 	//If params.autoType is not null then save to atomicState.
 	if(!params?.autoType) { autoType = atomicState?.automationType }
-	else { atomicState.automationType = params?.autoType; autoType = params?.autoType }
+	else { atomicState.automationType = params?.autoType; autoType = params?.autoType; }
 
 	// If the selected automation has not been configured take directly to the config page.  Else show main page
 	if(autoType == "nMode" && !isNestModesConfigured())		{ return nestModePresPage() }
@@ -320,7 +321,7 @@ def mainAutoPage(params) {
 		//return dynamicPage(name: "mainAutoPage", title: "Automation Configuration", uninstall: false, install: false, nextPage: "nameAutoPage" ) {
 		return dynamicPage(name: "mainAutoPage", title: "Automation Configuration", uninstall: false, install: true, nextPage:null ) {
 			section() {
-				if(disableAutomationreq) {
+				if(settings?.disableAutomationreq) {
 					paragraph "This Automation is currently disabled!\nTurn it back on to to make changes or resume operation", required: true, state: null, image: getAppImg("instruct_icon.png")
 				} else {
 					if(atomicState?.disableAutomation) { paragraph "This Automation is still disabled!\nPress Next and Done to Activate this Automation Again", state: "complete", image: getAppImg("instruct_icon.png") }
@@ -336,7 +337,7 @@ def mainAutoPage(params) {
 						}
 						nDesc += (nModePresSensor && !nModeSwitch) ? "\n\n${nModePresenceDesc()}" : ""
 						nDesc += (nModeSwitch && !nModePresSensor) ? "\n • Using Switch: (State: ${isSwitchOn(nModeSwitch) ? "ON" : "OFF"})" : ""
-						nDesc += (nModeDelay && nModeDelayVal) ? "\n • Change Delay: (${getEnumValue(longTimeSecEnum(), nModeDelayVal)})" : ""
+						nDesc += (settings?.nModeDelay && settings?.nModeDelayVal) ? "\n • Change Delay: (${getEnumValue(longTimeSecEnum(), settings?.nModeDelayVal)})" : ""
 						nDesc += (isNestModesConfigured() ) ? "\n • Restrictions Active: (${autoScheduleOk(getAutoType()) ? "NO" : "YES"})" : ""
 						if(isNestModesConfigured()) {
 							nDesc += "\n • Set Thermostats to ECO: (${nModeSetEco ? "On" : "Off"})"
@@ -433,13 +434,11 @@ def getSchMotConfigDesc(retAsList=false) {
 }
 
 def setAutomationStatus(upd=false) {
-	def myDis = settings?.disableAutomationreq == true ? true : false
-	def settingsReset = parent?.settings?.disableAllAutomations
-	def storAutoType = getAutoType() == "storage" ? true : false
-	if(settingsReset == true && !storAutoType) {
-		if(!myDis && settingsReset) {
-			 LogAction("setAutomationStatus: NST Manager forcing disable", "info", true)
-		}
+	Boolean myDis = (settings?.disableAutomationreq == true)
+	Boolean settingsReset = (parent?.settings?.disableAllAutomations == true)
+	Boolean storAutoType = getAutoType() == "storage" ? true : false
+	if(settingsReset && !storAutoType) {
+		if(!myDis && settingsReset) { LogAction("setAutomationStatus: NST Manager forcing disable", "info", true) }
 		myDis = true
 	} else if(storAutoType) {
 		myDis = false
@@ -491,8 +490,7 @@ def createAutoBackupJson() {
 		else {
 			if(itemType == "mode" || itemVal instanceof Integer || itemVal instanceof Double || itemVal instanceof Boolean || itemVal instanceof Float || itemVal instanceof Long || itemVal instanceof BigDecimal) {
 				setObj = itemVal
-			}
-			else { setObj = itemVal.toString() }
+			} else { setObj = itemVal.toString() }
 		}
 		//log.debug "setting item ${item?.key}: ${getObjType(itemVal)} | result: $setObj"
 		setData[item?.key]?.value = setObj
@@ -568,7 +566,6 @@ def initAutoApp() {
 
 	if(!autoDisabled) {
 		automationsInst()
-
 		if(autoType == "schMot" && isSchMotConfigured()) {
 			updateScheduleStateMap()
 			def schedList = getScheduleList()
@@ -750,27 +747,27 @@ def getStateVal(var) {
 	return state[var] ?: null
 }
 
-def automationsInst() {
-	atomicState.isNestModesConfigured = isNestModesConfigured() ? true : false
-	atomicState.isWatchdogConfigured =	isWatchdogConfigured() ? true : false
-	atomicState.isDiagnosticsConfigured = isDiagnosticsConfigured() ? true : false
-	atomicState.isStorageConfigured = isStorageConfigured() ? true : false
-	atomicState.isSchMotConfigured =	isSchMotConfigured() ? true : false
+public automationsInst() {
+	atomicState.isNestModesConfigured = 	(isNestModesConfigured() == true)
+	atomicState.isWatchdogConfigured =		(isWatchdogConfigured() == true)
+	atomicState.isDiagnosticsConfigured = 	(isDiagnosticsConfigured() == true)
+	atomicState.isStorageConfigured = 		(isStorageConfigured() == true)
+	atomicState.isSchMotConfigured =		(isSchMotConfigured() == true)
 
-	atomicState.isLeakWatConfigured =	isLeakWatConfigured() ? true : false
-	atomicState.isConWatConfigured =	isConWatConfigured() ? true : false
-	atomicState.isHumCtrlConfigured =	isHumCtrlConfigured() ? true : false
-	atomicState.isExtTmpConfigured =	isExtTmpConfigured() ? true : false
-	atomicState.isRemSenConfigured =	isRemSenConfigured() ? true : false
-	atomicState.isTstatSchedConfigured =	isTstatSchedConfigured() ? true : false
-	atomicState.isFanCtrlConfigured =	isFanCtrlSwConfigured() ? true : false
-	atomicState.isFanCircConfigured =	isFanCircConfigured() ? true : false
+	atomicState.isLeakWatConfigured =		(isLeakWatConfigured() == true)
+	atomicState.isConWatConfigured =		(isConWatConfigured() == true)
+	atomicState.isHumCtrlConfigured =		(isHumCtrlConfigured() == true)
+	atomicState.isExtTmpConfigured =		(isExtTmpConfigured() == true)
+	atomicState.isRemSenConfigured =		(isRemSenConfigured() == true)
+	atomicState.isTstatSchedConfigured =	(isTstatSchedConfigured() == true)
+	atomicState.isFanCtrlConfigured =		(isFanCtrlSwConfigured() == true)
+	atomicState.isFanCircConfigured =		(isFanCircConfigured() == true)
 	atomicState?.isInstalled = true
 }
 
-def getAutomationsInstalled() {
-	def list = []
-	def aType = atomicState?.automationType
+List getAutomationsInstalled() {
+	List list = []
+	String aType = atomicState?.automationType
 	switch(aType) {
 		case "nMode":
 			list.push(aType)
@@ -783,7 +780,7 @@ def getAutomationsInstalled() {
 			if(isHumCtrlConfigured())		{ tmp[aType].push("humCtrl") }
 			if(isExtTmpConfigured())		{ tmp[aType].push("extTmp") }
 			if(isRemSenConfigured())		{ tmp[aType].push("remSen") }
-			if(isTstatSchedConfigured())		{ tmp[aType].push("tSched") }
+			if(isTstatSchedConfigured())	{ tmp[aType].push("tSched") }
 			if(isFanCtrlSwConfigured())		{ tmp[aType].push("fanCtrl") }
 			if(isFanCircConfigured())		{ tmp[aType].push("fanCirc") }
 			if(tmp?.size()) { list.push(tmp) }
@@ -802,11 +799,11 @@ def getAutomationsInstalled() {
 	return list
 }
 
-def getAutomationType() {
+String getAutomationType() {
 	return atomicState?.automationType ?: null
 }
 
-def getAutoType() { return !parent ? "" : atomicState?.automationType }
+String getAutoType() { return !parent ? "" : atomicState?.automationType }
 
 def getIsAutomationDisabled() {
 	def dis = atomicState?.disableAutomation
@@ -815,8 +812,8 @@ def getIsAutomationDisabled() {
 
 def subscribeToEvents() {
 	//Remote Sensor Subscriptions
-	def autoType = getAutoType()
-	def swlist = []
+	String autoType = getAutoType()
+	List swlist = []
 
 	//Nest Mode Subscriptions
 	if(autoType == "nMode") {
@@ -839,7 +836,7 @@ def subscribeToEvents() {
 					return d1
 				}
 			}
-			def t0 = []
+			List t0 = []
 			if(settings["nModerestrictionSwitchOn"]) { t0 = t0 + settings["nModerestrictionSwitchOn"] }
 			if(settings["nModerestrictionSwitchOff"]) { t0 = t0 + settings["nModerestrictionSwitchOff"] }
 			for(sw in t0) {
@@ -866,7 +863,7 @@ def subscribeToEvents() {
 			if(settings?.schMotContactOff) {
 				if(isConWatConfigured()) {
 					subscribe(conWatContacts, "contact", conWatContactEvt)
-					def t0 = []
+					List t0 = []
 					if(settings["conWatrestrictionSwitchOn"]) { t0 = t0 + settings["conWatrestrictionSwitchOn"] }
 					if(settings["conWatrestrictionSwitchOff"]) { t0 = t0 + settings["conWatrestrictionSwitchOff"] }
 					for(sw in t0) {
@@ -951,8 +948,7 @@ def subscribeToEvents() {
 					}
 				}
 			}
-			if(isTstatSchedConfigured()) {
-			}
+			if(isTstatSchedConfigured()) { }
 			if(settings?.schMotOperateFan) {
 				if(isFanCtrlSwConfigured() && fanCtrlFanSwitches) {
 					subscribe(fanCtrlFanSwitches, "switch", automationGenericEvt)
@@ -970,16 +966,16 @@ def subscribeToEvents() {
 					}
 				}
 			}
-			def hasFan = atomicState?.schMotTstatHasFan ? true : false
+			Boolean hasFan = (atomicState?.schMotTstatHasFan == true)
 			if(hasFan && (settings?.schMotOperateFan || settings?.schMotRemoteSensor || settings?.schMotHumidityControl)) {
 				subscribe(schMotTstat, "thermostatFanMode", automationGenericEvt)
 			}
 
-			def schedList = getScheduleList()
-			def sLbl
-			def cnt = 1
-			def prlist = []
-			def mtlist = []
+			List schedList = getScheduleList()
+			String sLbl
+			Integer cnt = 1
+			List prlist = []
+			List mtlist = []
 			schedList?.each { scd ->
 				sLbl = "schMot_${scd}_"
 				def restrict = atomicState?."sched${cnt}restrictions"
@@ -4024,7 +4020,7 @@ def nestModePresPage() {
 			section("Additional Settings:") {
 				input (name: "nModeSetEco", type: "bool", title: "Set ECO mode when away?", required: false, defaultValue: false, submitOnChange: true, image: getDevImg("eco_icon.png"))
 				input (name: "nModeDelay", type: "bool", title: "Delay Changes?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("delay_time_icon.png"))
-				if(nModeDelay) {
+				if(settings?.nModeDelay) {
 					input "nModeDelayVal", "enum", title: "Delay before change?", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()],
 							submitOnChange: true, image: getAppImg("configure_icon.png")
 				}
@@ -4051,16 +4047,16 @@ def nestModePresPage() {
 	}
 }
 
-def nModePresenceDesc() {
+String nModePresenceDesc() {
 	if(settings?.nModePresSensor) {
-		def cCnt = nModePresSensor?.size() ?: 0
-		def str = ""
-		def cnt = 0
+		Integer cCnt = settings?.nModePresSensor?.size() ?: 0
+		String str = ""
+		Integer cnt = 0
 		str += "Presence Status:"
 		settings?.nModePresSensor?.sort { it?.displayName }?.each { dev ->
 			cnt = cnt+1
-			def t0 = strCapitalize(dev?.currentPresence)
-			def presState = t0 ?: "No State"
+			String t0 = strCapitalize(dev?.currentPresence)
+			String presState = t0 ?: "No State"
 			str += "${(cnt >= 1) ? "${(cnt == cCnt) ? "\n└" : "\n├"}" : "\n└"} ${dev?.label}: ${(dev?.label?.toString()?.length() > 10) ? "\n${(cCnt == 1 || cnt == cCnt) ? "    " : " │"} └ " : ""}(${presState})"
 		}
 		return str
@@ -4068,9 +4064,8 @@ def nModePresenceDesc() {
 	return null
 }
 
-def isNestModesConfigured() {
-	def devOk = ((!nModePresSensor && !nModeSwitch && (nModeHomeModes && nModeAwayModes)) || (nModePresSensor && !nModeSwitch) || (!nModePresSensor && nModeSwitch)) ? true : false
-	return devOk
+Boolean isNestModesConfigured() {
+	return ((!settings?.nModePresSensor && !settings?.nModeSwitch && (settings?.nModeHomeModes && settings?.nModeAwayModes)) || (settings?.nModePresSensor && !settings?.nModeSwitch) || (!settings?.nModePresSensor && settings?.nModeSwitch))
 }
 
 def nModeGenericEvt(evt) {
@@ -4079,10 +4074,10 @@ def nModeGenericEvt(evt) {
 	LogAction("${evt?.name.toUpperCase()} Event | Device: ${evt?.displayName} | Value: (${strCapitalize(evt?.value)}) with a delay of ${eventDelay}ms", "trace", true)
 	if(atomicState?.disableAutomation) { return }
 	storeLastEventData(evt)
-	if(nModeDelay) {
-		def delay = nModeDelayVal.toInteger() ?: 60
+	if(settings?.nModeDelay) {
+		Integer delay = settings?.nModeDelayVal.toInteger() ?: 60
 		if(delay > defaultAutomationTime()) {
-			LogAction("Event | A Check is scheduled (${getEnumValue(longTimeSecEnum(), nModeDelayVal)})", "info", false)
+			LogAction("Event | A Check is scheduled (${getEnumValue(longTimeSecEnum(), settings?.nModeDelayVal)})", "info", false)
 			scheduleAutomationEval(delay)
 		} else { scheduleAutomationEval() }
 	} else {
@@ -6332,14 +6327,12 @@ def storeExecutionHistory(val, method = null) {
 def addToList(val, list, listSize) {
 	if(list?.size() < listSize) {
 		list.push(val)
-	}
-	else if(list?.size() > listSize) {
+	} else if(list?.size() > listSize) {
 		def nSz = (list?.size()-listSize) + 1
 		def nList = list?.drop(nSz)
 		nList?.push(val)
 		list = nList
-	}
-	else if(list?.size() == listSize) {
+	} else if(list?.size() == listSize) {
 		def nList = list?.drop(1)
 		nList?.push(val)
 		list = nList
