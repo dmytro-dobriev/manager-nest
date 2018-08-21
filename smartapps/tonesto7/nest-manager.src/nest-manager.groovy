@@ -34,8 +34,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.4.2" }
-def appVerDate() { "08-20-2018" }
+def appVersion() { "5.5.0" }
+def appVerDate() { "08-21-2018" }
 def minVersions() {
 	return [
 		"automation":["val":542, "desc":"5.4.2"],
@@ -106,8 +106,10 @@ mappings {
 		path("/cameraTiles")	{action: [GET: "getCamTiles"]}
 		path("/weatherTile")	{action: [GET: "getWeatherTile"]}
 		path("/renderInstallData")	{action: [GET: "renderInstallData"]}
-		path("/receiveEventData") 	{action: [POST: "receiveEventData"]}
-		path("/streamStatus")		{action: [POST: "receiveStreamStatus"]}
+		if(!(settings?.restStreamLocal && settings?.restStreamLocalHub)) {
+			path("/receiveEventData") 	{action: [POST: "receiveEventData"]}
+			path("/streamStatus")		{action: [POST: "receiveStreamStatus"]}
+		}
 		//Web Diagnostics Pages
 		if(settings?.enDiagWebPage == true || getDevOpt()) {
 			path("/processCmd") 	{action: [POST: "procDiagCmd"]}
@@ -927,7 +929,7 @@ def pollPrefPage() {
 		if(atomicState?.appData?.eventStreaming?.enabled == true || getDevOpt()) {
 			section("Rest Streaming (Experimental):") {
 				input(name: "restStreaming", title:"Enable Rest Streaming?", type: "bool", defaultValue: false, required: false, submitOnChange: true, image: getAppImg("two_way_icon.png"))
-				if(!settings?.restStreaming) {
+				if(!settings?.restStreaming) {	
 					paragraph title: "Streaming is an Experimental Feature (Even though it's Stable)", "It requires the install of our local NodeJS streaming service running on your home network."
 					href url: streamLink(), style:"external", required: false, title:"Setup Instructions", description:"Tap to open in browser", state: "complete", image: getAppImg("web_icon.png")
 				}
@@ -940,6 +942,11 @@ def pollPrefPage() {
 						input(name: "restStreamIp", title:"Rest Service Address", type: "text", required: true, submitOnChange: true, image: getAppImg("ip_icon.png"))
 						input(name: "restStreamPort", title:"Rest Service Port", type: "number", defaultValue: 3000, required: true, submitOnChange: true, image: getAppImg("port_icon.png"))
 					}
+					input(name: "restStreamLocal", title:"Use Local Network to Send Events?", type: "bool", defaultValue: false, required: false, submitOnChange: true, image: getAppImg("two_way_icon.png"))
+					if(settings?.restStreamLocal == true) { 
+						input(name: "restStreamLocalHub", type: "hub", title: "Select Local Hub", description: "This is the hub Stream events will be sent to.", submitOnChange: true, image: getAppImg("hub_icon.png"))
+						if(settings?.restStreamLocal && settings?.restStreamLocalHub) { subscribe(location, null, lanStreamEvtHandler, [filterEvents:false]) }
+					} 
 					getRestSrvcDesc()
 					paragraph title: "Notice", "This is still an experimental feature. It's subject to your local network and internet connections. If communication is lost the Manager will default back to standard polling."
 				}
@@ -1913,16 +1920,6 @@ def getRemDiagApp() {
 	} else {
 		return null
 	}
-/*
-	def remDiagApp = null
-	def cApps = getChildApps()
-	cApps?.each { ca ->
-		if(ca?.getAutomationType() == "remDiag") {
-			remDiagApp = ca
-		}
-	}
-	return remDiagApp
-*/
 }
 
 void diagLogProcChange(setOn) {
@@ -3033,12 +3030,16 @@ def restStreamHandler(close = false) {
 	LogTrace("restStreamHandler(close: ${close}) host: ${host} lastRestHost: ${atomicState?.lastRestHost}")
 	def connStatus = toClose ? false : true
 	LogAction("restStreamHandler(${connStatus ? "Start" : "Stop"}) Event to local node service", "debug", true)
+	String hubIp = settings?.restStreamLocalHub?.getLocalIP()
+	Boolean localStream = (settings?.restStreamLocal == true && hubIp)
 	try {
 		def hubAction = new physicalgraph.device.HubAction(
 			method: "POST",
 			headers: [
 				"HOST": host,
 				"nesttoken": "${atomicState?.authToken}",
+				"stHubIp": "${hubIp}",
+				"localStream": "${localStream}",
 				"connStatus": "${connStatus}",
 				"callback": "${getApiURL()}",
 				"sttoken": "${atomicState?.accessToken}",
@@ -3064,6 +3065,8 @@ def restStreamCheck() {
 		return
 	}
 	LogTrace("restStreamCheck host: ${host}")
+	String hubIp = settings?.restStreamLocalHub?.getLocalIP()
+	Boolean localStream = (settings?.restStreamLocal == true && hubIp)
 	try {
 		atomicState.lastRestHost = host
 		def hubAction = new physicalgraph.device.HubAction(
@@ -3071,6 +3074,8 @@ def restStreamCheck() {
 			headers: [
 				"HOST": host,
 				"callback": "${getApiURL()}",
+				"stHubIp": "${hubIp}",
+				"localStream": "${localStream}",
 				"sttoken": "${atomicState?.accessToken}",
 				"structure": "${atomicState?.structures}"
 			],
@@ -3085,8 +3090,8 @@ def restStreamCheck() {
 	}
 }
 
-def receiveStreamStatus() {
-	def resp = request?.JSON
+def receiveStreamStatus(eventData=null) {
+	def resp = eventData == null ? request?.JSON : eventtData
 	if(resp) {
 		def t0 = resp?.streaming == true ? true : false
 		def t1 = atomicState?.restStreamingOn
@@ -3118,8 +3123,11 @@ def receiveStreamStatus() {
 			}
 		}
 		atomicState?.restServiceData = resp
-
-		render contentType: 'text/html', data: "status received...ok", status: 200
+		if(eventData) {
+			return [data: "status received...ok", status: 200]
+		} else {
+			render contentType: 'text/html', data: "status received...ok", status: 200
+		}
 	}
 }
 
@@ -3295,11 +3303,16 @@ def subscriber() {
 	if(atomicState.appData?.aaPrefs?.enMultiQueue && settings?.allowAskAlexaMQ) {
 		subscribe(location, "askAlexaMQ", askAlexaMQHandler) //Refreshes list of available AA queues
 	}
+	//Pushover Manager Init/cleanup
 	if(settings?.pushoverEnabled == true) {
 		pushover_init()
 	} else { pushover_cleanup() }
+	//Rest Stream Subriptions
 	if(settings?.restStreaming && !getRestHost()) {
 		restSrvcSubscribe()
+	}
+	if(settings?.restStreaming && settings?.restStreamLocal && settings?.restStreamLocalHub) { 
+		subscribe(location, null, lanStreamEvtHandler, [filterEvents:false])
 	}
 }
 
@@ -3837,10 +3850,10 @@ def procNestResponse(resp, data) {
 	}
 }
 
-def receiveEventData() {
+def receiveEventData(eventData=null) {
 	def status = [:]
 	try {
-		def evtData = request?.JSON
+		def evtData = eventData == null ? request?.JSON : eventData
 		//LogAction("evtData: $evtData", "trace", true)
 		def devChgd = false
 		def gotSomething = false
@@ -3871,9 +3884,7 @@ def receiveEventData() {
 				//LogTrace("API Metadata Resp.Data: ${evtData?.data?.metadata}")
 				gotSomething = true
 				def chg = didChange(atomicState?.metaData, evtData?.data?.metadata, "meta", "stream")
-				if(!chg) {
-					LogTrace("got metaData")
-				}
+				if(!chg) { LogTrace("got metaData") }
 			}
 		} else {
 			LogTrace("receiveEventData: Sending restStreamHandler(Stop)")
@@ -3883,7 +3894,7 @@ def receiveEventData() {
 			updTimestampMap("lastHeardFromNestDt", getDtNow())
 			if(atomicState?.ssdpOn == true) {
 				unsubscribe() //These were causing exceptions
-				atomicState.ssdpOn = false
+				atomicState?.ssdpOn = false
 				subscriber()
 			}
 			apiIssueEvent(false)
@@ -3894,26 +3905,61 @@ def receiveEventData() {
 		if(atomicState?.forceChildUpd || atomicState?.needChildUpd || devChgd) {
 			schedFinishPoll(devChgd)
 		}
-		status = ["data":"status received...ok", "code":200]
+		status = [data:"status received...ok", code:200]
 	} catch (ex) {
 		log.error "receiveEventData Exception:", ex
 		LogAction("receiveEventData Exception: ${ex}", "error", true)
-		status = ["data":"${ex?.message}", "code":500]
+		status = [data:"${ex?.message}", code:500]
+	}
+	if(eventData) {
+		return status
+	} else {
+		render contentType: 'text/html', data: status?.data, status: status?.code
+	}
+}
+
+def lanStreamEvtHandler(evt) {
+	// log.trace "lanStreamEvtHandler..."
+	def status = [:]
+	try {
+		def msg = parseLanMessage(evt?.description)
+		Map headerMap = msg?.headers
+		// log.debug "lanStreamEvtHandler... | headers: ${headerMap}"
+		Map msgData = [:]
+		if (headerMap?.size()) {
+			if (headerMap?.evtSource && headerMap?.evtSource == "NST_Stream") {
+				if (msg?.body != null) {
+					def slurper = new groovy.json.JsonSlurper()
+					msgData = slurper.parseText(msg?.body)
+					// log.debug "msgData: $msgData"
+					if(headerMap?.evtType) { 
+						switch(headerMap?.evtType) {
+							case "streamStatus":
+								status = receiveStreamStatus(msgData)
+								break
+							case "sendEventData":
+								status = receiveEventData(msgData)
+								break
+						}
+					}
+				}
+			}
+		}
+	} catch (ex) {
+		log.error "lanStreamEvtHandler Exception:", ex
+		status = [data:"${ex?.message}", code: 500]
 	}
 	render contentType: 'text/html', data: status?.data, status: status?.code
 }
 
 def didChange(old, newer, type, src) {
 	//LogTrace("didChange: type: $type src: $src")
-	def result = false
-	def srcStr = src.toString().toUpperCase()
+	Boolean result = false
+	String srcStr = src.toString().toUpperCase()
 	if(newer != null) {
 		if(type == "str") {
 			updTimestampMap("lastStrucDataUpd", getDtNow())
 			atomicState.needStrPoll = false
-			// if(atomicState?.structures) {
-			// 	LogAction("NestAPI AWAY Debug | Current: (${newer[atomicState?.structures]?.away})${(newer[atomicState?.structures]?.away != old[atomicState?.structures]?.away) ? " | Previous: (${old[atomicState?.structures]?.away})" : ""}", "trace", false)
-			// }
 			newer.each {
 				if(it?.value) {
 					def myId = it?.value?.structure_id
@@ -3953,8 +3999,6 @@ def didChange(old, newer, type, src) {
 		}
 		if(old != newer) {
 			if(type == "str") {
-				// def t0 = atomicState?.structData?.size() && atomicState?.structures ? atomicState?.structData[atomicState?.structures] : null
-				// def t1 = newer && atomicState?.structures ? newer[atomicState?.structures] : null
 				def tt0 = atomicState?.structData?.size() ? atomicState?.structData : null
 				// Null safe does not work on array references that miss
 				def t0 = tt0 && atomicState?.structures && tt0?."${atomicState?.structures}" ? tt0[atomicState?.structures] : null
