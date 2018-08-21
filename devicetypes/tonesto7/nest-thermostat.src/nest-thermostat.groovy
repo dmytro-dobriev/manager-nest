@@ -17,7 +17,7 @@ def devVer() { return "5.3.7" }
 
 // for the UI
 metadata {
-	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
+	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.", vid: "SmartThings-smartthings-Z-Wave_Thermostat") {
 		capability "Actuator"
 		capability "Relative Humidity Measurement"
 		capability "Refresh"
