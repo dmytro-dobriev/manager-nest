@@ -5166,7 +5166,7 @@ void schedNextWorkQ(useShort=false) {
 	if(qnum != null) {
 		queueItemsAvail = getRecentSendCmd(qnum)
 		lastCommandSent = getLastCmdSentSeconds(qnum)
-		//if( !(getRecentSendCmd(qnum) > 0 || getLastCmdSentSeconds(qnum) > 60) ) {
+		if( (queueItemsAvailable == 0 && lastCommandSent > 60) ) { queueItemsAvail = 1 }
 		if( queueItemsAvail <= 0 || atomicState?.apiRateLimited) {
 			timeVal = 60 + cmdDelay
 			//atomicState?.workQrunInActive = false
