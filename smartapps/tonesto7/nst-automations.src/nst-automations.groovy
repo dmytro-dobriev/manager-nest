@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.4.2" }
-def appVerDate() { "08-20-2018" }
+def appVerDate() { "08-21-2018" }
 
 preferences {
 	//startPage
@@ -4323,7 +4323,7 @@ def checkNestMode() {
 				parent.setNModeActive(false)		// clear nMode has it in manager
 			}
 			if(t1) { atomicState?.nModeTstatLocAway = false }
-			def t2 = (away && nodeModeAway) ? true : false
+			def t2 = (away && nestModeAway) ? true : false
 			if(nModeSetEco && t2 && !MNecoisEnabled) {
 				LogAction("checkNestMode adjusting manager state NM will clear eco", "warn", true)
 				parent.setNModeActive(true)		// set nMode has it in manager
