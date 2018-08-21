@@ -3236,7 +3236,7 @@ def extTmpTempOk(disp=false, last=false) {
 			LogAction("extTmpTempOk: ${retval} Dewpoint: (${curDp}${tUnitStr()}) is ${dpOk ? "ok" : "TOO HIGH"}", "info", showRes)
 		} else {
 			if(!modeAuto) {
-				LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${desiredTemp}${tUnitStr()}) is ${tempOk ? "" : "Not"} ${str} $diffThresh\u00b0 of Outside Temp: (${extTemp}${tUnitStr()}) or Inside Temp: (${intTemp}) is ${tempOk ? "" : "Not"} within Inside Threshold: ${insideThresh} of desired (${desiredTemp})", "info", showRes)
+				LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${desiredTemp}${tUnitStr()}) is ${tempOk ? "" : "Not"} ${str} $diffThresh\u00b0 of Outside Temp: (${extTemp}${tUnitStr()}) ${retval ? "AND" : "OR"} Inside Temp: (${intTemp}) is ${tempOk ? "" : "Not"} within Inside Threshold: ${insideThresh} of desired (${desiredTemp})", "info", showRes)
 			} else {
 				LogAction("extTmpTempOk: ${retval} Exterior Temperature (${extTemp}${tUnitStr()}) is ${tempOk ? "" : "Not"} ${str} using $diffThresh\u00b0 offset |  Inside Temp: (${intTemp}${tUnitStr()})", "info", showRes)
 
@@ -3288,7 +3288,7 @@ def extTmpTempCheck(cTimeOut = false) {
 			def allowAlarm = allowNotif && settings?."${pName}AllowAlarmNotif" ? true : false
 			def speakOnRestore = allowSpeech && settings?."${pName}SpeechOnRestore" ? true : false
 
-			if(!modeInactive) { atomicState."${pName}timeOutOn" = false; timeOut = false }
+			if(!modeInActive) { atomicState."${pName}timeOutOn" = false; timeOut = false }
 // if we requested off; and someone switched us on or nMode took over...
 			if( atomicState?.extTmpTstatOffRequested && (!modeEco || (modeEco && parent.setNModeActive(null))) ) {  // reset timer and states
 				LogAction("extTmpTempCheck: | ${!modeEco ? "HVAC turned on when automation had OFF" : "Automation overridden by nMODE"}, resetting state to match", "warn", true)
@@ -3310,7 +3310,7 @@ def extTmpTempCheck(cTimeOut = false) {
 			def desiredTemp = getDesiredTemp()
 
 			if( (mylastMode != curMode) || (desiredTemp && desiredTemp != lastDesired)) {
-				if(!modeInactive) {
+				if(!modeInActive) {
 					atomicState?."${pName}lastMode" = curMode
 //ERS
 					if(desiredTemp) { atomicState?.extTmpLastDesiredTemp = desiredTemp }
@@ -3405,7 +3405,7 @@ def extTmpTempCheck(cTimeOut = false) {
 						}
 					}
 				} else {
-					if(modeInactive) {
+					if(modeInActive) {
 						if(timeout || !safetyOk) {
 							LogAction("extTmpTempCheck: | Timeout or Safety temps exceeded and Unable to restore settings okToRestore is false", "warn", true)
 							atomicState."${pName}timeOutOn" = false
@@ -3422,7 +3422,7 @@ def extTmpTempCheck(cTimeOut = false) {
 
 			if(tempWithinThreshold && !timeOut && safetyOk && schedOk && !modeEco) {
 				def rmsg = ""
-				if(!modeInactive) {
+				if(!modeInActive) {
 					if(getExtTmpWhileOnDtSec() >= (getExtTmpOffDelayVal() - 2)) {
 						atomicState."${pName}timeOutOn" = false
 						atomicState?.extTmpRestoreMode = curMode
@@ -3433,7 +3433,7 @@ def extTmpTempCheck(cTimeOut = false) {
 							atomicState?.extTmpTstatOffRequested = true
 							atomicState.extTmpChgWhileOffDt = getDtNow()
 							scheduleTimeoutRestore(pName)
-							modeInactive = true
+							modeInActive = true
 							modeEco = true
 							rmsg = "${extTmpTstat.label} turned 'ECO': External Temp is at the temp threshold for (${getEnumValue(longTimeSecEnum(), extTmpOffDelay)})"
 							if(extTmpTstatMir) {
