@@ -5097,6 +5097,12 @@ def sendNestApiCmd(cmdTypeId, cmdType, cmdObj, cmdObjVal, childId) {
 	}
 }
 
+/*
+ * Each nest device has its own queue (as does the nest structure itself)
+ *   Queues are "assigned" dynamically as they are needed
+ * Each queue has it own "free" command counts, then commands are limited to 1 per minute.
+ */
+
 private getQueueNumber(cmdTypeId) {
 	if(!atomicState?.cmdQlist) { atomicState.cmdQlist = [] }
 	def cmdQueueList = atomicState?.cmdQlist
@@ -5117,6 +5123,11 @@ private getQueueNumber(cmdTypeId) {
 	}
 	return qnum
 }
+
+/*
+ * Queues are processed in the order in which commands were sent (across all queues)
+ * This maintains proper state ordering for changes, as commands can have dependencies in order
+ */
 
 def getQueueToWork() {
 	def qnum
@@ -5166,7 +5177,7 @@ void schedNextWorkQ(useShort=false) {
 	if(qnum != null) {
 		queueItemsAvail = getRecentSendCmd(qnum)
 		lastCommandSent = getLastCmdSentSeconds(qnum)
-		//if( !(getRecentSendCmd(qnum) > 0 || getLastCmdSentSeconds(qnum) > 60) ) {
+		if( (queueItemsAvailable == 0 && lastCommandSent > 60) ) { queueItemsAvail = 1 }
 		if( queueItemsAvail <= 0 || atomicState?.apiRateLimited) {
 			timeVal = 60 + cmdDelay
 			//atomicState?.workQrunInActive = false

@@ -4314,17 +4314,17 @@ def checkNestMode() {
 
 // Track changes that happen outside of nMode
 // this won't attempt to reset Nest device eco or camera state - you chose to do it outside the automation
-			def NMisEnabled = parent.automationNestModeEnabled(true)
-			def NMecoisEnabled = parent.setNModeActive(null)
-			def t0 = (!nModeSetEco) ? true : false
-			def t1 = (home && !nestModeAway) ? true : false
+			Boolean NMisEnabled = parent.automationNestModeEnabled(true)
+			Boolean NMecoisEnabled = parent.setNModeActive(null)
+			Boolean t0 = (!nModeSetEco)
+			Boolean t1 = (home && (!nestModeAway) )
 			if( (t0 || t1) && NMecoisEnabled) {
 				LogAction("checkNestMode adjusting manager state NM is not setting eco", "warn", true)
 				parent.setNModeActive(false)		// clear nMode has it in manager
 			}
 			if(t1) { atomicState?.nModeTstatLocAway = false }
 			def t2 = (away && nestModeAway) ? true : false
-			if(nModeSetEco && t2 && !MNecoisEnabled) {
+			if(nModeSetEco && t2 && (!NMecoisEnabled)) {
 				LogAction("checkNestMode adjusting manager state NM will clear eco", "warn", true)
 				parent.setNModeActive(true)		// set nMode has it in manager
 			}
