@@ -3088,8 +3088,8 @@ def getDesiredTemp() {
 		//else if(desiredHeatTemp && modeEco)	{ desiredTemp = desiredHeatTemp }
 		//else if(desiredCoolTemp && modeEco)	{ desiredTemp = desiredCoolTemp }
 		else if(!desiredTemp && atomicState?.extTmpLastDesiredTemp) { desiredTemp = atomicState?.extTmpLastDesiredTemp }
-//ERS fix
-		LogAction("getDesiredTemp: curMode: ${curMode} | lastMode: ${lastMode} | Desired Temp: ${desiredTemp} | Desired Heat Temp: ${desiredHeatTemp} | Desired Cool Temp: ${desiredCoolTemp} extTmpLastDesiredTemp: ${atomicState?.extTmpLastDesiredTemp}", "info", true)
+
+		LogAction("getDesiredTemp: curMode: ${curMode} | lastMode: ${lastMode} | Desired Temp: ${desiredTemp} | Desired Heat Temp: ${desiredHeatTemp} | Desired Cool Temp: ${desiredCoolTemp} extTmpLastDesiredTemp: ${atomicState?.extTmpLastDesiredTemp}", "info", false)
 	}
 
 	return desiredTemp
