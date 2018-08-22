@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.4.2" }
-def appVerDate() { "08-21-2018" }
+def appVerDate() { "08-22-2018" }
 
 preferences {
 	//startPage
@@ -687,17 +687,7 @@ def uninstAutomationApp() {
 	//LogTrace("uninstAutomationApp")
 	def autoType = getAutoType()
 	if(autoType == "schMot") {
-		def myID = getMyLockId()
-		if(schMotTstat && myID && parent) {
-			if(parent?.addRemoveVthermostat(schMotTstat.deviceNetworkId, false, myID)) {
-				LogAction("uninstAutomationApp: cleanup virtual thermostat", "debug", true)
-			}
-		}
-		if(schMotTstat && myID && parent) {
-			if( parent?.remSenUnlock(atomicState?.remSenTstat, myID) ) { // attempt unlock old ID
-				LogAction("uninstAutomationApp: Released remote sensor lock", "debug", true)
-			}
-		}
+		removeVstat("uninstAutomationApp")
 	}
 	if(autoType == "nMode") {
 		parent?.automationNestModeEnabled(false)
@@ -1509,6 +1499,36 @@ def isDiagnosticsConfigured() {
 *****************************************************************************/
 
 def remSenPrefix() { return "remSen" }
+
+//ERS
+def removeVstat(callerStr) {
+	def autoType = getAutoType()
+	if(autoType == "schMot") {
+		def mycallerStr = "${callerStr} removeVstat: Could"
+		def t0 = mycallerStr
+		def myID = getMyLockId()
+		if(!myID) {
+			setMyLockId(app.id)
+			myID = getMyLockId()
+		}
+		def toRemove = atomicState?.remSenTstat
+		if(schMotTstat && myID && parent && toRemove) {
+
+			if(!parent?.addRemoveVthermostat(toRemove, false, myID)) {
+				t0 = "${mycallerStr} NOT"
+			}
+			LogAction("${t0} cleanup virtual thermostat", "debug", true)
+			atomicState.oldremSenTstat = atomicState?.remSenTstat
+			atomicState?.remSenTstat = null
+
+			t0 = mycallerStr
+			if( !parent?.remSenUnlock(toRemove, myID) ) { // attempt unlock old ID
+				t0 = "${mycallerStr} NOT"
+			}
+			LogAction("${t0} Release remote sensor lock", "debug", true)
+		}
+	}
+}
 
 /*
 def remSenLock(val, myId) {
@@ -5197,6 +5217,12 @@ def schMotModePage() {
 						def remSenDesc = isRemSenConfigured() ? "${remSenDescStr}\n\nTap to modify" : null
 						href "tstatConfigAutoPage", title: "Remote Sensor Config", description: remSenDesc ?: "Not Configured", params: ["configType":"remSen"], required: true, state: (remSenDesc ? "complete" : null),
 								image: getAppImg("configure_icon.png")
+					} else {
+						if(settings?.vthermostat != null) {
+//ERS
+							settingRemove("vthermostat")
+							removeVstat("automation Selection")
+						}
 					}
 				} else if(!tStatPhys) {	paragraph "Remote Sensor is not available on a VIRTUAL Thermostat", state: "complete", image: getAppImg("info_icon2.png") }
 
@@ -5503,13 +5529,11 @@ def tstatConfigAutoPage(params) {
 			if(!getMyLockId()) {
 				setMyLockId(app.id)
 			}
+//ERS
+// this deals with changing the tstat on the automation
 			if(atomicState?.remSenTstat) {
 				if(tstat.deviceNetworkId != atomicState?.remSenTstat) {
-					parent?.addRemoveVthermostat(atomicState.remSenTstat, false, getMyLockId())
-					if( parent?.remSenUnlock(atomicState.remSenTstat, getMyLockId()) ) { // attempt unlock old ID
-						atomicState.oldremSenTstat = atomicState?.remSenTstat
-						atomicState?.remSenTstat = null
-					}
+					removeVstat("settings pages")
 				}
 			}
 			if(settings?.schMotRemoteSensor) {
@@ -5520,13 +5544,11 @@ def tstatConfigAutoPage(params) {
 			}
 
 			if(configType == "remSen") {
-				//   can check if any vthermostat is owned by us, and delete it
-				//   have issue request for vthermostat is still on as input below
-
 				if(cannotLock) {
 					section("") {
 						paragraph "Cannot Lock thermostat for remote sensor - thermostat may already be in use.  Please Correct", required: true, state: null, image: getAppImg("error_icon.png")
 					}
+					settingRemove("vthermostat")
 				}
 
 				if(!cannotLock) {
