@@ -35,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.5.0" }
-def appVerDate() { "08-21-2018" }
+def appVerDate() { "08-22-2018" }
 def minVersions() {
 	return [
 		"automation":["val":543, "desc":"5.4.3"],
@@ -3091,7 +3091,7 @@ def restStreamCheck() {
 }
 
 def receiveStreamStatus(eventData=null) {
-	def resp = eventData == null ? request?.JSON : eventtData
+	def resp = eventData == null ? request?.JSON : eventData
 	if(resp) {
 		def t0 = resp?.streaming == true ? true : false
 		def t1 = atomicState?.restStreamingOn
