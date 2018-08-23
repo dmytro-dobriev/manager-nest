@@ -3384,9 +3384,8 @@ def onAppTouch(event) {
 			atomicState?.swVer = sData
 			return
 	*/
-	sendExceptionData("Some really bad error here", "procNestResponse_something")
-	// stateCleanup()
-	// createSavedNest()
+	stateCleanup()
+	createSavedNest()
 	poll(true)
 }
 
