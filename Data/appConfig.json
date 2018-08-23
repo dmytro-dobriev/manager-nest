@@ -41,8 +41,7 @@
             "stream": {
                 "ver": "2.0.1"
             }
-        },
-        "allowInApp": false
+        }
     },
     "settings": {
         "askAlexa": {
