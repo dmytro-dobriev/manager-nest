@@ -6168,7 +6168,7 @@ def getWeatherDeviceInst() {
 
 def getWebFileData(now = true) {
 	LogTrace("getWebFileData $now")
-	def params = [ uri: "https://raw.githubusercontent.com/${gitPath()}/Data/appData.json", contentType: 'application/json' ]
+	def params = [ uri: "https://raw.githubusercontent.com/${gitPath()}/Data/appConfig.json", contentType: 'application/json' ]
 	def result = false
 	try {
 		def allowAsync = false
@@ -6178,7 +6178,7 @@ def getWebFileData(now = true) {
 			metstr = "async"
 		}
 
-		LogTrace("getWebFileData: Getting appData.json File(${metstr})")
+		LogTrace("getWebFileData: Getting appConfig.json File(${metstr})")
 
 		if(now || !allowAsync) {
 			httpGet(params) { resp ->
@@ -6190,7 +6190,7 @@ def getWebFileData(now = true) {
 	}
 	catch (ex) {
 		if(ex instanceof groovyx.net.http.HttpResponseException) {
-			LogAction("appData.json file not found", "warn", true)
+			LogAction("appConfig.json file not found", "warn", true)
 		} else {
 			log.error "getWebFileData Exception:", ex
 		}
@@ -6211,12 +6211,12 @@ def webResponse(resp, data) {
 		//LogTrace("webResponse Resp: ${newdata}")
 		LogTrace("webResponse appData: ${t0}")
 		if(newdata && t0 != newdata) {
-			LogAction("appData.json File HAS Changed", "info", true)
+			LogAction("appConfig.json File HAS Changed", "info", true)
 			atomicState?.appData = newdata
 			clientBlacklisted()
 			updateHandler()
 			setStateVar(true)
-		} else { LogAction("appData.json did not change", "info", false) }
+		} else { LogAction("appConfig.json did not change", "info", false) }
 		if(atomicState?.appData && !appDevType() && atomicState?.clientBlacklisted) {
 			appUpdateNotify()
 		}
@@ -6226,7 +6226,7 @@ def webResponse(resp, data) {
 		updTimestampMap("lastWebUpdDt", getDtNow())
 		result = true
 	} else {
-		LogAction("Get failed appData.json status: ${resp?.status}", "warn", true)
+		LogAction("Get failed appConfig.json status: ${resp?.status}", "warn", true)
 	}
 	return result
 }
