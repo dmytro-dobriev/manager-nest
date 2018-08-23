@@ -1,7 +1,4 @@
 {
-    "state": {
-        "stateVarVer": 2
-    },
     "broadcast": {
         "msgId": "",
         "message": "",
@@ -40,6 +37,9 @@
             },
             "weather": {
                 "ver": "5.3.7"
+            },
+            "stream": {
+                "ver": "2.0.1"
             }
         },
         "allowInApp": false
@@ -61,10 +61,6 @@
         "schedules": {
             "count": 8
         },
-        "eventStreaming": {
-            "enabled": true,
-            "minVersion": "2.0.1"
-        },
         "healthcheck": {
             "camTimeout": 120,
             "protWireTimeout": 45,
@@ -74,6 +70,9 @@
             "timeout": 45,
             "enabled": true,
             "repairEnabled": false
+        },
+        "maintenance": {
+            "stateVer": 3
         }
     },
     "blacklists": {

@@ -242,7 +242,7 @@ def mainPage() {
 		section("") {
 			href "changeLogPage", title: "", description: "${appInfoDesc()}", image: getAppImg("nst_manager_5%402x.png", true)
 			if(settings?.restStreaming) {
-				def rStrEn = (atomicState?.appData?.eventStreaming?.enabled || getDevOpt() || betaMarker())
+				def rStrEn = (getDevOpt() || betaMarker())
 				href "pollPrefPage", title: "", state: ((atomicState?.restStreamingOn && rStrEn) ? "complete" : null), image: getAppImg("two_way_icon.png"),
 						description: "Nest Streaming: (${(!atomicState?.restStreamingOn || !rStrEn) ? "Inactive" : "Active"})"
 			}
@@ -251,7 +251,7 @@ def mainPage() {
 					href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!",
 						description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in Browser", state: "complete", image: getAppImg("update_icon.png")
 				}
-				if(atomicState?.clientBlacklisted) {
+				if(atomicState?.cltBlacklisted) {
 					paragraph "This ID is blacklisted, please update software!\nIf software is up to date, contact developer", required: true, state: null
 				}
 			}
@@ -574,7 +574,7 @@ def devPrefPage() {
 		}
 		if(atomicState?.cameras) {
 			section("Camera Devices:") {
-				if(atomicState?.appData?.eventStreaming?.enabled == true || getDevOpt() || betaMarker()) {
+				if(getDevOpt() || betaMarker()) {
 					input "camTakeSnapOnEvt", "bool", title: "Take Snapshot on Motion Events?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("snapshot_icon.png")
 					input "motionSndChgWaitVal", "enum", title: "Delay before Motion/Sound Events are marked Inactive?", required: false, defaultValue: 60, metadata: [values:waitValAltEnum(true)], submitOnChange: true, image: getAppImg("delay_time_icon.png")
 					input "camEnMotionZoneFltr", "bool", title: "Allow filtering motion events by configured zones?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("motion_icon.png")
@@ -924,35 +924,34 @@ def voiceRprtPrefPage() {
 def pollPrefPage() {
 	def execTime = now()
 	dynamicPage(name: "pollPrefPage", title: "Polling Preferences", install: false) {
-		if(atomicState?.appData?.eventStreaming?.enabled == true || getDevOpt()) {
-			section("Rest Streaming (Experimental):") {
-				input(name: "restStreaming", title:"Enable Rest Streaming?", type: "bool", defaultValue: false, required: false, submitOnChange: true, image: getAppImg("two_way_icon.png"))
-				if(!settings?.restStreaming) {	
-					paragraph title: "Streaming is an Experimental Feature (Even though it's Stable)", "It requires the install of our local NodeJS streaming service running on your home network."
-					href url: streamLink(), style:"external", required: false, title:"Setup Instructions", description:"Tap to open in browser", state: "complete", image: getAppImg("web_icon.png")
-				}
+		section("Rest Streaming (Experimental):") {
+			input(name: "restStreaming", title:"Enable Rest Streaming?", type: "bool", defaultValue: false, required: false, submitOnChange: true, image: getAppImg("two_way_icon.png"))
+			if(!settings?.restStreaming) {	
+				paragraph title: "Streaming is an Experimental Feature (Even though it's Stable)", "It requires the install of our local NodeJS streaming service running on your home network."
+				href url: streamLink(), style:"external", required: false, title:"Setup Instructions", description:"Tap to open in browser", state: "complete", image: getAppImg("web_icon.png")
 			}
-			if(settings?.restStreaming) {
-				section("Configure Streaming Service:") {
-					href "restSrvcDiscovery", title: "Auto-Discover Local Service", state: (settings?.selectedRestDevice ? "complete" : null), image: getAppImg("search_icon.png"),
-							description: selectedRestDiscSrvcDesc() ? "Selected Service:\n${selectedRestDiscSrvcDesc()}" : "Discover NST Service on your local network"
-					if(!settings?.selectedRestDevice) {
-						input(name: "restStreamIp", title:"Rest Service Address", type: "text", required: true, submitOnChange: true, image: getAppImg("ip_icon.png"))
-						input(name: "restStreamPort", title:"Rest Service Port", type: "number", defaultValue: 3000, required: true, submitOnChange: true, image: getAppImg("port_icon.png"))
-					}
-					input(name: "restStreamLocal", title:"Use Local Network to Send Events?", type: "bool", defaultValue: false, required: false, submitOnChange: true, image: getAppImg("two_way_icon.png"))
-					if(settings?.restStreamLocal == true) { 
-						input(name: "restStreamLocalHub", type: "hub", title: "Select Local Hub", description: "This is the hub Stream events will be sent to.", submitOnChange: true, image: getAppImg("hub_icon.png"))
-						if(settings?.restStreamLocal && settings?.restStreamLocalHub) { subscribe(location, null, lanStreamEvtHandler, [filterEvents:false]) }
-					} 
-					getRestSrvcDesc()
-					paragraph title: "Notice", "This is still an experimental feature. It's subject to your local network and internet connections. If communication is lost the Manager will default back to standard polling."
-				}
-			} else {
-				restDiscoveryClean()
-			}
-			startStopStream()
 		}
+		if(settings?.restStreaming) {
+			section("Configure Streaming Service:") {
+				href "restSrvcDiscovery", title: "Auto-Discover Local Service", state: (settings?.selectedRestDevice ? "complete" : null), image: getAppImg("search_icon.png"),
+						description: selectedRestDiscSrvcDesc() ? "Selected Service:\n${selectedRestDiscSrvcDesc()}" : "Discover NST Service on your local network"
+				if(!settings?.selectedRestDevice) {
+					input(name: "restStreamIp", title:"Rest Service Address", type: "text", required: true, submitOnChange: true, image: getAppImg("ip_icon.png"))
+					input(name: "restStreamPort", title:"Rest Service Port", type: "number", defaultValue: 3000, required: true, submitOnChange: true, image: getAppImg("port_icon.png"))
+				}
+				input(name: "restStreamLocal", title:"Use Local Network to Send Events?", type: "bool", defaultValue: false, required: false, submitOnChange: true, image: getAppImg("two_way_icon.png"))
+				if(settings?.restStreamLocal == true) { 
+					input(name: "restStreamLocalHub", type: "hub", title: "Select Local Hub", description: "This is the hub Stream events will be sent to.", submitOnChange: true, image: getAppImg("hub_icon.png"))
+					if(settings?.restStreamLocal && settings?.restStreamLocalHub) { subscribe(location, null, lanStreamEvtHandler, [filterEvents:false]) }
+				} 
+				getRestSrvcDesc()
+				paragraph title: "Notice", "This is still an experimental feature. It's subject to your local network and internet connections. If communication is lost the Manager will default back to standard polling."
+			}
+		} else {
+			restDiscoveryClean()
+		}
+		startStopStream()
+
 		section("Polling:") {
 			if(settings?.restStreaming && getRestHost()) {
 				paragraph title: "NOTICE!", "These settings are only used when rest streaming is inactive or disabled", required: true, state: null, image: getAppImg("info_icon2.png")
@@ -2093,7 +2092,7 @@ def getVoiceRprtPrefDesc() {
 }
 
 def getPollingConfDesc() {
-	def rStrEn = (atomicState?.appData?.eventStreaming?.enabled || getDevOpt() || betaMarker())
+	def rStrEn = true
 	def pollValDesc = (!settings?.pollValue || settings?.pollValue == "180") ? "" : (!atomicState?.streamPolling ? " (Custom)" : " (Stream)")
 	def pollStrValDesc = (!settings?.pollStrValue || settings?.pollStrValue == "180") ? "" : (!atomicState?.streamPolling ? " (Custom)" : " (Stream)")
 	def pollWeatherValDesc = (!settings?.pollWeatherValue || settings?.pollWeatherValue == "900") ? "" : " (Custom)"
@@ -2958,20 +2957,19 @@ def askAlexaMQHandler(evt) {
 }
 
 def startStopStream() {
-	def strEn = (atomicState?.appData?.eventStreaming?.enabled == true || getDevOpt() || betaMarker()) ? true : false
-	if((!strEn || !settings?.restStreaming) && !atomicState?.restStreamingOn) {
+	if((!settings?.restStreaming) && !atomicState?.restStreamingOn) {
 		return
 	}
-	if(strEn && settings?.restStreaming && atomicState?.restStreamingOn) {
+	if(settings?.restStreaming && atomicState?.restStreamingOn) {
 		runIn(45, "restStreamCheck", [overwrite: true])
 		return
 	}
-	if(strEn && settings?.restStreaming && !atomicState?.restStreamingOn) {
+	if(settings?.restStreaming && !atomicState?.restStreamingOn) {
 		LogTrace("startStopStream: Stream not on, Sending restStreamHandler(Start) Event to local node service")
 		restStreamHandler()
 		runIn(45, "restStreamCheck", [overwrite: true])
 	}
-	else if ((!settings?.restStreaming || !strEn) && atomicState?.restStreamingOn) {
+	else if (!settings?.restStreaming && atomicState?.restStreamingOn) {
 		LogTrace("startStopStream: Streaming should not be running Sending restStreamHandler(Stop) Event to local node service")
 		restStreamHandler(true)
 		atomicState?.restStreamingOn = false
@@ -3386,8 +3384,9 @@ def onAppTouch(event) {
 			atomicState?.swVer = sData
 			return
 	*/
-	stateCleanup()
-	createSavedNest()
+	sendExceptionData("Some really bad error here", "procNestResponse_something")
+	// stateCleanup()
+	// createSavedNest()
 	poll(true)
 }
 
@@ -3498,7 +3497,7 @@ def poll(force = false, type = null) {
 			return
 		}
 		finishPoll(str, dev)
-	} else if(atomicState?.clientBlacklisted) {
+	} else if(atomicState?.cltBlacklisted) {
 		LogAction("Client poll is BLACKLISTED. Please contact the Developer", "warn", true)
 		finishPoll(false, true)
 	}
@@ -4175,7 +4174,7 @@ def updateChildData(force = false) {
 		def htmlInfo = getHtmlInfo()
 		def mobClientType = settings?.mobileClientType
 		def vRprtPrefs = getVoiceRprtPrefs()
-		def clientBl = atomicState?.clientBlacklisted == true ? true : false
+		def clientBl = atomicState?.cltBlacklisted == true ? true : false
 		def hcCamTimeout = atomicState?.appData?.settings?.healthcheck?.camTimeout ?: 120
 		def hcProtWireTimeout = atomicState?.appData?.settings?.healthcheck?.protWireTimeout ?: 45
 		def hcProtBattTimeout = atomicState?.appData?.settings?.healthcheck?.protBattTimeout ?: 1500
@@ -4678,7 +4677,7 @@ def ok2PollStruct() {
 
 def isPollAllowed() {
 	return (atomicState?.pollingOn && atomicState?.authToken &&
-		!atomicState?.clientBlacklisted &&
+		!atomicState?.cltBlacklisted &&
 		(atomicState?.thermostats || atomicState?.protects || atomicState?.weatherDevice || atomicState?.cameras)) ? true : false
 }
 
@@ -5875,7 +5874,7 @@ def appUpdateNotify(badFile=false, badType=null) {
 		def weatherUpd = atomicState?.weatherDevice ? isWeatherUpdateAvail() : false
 		def camUpd = atomicState?.cameras ? isCamUpdateAvail() : false
 		def streamUpd = atomicState?.restStreamingOn ? isStreamUpdateAvail() : false
-		def blackListed = (atomicState?.appData && !appDevType() && atomicState?.clientBlacklisted) ? true : false
+		def blackListed = (atomicState?.appData && !appDevType() && atomicState?.cltBlacklisted) ? true : false
 		//log.debug "appUpd: $appUpd || protUpd: $protUpd || presUpd: $presUpd || tstatUpd: $tstatUpd || weatherUpd: $weatherUpd || camUpd: $camUpd || blackListed: $blackListed || badFile: $badFile"
 		if(appUpd || autoappUpd || protUpd || presUpd || tstatUpd || weatherUpd || camUpd || streamUpd || blackListed || badFile) {
 			def str = ""
@@ -5891,7 +5890,7 @@ def appUpdateNotify(badFile=false, badType=null) {
 			str += !tstatUpd ? "" : "\nThermostat: v${atomicState?.appData?.updater?.versions?.thermostat?.ver?.toString()}"
 			// str += !vtstatUpd ? "" : "\nVirtual Thermostat: v${atomicState?.appData?.updater?.versions?.thermostat?.ver?.toString()}"
 			str += !weatherUpd ? "" : "\nWeather App: v${atomicState?.appData?.updater?.versions?.weather?.ver?.toString()}"
-			str += !streamUpd ? "" : "\nStream Service: v${atomicState?.appData?.eventStreaming?.minVersion?.toString()}"
+			str += !streamUpd ? "" : "\nStream Service: v${atomicState?.appData?.updater?.versions?.stream?.ver?.toString()}"
 			def t0 = badFile ? "Warn" : "Info"
 			if(sendMsg(t0, "${appName()} Update(s) are Available:${str} \n\nPlease visit the IDE to Update code", true)) {
 				updTimestampMap("lastUpdMsgDt", getDtNow())
@@ -6196,10 +6195,12 @@ def webResponse(resp, data) {
 			LogAction("appConfig.json File HAS Changed", "info", true)
 			atomicState?.appData = newdata
 			clientBlacklisted()
+			clientMetricBlacklisted()
+			clientExceptionsBlacklisted()
 			updateHandler()
 			setStateVar(true)
 		} else { LogAction("appConfig.json did not change", "info", false) }
-		if(atomicState?.appData && !appDevType() && atomicState?.clientBlacklisted) {
+		if(atomicState?.appData && !appDevType() && atomicState?.cltBlacklisted) {
 			appUpdateNotify()
 		}
 		if(atomicState?.appData?.settings?.database?.pullSettingsFromFB == true) {
@@ -6283,18 +6284,31 @@ def getWebData(params, desc, text=true) {
 	}
 }
 
-def clientBlacklisted() {
-	if(atomicState?.clientBlacklisted == null) { atomicState?.clientBlacklisted == false }
-	def curBlState = atomicState?.clientBlacklisted
-	if(atomicState?.isInstalled && atomicState?.appData?.blacklists) {
-		def clientList = atomicState?.appData?.blacklists?.clients
-		if(clientList != null || clientList != []) {
-			def isBL = (atomicState?.installationId in clientList) ? true : false
-			if(curBlState != isBL) {
-				atomicState?.clientBlacklisted = isBL
-			}
-		} else { atomicState?.clientBlacklisted = false }
-	} else { atomicState?.clientBlacklisted = false }
+private clientBlacklisted() {
+	Boolean isBl = false
+	List clList = atomicState?.appData?.blacklists?.clients ?: []
+	if(atomicState?.isInstalled && atomicState?.installationId && clList?.size()) {
+		isBl = (atomicState?.installationId in clList)
+	}
+	atomicState?.cltBlacklisted = isBl
+}
+
+private clientMetricBlacklisted() {
+	Boolean isBl = false
+	List clList = atomicState?.appData?.blacklists?.metrics ?: []
+	if(atomicState?.isInstalled && clList?.size()) {
+		isBl = (atomicState?.installationId in clList)
+	}
+	atomicState?.cltMetBlacklisted = isBl
+}
+
+private clientExceptionsBlacklisted() {
+	Boolean isBl = false
+	List clList = atomicState?.appData?.blacklists?.exceptions ?: []
+	if(atomicState?.isInstalled && clList?.size()) {
+		isBl = (atomicState?.installationId in clList)
+	}
+	atomicState?.cltExcBlacklisted = isBl
 }
 
 def broadcastCheck() {
@@ -6437,7 +6451,7 @@ def isWeatherUpdateAvail() {
 }
 
 def isStreamUpdateAvail() {
-	if(isCodeUpdateAvailable(atomicState?.appData?.eventStreaming?.minVersion, atomicState?.swVer?.streamDevVer, "stream")) { return true }
+	if(isCodeUpdateAvailable(atomicState?.appData?.updater?.versions?.stream?.ver, atomicState?.swVer?.streamDevVer, "stream")) { return true }
 	return false
 }
 
@@ -7731,14 +7745,14 @@ def setStateVar(frc = false) {
 	//the app to create any new state values that might not exist or reset those that do to prevent errors
 	def stateVer = 3
 	def stateVar = !atomicState?.stateVarVer ? 0 : atomicState?.stateVarVer.toInteger()
-	if(!atomicState?.stateVarUpd || frc || (stateVer < atomicState?.appData?.state?.stateVarVer?.toInteger())) {
+	if(!atomicState?.stateVarUpd || frc || (stateVer < atomicState?.appData?.settings?.maintenance?.stateVer?.toInteger())) {
 		if(!atomicState?.newSetupComplete)		{ atomicState.newSetupComplete = false }
 		if(!atomicState?.setupVersion)			{ atomicState?.setupVersion = 0 }
 		if(!atomicState?.custLabelUsed)			{ atomicState?.custLabelUsed = false }
 		if(!atomicState?.useAltNames)			{ atomicState.useAltNames = false }
 		if(!atomicState?.apiCommandCnt)			{ atomicState?.apiCommandCnt = 0L }
 		atomicState?.stateVarUpd = true
-		atomicState?.stateVarVer = atomicState?.appData?.state?.stateVarVer ? atomicState?.appData?.state?.stateVarVer?.toInteger() : 0
+		atomicState?.stateVarVer = atomicState?.appData?.settings?.maintenance?.stateVer ? atomicState?.appData?.settings?.maintenance?.stateVer?.toInteger() : 0
 	}
 }
 
@@ -7760,7 +7774,7 @@ def stateCleanup() {
 
 	def data = [ "exLogs", "pollValue", "pollStrValue", "pollWaitVal", "tempChgWaitVal", "cmdDelayVal", "testedDhInst", "missedPollNotif", "updateMsgNotif", "updChildOnNewOnly", "disAppIcons",
 		"showProtAlarmStateEvts", "showAwayAsAuto", "cmdQlist", "cmdQ", "recentSendCmd", "cmdIsProc", "currentWeather", "altNames", "locstr", "custLocStr", "autoAppInstalled", "nestStructures", "lastSentExceptionDataDt",
-		"swVersion", "dashSetup", "dashboardUrl", "apiIssues", "stateSize", "haveRun", "lastStMode", "lastPresSenAway", "devCodeIdData", "appCodeIdData",
+		"swVersion", "dashSetup", "dashboardUrl", "apiIssues", "stateSize", "haveRun", "lastStMode", "lastPresSenAway", "devCodeIdData", "appCodeIdData", "clientBlacklisted",
 		"automationsActive", "temperatures", "powers", "energies", "use24Time", "useMilitaryTime", "advAppDebug", "appDebug", "awayModes", "homeModes", "childDebug", "updNotifyWaitVal",
 		"appApiIssuesWaitVal", "misPollNotifyWaitVal", "misPollNotifyMsgWaitVal", "devHealthMsgWaitVal", "nestLocAway", "heardFromRestDt", "autoSaVer", "lastHeardFromRestDt",
 		"remDiagApp", "remDiagClientId", "restorationInProgress", "diagManagAppStateFilters", "diagChildAppStateFilters", "lastFinishedPoll","tDevVer", "pDevVer", "camDevVer", "presDevVer", "weatDevVer", "vtDevVer", "streamDevVer",
@@ -7845,8 +7859,8 @@ def slackMsgWebHookUrl()	{ return "https://hooks.slack.com/services/T10NQTZ40/B3
 def getAutoHelpPageUrl()	{ return "http://thingsthataresmart.wiki/index.php?title=NST_Manager#Nest_Automations" }
 def weatherApiKey()			{ return "b82aba1bb9a9d7f1" }
 def getFbLegacyAppUrl() 	{ return "https://st-nest-manager.firebaseio.com" }
-def getFbMetricsUrl() 		{ return "https://nst-manager-metrics.firebaseio.com/" }
-def getFbExceptionsUrl() 	{ return "https://nst-manager-exceptions.firebaseio.com/m" }
+def getFbMetricsUrl() 		{ return "https://nst-manager-metrics.firebaseio.com" }
+def getFbExceptionsUrl() 	{ return "https://nst-manager-exceptions.firebaseio.com" }
 def getAppImg(imgName, on = null)	{ return (!disAppIcons || on) ? "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Images/App/$imgName" : "" }
 def getDevImg(imgName, on = null)	{ return (!disAppIcons || on) ? "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Images/Devices/$imgName" : "" }
 private Integer convertHexToInt(hex) { Integer.parseInt(hex,16) }
@@ -9551,7 +9565,9 @@ def renderHtmlMapDesc(title, heading, datamap) {
 }
 
 def sendInstallData() {
-	sendFirebaseData(getFbMetricsUrl(), createInstallDataJson(), "clients/${atomicState?.installationId}.json", null, "heartbeat")
+	if(atomicState?.cltMetBlacklisted) {
+		LogAction("Metrics Upload has been BLACKLISTED for this client.", "warn", true)
+	} else { sendFirebaseData(getFbMetricsUrl(), createInstallDataJson(), "clients/${atomicState?.installationId}.json", null, "heartbeat") }
 }
 
 def removeInstallData() {
@@ -9599,6 +9615,8 @@ def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 		LogAction("${labelstr}sendExceptionData(method: $methodName, isChild: $isChild, autoType: $autoType, ex: ${ex})", "error", showErrLog)
 		if(atomicState?.appData?.settings?.database?.disableExceptions == true) {
 			// Nothing to see here!
+		} else if(atomicState?.cltMetBlacklisted) {
+			LogAction("Exception Data Upload has been BLACKLISTED for this client.", "warn", true)
 		} else {
 			def exCnt = atomicState?.appExceptionCnt ?: 1
 			atomicState?.appExceptionCnt = exCnt?.toInteger() + 1
@@ -9613,6 +9631,7 @@ def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 					exData = ["methodName":methodName, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exString, "errorDt":getDtNow().toString()]
 				}
 				def results = new groovy.json.JsonOutput().toJson(exData)
+				log.debug "sendExceptionData | url: ${getFbExceptionsUrl()} | results: $results | dbPath: ${getDbExceptPath()}/${appType}/${methodName}/${atomicState?.installationId}"
 				sendFirebaseData(getFbExceptionsUrl(), results, "${getDbExceptPath()}/${appType}/${methodName}/${atomicState?.installationId}.json", "post", "Exception")
 			}
 		}
