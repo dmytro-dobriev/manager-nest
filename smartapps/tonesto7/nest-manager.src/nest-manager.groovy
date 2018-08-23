@@ -1923,7 +1923,7 @@ def getRemDiagApp() {
 }
 
 void diagLogProcChange(setOn) {
-	def diagAllowed = atomicState?.appData?.database?.allowRemoteDiag == true ? true : false
+	def diagAllowed = true
 	//log.debug "diagAllowed: $diagAllowed"
 	def doInit = false
 	def msg = "Remote Diagnostic Logs "
@@ -3497,43 +3497,25 @@ def poll(force = false, type = null) {
 		def str = false
 		if(!okDevice && !okStruct && !(getLastHeardFromNestSec() > pollTimeout*2)) {
 			LogAction("No Device or Structure poll - Devices Last Updated: ${getLastDevicePollSec()} seconds ago | Structures Last Updated ${getLastStructPollSec()} seconds ago", "info", true)
-		}
-		else {
+		} else {
 			def sstr = ""
-			def allowAsync = false
-			def metstr = "sync"
-			if(atomicState?.appData && atomicState?.appData?.pollMethod?.allowAsync) {
-				allowAsync = true
-				metstr = "async"
-			}
+			def metstr = "async"
 			if(okStruct) {
 				sstr += "Updating Structure Data (Last Updated: ${getLastStructPollSec()} seconds ago)"
-				if(allowAsync) {
-					str = queueGetApiData("str")
-				} else {
-					str = getApiData("str")
-				}
+				str = queueGetApiData("str")
 			}
 			if(okDevice) {
 				sstr += sstr != "" ? " | " : ""
 				sstr += "Updating Device Data (Last Updated: ${getLastDevicePollSec()} seconds ago)"
-				if(allowAsync) {
-					dev = queueGetApiData("dev")
-				} else {
-					dev = getApiData("dev")
-				}
+				dev = queueGetApiData("dev")
 			}
 			if(okMeta) {
 				sstr += sstr != "" ? " | " : ""
 				sstr += "Updating Meta Data(Last Updated: ${getLastMetaPollSec()} seconds ago)"
-				if(allowAsync) {
-					meta = queueGetApiData("meta")
-				} else {
-					meta = getApiData("meta")
-				}
+				meta = queueGetApiData("meta")
 			}
 			if(sstr != "") { LogAction("${sstr} (${metstr})", "info", true) }
-			if(allowAsync) { return }
+			return
 		}
 		finishPoll(str, dev)
 	} else if(atomicState?.clientBlacklisted) {
@@ -4207,7 +4189,7 @@ def updateChildData(force = false) {
 		def useMt = !useMilitaryTime ? false : true
 		def dbg = !childDebug ? false : true
 		def logNamePrefix = (settings?.debugAppendAppName || settings?.debugAppendAppName == null) ? true : false
-		def remDiag = (atomicState?.appData?.database?.allowRemoteDiag && atomicState?.enRemDiagLogging && settings?.enRemDiagLogging) ? true: false
+		def remDiag = (atomicState?.enRemDiagLogging && settings?.enRemDiagLogging) ? true: false
 		def nestTz = getNestTimeZone()?.toString()
 		def api = !apiIssues() ? false : true
 		def htmlInfo = getHtmlInfo()
@@ -5205,13 +5187,7 @@ def getQueueToWork() {
 
 void schedNextWorkQ(useShort=false) {
 	def cmdDelay = getChildWaitVal()
-
-	def allowAsync = false
-	if(atomicState?.appData && atomicState?.appData?.pollMethod?.allowAsync) {
-		allowAsync = true
-	}
-
-	if(useShort && allowAsync) { cmdDelay = 0 }
+	if(useShort) { cmdDelay = 0 }
 	//
 	// This is throttling the rate of commands to the Nest service for this access token.
 	// If too many commands are sent Nest throttling could shut all write commands down for 1 hour to the device or structure
@@ -5237,7 +5213,7 @@ void schedNextWorkQ(useShort=false) {
 			if(queueItemsAvail > 0) { timeVal = 0 }
 		}
 		str = timeVal > cmdDelay || atomicState?.apiRateLimited ? "*RATE LIMITING ON* " : ""
-		//LogAction("schedNextWorkQ │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${queueItemsAvail} │ last seconds: ${lastCommandSent} │ cmdDelay: ${cmdDelay} │ allowAsync: ${allowAsync} | runInActive: ${atomicState?.workQrunInActive} | Api Limited: ${atomicState?.apiRateLimited}", "info", true)
+		//LogAction("schedNextWorkQ │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${queueItemsAvail} │ last seconds: ${lastCommandSent} │ cmdDelay: ${cmdDelay} | runInActive: ${atomicState?.workQrunInActive} | Api Limited: ${atomicState?.apiRateLimited}", "info", true)
 	} else {
 		timeVal = 0
 	}
@@ -5253,7 +5229,7 @@ void schedNextWorkQ(useShort=false) {
 			workQueue()
 		}
 	}
-	LogAction("schedNextWorkQ ${actStr} │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${queueItemsAvail} │ last seconds: ${lastCommandSent} │ cmdDelay: ${cmdDelay} │ allowAsync: ${allowAsync} | runInActive: ${atomicState?.workQrunInActive} | command proc: ${cmdIsProc()} | Api Limited: ${atomicState?.apiRateLimited}", "info", true)
+	LogAction("schedNextWorkQ ${actStr} │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${queueItemsAvail} │ last seconds: ${lastCommandSent} │ cmdDelay: ${cmdDelay} | runInActive: ${atomicState?.workQrunInActive} | command proc: ${cmdIsProc()} | Api Limited: ${atomicState?.apiRateLimited}", "info", true)
 }
 
 private getRecentSendCmd(qnum) {
@@ -5318,12 +5294,7 @@ void workQueue() {
 	if(qnum == null) { qnum = 0 }
 	if(!atomicState?."cmdQ${qnum}") { atomicState."cmdQ${qnum}" = [] }
 
-	def allowAsync = false
-	def metstr = "sync"
-	if(atomicState?.appData && atomicState?.appData?.pollMethod?.allowAsync) {
-		allowAsync = true
-		metstr = "async"
-	}
+	def metstr = "async"
 
 	def cmdQueue = atomicState?."cmdQ${qnum}"
 	try {
@@ -5352,12 +5323,8 @@ void workQueue() {
 					atomicState.forceChildUpd = true
 					cmdres = true
 				} else {
-					if(allowAsync) {
-						cmdres = queueProcNestApiCmd(getNestApiUrl(), cmd[0], cmd[1], cmd[2], cmd[3], qnum, cmd)
-						return
-					} else {
-						cmdres = procNestApiCmd(getNestApiUrl(), cmd[0], cmd[1], cmd[2], cmd[3], qnum, cmd)
-					}
+					cmdres = queueProcNestApiCmd(getNestApiUrl(), cmd[0], cmd[1], cmd[2], cmd[3], qnum, cmd)
+					return
 				}
 				finishWorkQ(cmd, cmdres)
 			} else { LogAction("workQueue: busy processing command", "warn", true) }
@@ -6208,7 +6175,7 @@ def getWebFileData(now = true) {
 	try {
 		def allowAsync = false
 		def metstr = "sync"
-		if(!now && atomicState?.appData && atomicState?.appData?.pollMethod?.allowAsync) {
+		if(!now) {
 			allowAsync = true
 			metstr = "async"
 		}
@@ -6273,7 +6240,7 @@ def getFbAppSettings(now = true) {
 	try {
 		def allowAsync = false
 		def metstr = "sync"
-		if(!now && atomicState?.appData && atomicState?.appData?.pollMethod?.allowAsync) {
+		if(!now) {
 			allowAsync = true
 			metstr = "async"
 		}
@@ -7635,10 +7602,6 @@ def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=f
 				turnOff = true
 				reasonStr += "was active for last 48 hours "
 			}
-			if(atomicState?.appData?.database?.allowRemoteDiag != true) {
-				turnOff = true
-				reasonStr += "appData does not allow"
-			}
 		}
 		if(turnOff) {
 			saveLogtoRemDiagStore("Diagnostics disabled due to ${reasonStr}", "info", "Manager", true)
@@ -7908,7 +7871,7 @@ def getIssuePageUrl()		{ return "https://github.com/tonesto7/nest-manager/issues
 def slackMsgWebHookUrl()	{ return "https://hooks.slack.com/services/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" }
 def getAutoHelpPageUrl()	{ return "http://thingsthataresmart.wiki/index.php?title=NST_Manager#Nest_Automations" }
 def weatherApiKey()			{ return "b82aba1bb9a9d7f1" }
-def getFirebaseAppUrl() 	{ return "https://st-nest-manager.firebaseio.com" }
+def getFbLegacyAppUrl() 	{ return "https://st-nest-manager.firebaseio.com" }
 def getAppImg(imgName, on = null)	{ return (!disAppIcons || on) ? "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Images/App/$imgName" : "" }
 def getDevImg(imgName, on = null)	{ return (!disAppIcons || on) ? "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Images/Devices/$imgName" : "" }
 private Integer convertHexToInt(hex) { Integer.parseInt(hex,16) }
@@ -9651,7 +9614,7 @@ def sendInstallSlackNotif(inst=true) {
 	sendDataToSlack(json, "", "post", "${typeStr} Slack Notif")
 }
 
-def getDbExceptPath() { return atomicState?.appData?.database?.newexceptionPath ?: "newexceptionData" }
+def getDbExceptPath() { return atomicState?.appData?.database?.newexceptionPath ?: "exceptions" }
 
 def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 	try {
@@ -9660,7 +9623,7 @@ def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 		//LogAction("${labelstr}sendExceptionData(method: $methodName, isChild: $isChild, autoType: $autoType)", "info", false)
 		LogAction("${labelstr}sendExceptionData(method: $methodName, isChild: $isChild, autoType: $autoType, ex: ${ex})", "error", showErrLog)
 		if(atomicState?.appData?.database?.disableExceptions == true) {
-			;
+			// Nothing to see here!
 		} else {
 			def exCnt = atomicState?.appExceptionCnt ?: 1
 			atomicState?.appExceptionCnt = exCnt?.toInteger() + 1
@@ -9713,28 +9676,17 @@ def sendFeedbackData(msg) {
 	}
 }
 
-def sendFirebaseData(data, pathVal, cmdType=null, type=null, noAsync=false) {
-	LogAction("sendFirebaseData(${data}, ${pathVal}, $cmdType, $type, $noAsync", "info", true)
-	LogTrace("sendFirebaseData(${data}, ${pathVal}, $cmdType, $type, $noAsync")
-
-	def allowAsync = false
-	def metstr = "sync"
-	if(atomicState?.appData && atomicState?.appData?.pollMethod?.allowAsync) {
-		allowAsync = true
-		metstr = "async"
-	}
-	if(allowAsync && !noAsync) {
-		return queueFirebaseData(data, pathVal, cmdType, type)
-	} else {
-		return syncSendFirebaseData(data, pathVal, cmdType, type)
-	}
+def sendFirebaseData(url, data, pathVal, cmdType=null, type=null) {
+	LogAction("sendFirebaseData(${data}, ${pathVal}, $cmdType, $type", "info", true)
+	LogTrace("sendFirebaseData(${data}, ${pathVal}, $cmdType, $type")
+	return queueFirebaseData(data, pathVal, cmdType, type)
 }
 
-def queueFirebaseData(data, pathVal, cmdType=null, type=null) {
+def queueFirebaseData(url, data, pathVal, cmdType=null, type=null) {
 	LogTrace("queueFirebaseData(${data}, ${pathVal}, $cmdType, $type")
 	def result = false
 	def json = new groovy.json.JsonOutput().prettyPrint(data)
-	def params = [ uri: "${getFirebaseAppUrl()}/${pathVal}", body: json.toString() ]
+	def params = [ uri: "${getFbLegacyAppUrl()}/${pathVal}", body: json.toString() ]
 	def typeDesc = type ? "${type}" : "Data"
 	try {
 		if(!cmdType || cmdType == "put") {
@@ -9785,7 +9737,7 @@ def syncSendFirebaseData(data, pathVal, cmdType=null, type=null) {
 	LogTrace("syncSendFirebaseData(${data}, ${pathVal}, $cmdType, $type")
 	def result = false
 	def json = new groovy.json.JsonOutput().prettyPrint(data)
-	def params = [ uri: "${getFirebaseAppUrl()}/${pathVal}", body: json.toString() ]
+	def params = [ uri: "${getFbLegacyAppUrl()}/${pathVal}", body: json.toString() ]
 	def typeDesc = type ? "${type}" : "Data"
 	def respData
 	try {
@@ -9854,7 +9806,7 @@ def removeFirebaseData(pathVal) {
 	LogAction("removeFirebaseData(${pathVal})", "trace", false)
 	def result = true
 	try {
-		httpDelete(uri: "${getFirebaseAppUrl()}/${pathVal}") { resp ->
+		httpDelete(uri: "${getFbLegacyAppUrl()}/${pathVal}") { resp ->
 			LogAction("resp: ${resp?.status}", "info", true)
 		}
 	}

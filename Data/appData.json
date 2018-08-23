@@ -48,11 +48,9 @@
         "allowInApp": false
     },
     "database": {
-        "allowRemoteDiag": true,
         "disableExceptions": false,
         "exceptionPath": "exceptionData",
-        "newexceptionPath": "newexceptionData",
-        "remoteDiagPath": "remoteDiagLogs"
+        "newexceptionPath": "newexceptionData"
     },
     "appSettings": {
         "pullFromFB": true
@@ -68,9 +66,6 @@
     "clientBL": {
         "clients": []
     },
-    "clientRemDiagAuth": {
-        "clients": []
-    },
     "pollMethod": {
         "allowAsync": true
     },
@@ -79,7 +74,7 @@
     },
     "eventStreaming": {
         "enabled": true,
-        "minVersion": "1.0.0"
+        "minVersion": "2.0.1"
     },
     "healthcheck": {
         "camTimeout": 120,
@@ -90,9 +85,5 @@
         "timeout": 45,
         "enabled": true,
         "repairEnabled": false
-    },
-    "devStatusPage": {
-        "enabled": false,
-        "path": ""
     }
 }
