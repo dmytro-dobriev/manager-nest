@@ -7863,6 +7863,8 @@ def slackMsgWebHookUrl()	{ return "https://hooks.slack.com/services/T10NQTZ40/B3
 def getAutoHelpPageUrl()	{ return "http://thingsthataresmart.wiki/index.php?title=NST_Manager#Nest_Automations" }
 def weatherApiKey()			{ return "b82aba1bb9a9d7f1" }
 def getFbLegacyAppUrl() 	{ return "https://st-nest-manager.firebaseio.com" }
+def getFbMetricsUrl() 		{ return "https://nst-manager-metrics.firebaseio.com/" }
+def getFbExceptionsUrl() 	{ return "https://nst-manager-exceptions.firebaseio.com/m" }
 def getAppImg(imgName, on = null)	{ return (!disAppIcons || on) ? "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Images/App/$imgName" : "" }
 def getDevImg(imgName, on = null)	{ return (!disAppIcons || on) ? "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Images/Devices/$imgName" : "" }
 private Integer convertHexToInt(hex) { Integer.parseInt(hex,16) }
@@ -9567,7 +9569,7 @@ def renderHtmlMapDesc(title, heading, datamap) {
 }
 
 def sendInstallData() {
-	sendFirebaseData(createInstallDataJson(), "installData/clients/${atomicState?.installationId}.json", null, "heartbeat")
+	sendFirebaseData(getFbMetricsUrl(), createInstallDataJson(), "clients/${atomicState?.installationId}.json", null, "heartbeat")
 }
 
 def removeInstallData() {
@@ -9629,7 +9631,7 @@ def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 					exData = ["methodName":methodName, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exString, "errorDt":getDtNow().toString()]
 				}
 				def results = new groovy.json.JsonOutput().toJson(exData)
-				sendFirebaseData(results, "${getDbExceptPath()}/${appType}/${methodName}/${atomicState?.installationId}.json", "post", "Exception")
+				sendFirebaseData(getFbExceptionsUrl(), results, "${getDbExceptPath()}/${appType}/${methodName}/${atomicState?.installationId}.json", "post", "Exception")
 			}
 		}
 		if(ex instanceof physicalgraph.exception.StateCharacterLimitExceededException) {
@@ -9653,7 +9655,7 @@ def sendChildExceptionData(devType, devVer, ex, methodName) {
 		generateInstallId()
 		def exData = ["deviceType":devType, "devVersion":(devVer ?: "Not Available"), "methodName":methodName, "errorMsg":exString, "errorDt":getDtNow().toString()]
 		def results = new groovy.json.JsonOutput().toJson(exData)
-		sendFirebaseData(results, "${getDbExceptPath()}/${devType}/${methodName}/${atomicState?.installationId}.json", "post", "Exception")
+		sendFirebaseData(getFbExceptionsUrl(), results, "${getDbExceptPath()}/${devType}/${methodName}/${atomicState?.installationId}.json", "post", "Exception")
 	}
 }
 
@@ -9661,7 +9663,7 @@ def sendFeedbackData(msg) {
 	def cltId = atomicState?.installationId
 	def exData = ["guid":atomicState?.installationId, "version":appVersion(), "feedbackMsg":(msg ? msg : (settings?.feedbackMsg ?: "No Text")), "msgDt":getDtNow().toString()]
 	def results = new groovy.json.JsonOutput().toJson(exData)
-	if(sendFirebaseData(results, "feedback/data.json", "post", "Feedback")) {
+	if(sendFirebaseData(getFbLegacyAppUrl(), results, "feedback/data.json", "post", "Feedback")) {
 		atomicState?.feedbackPending = false
 		if(!msg) { atomicState?.lastFeedbackData = ["lastMsg":settings?.feedbackMsg, "lastMsgDt":getDtNow().toString(), "lastAppVer":appVersion()] }
 	}
@@ -9670,14 +9672,14 @@ def sendFeedbackData(msg) {
 def sendFirebaseData(url, data, pathVal, cmdType=null, type=null) {
 	LogAction("sendFirebaseData(${data}, ${pathVal}, $cmdType, $type", "info", true)
 	LogTrace("sendFirebaseData(${data}, ${pathVal}, $cmdType, $type")
-	return queueFirebaseData(data, pathVal, cmdType, type)
+	return queueFirebaseData(url, data, pathVal, cmdType, type)
 }
 
 def queueFirebaseData(url, data, pathVal, cmdType=null, type=null) {
 	LogTrace("queueFirebaseData(${data}, ${pathVal}, $cmdType, $type")
 	def result = false
 	def json = new groovy.json.JsonOutput().prettyPrint(data)
-	def params = [ uri: "${getFbLegacyAppUrl()}/${pathVal}", body: json.toString() ]
+	def params = [ uri: "${url}/${pathVal}", body: json.toString() ]
 	def typeDesc = type ? "${type}" : "Data"
 	try {
 		if(!cmdType || cmdType == "put") {
@@ -9722,52 +9724,6 @@ def processFirebaseSlackResponse(resp, data) {
 		log.error "processFirebaseSlackResponse (type: $typeDesc) Exception:", ex
 		sendExceptionData(ex, "processFirebaseSlackResponse")
 	}
-}
-
-def syncSendFirebaseData(data, pathVal, cmdType=null, type=null) {
-	LogTrace("syncSendFirebaseData(${data}, ${pathVal}, $cmdType, $type")
-	def result = false
-	def json = new groovy.json.JsonOutput().prettyPrint(data)
-	def params = [ uri: "${getFbLegacyAppUrl()}/${pathVal}", body: json.toString() ]
-	def typeDesc = type ? "${type}" : "Data"
-	def respData
-	try {
-		if(!cmdType || cmdType == "put") {
-			httpPutJson(params) { resp ->
-				respData = resp
-			}
-		} else if (cmdType == "post") {
-			httpPostJson(params) { resp ->
-				respData = resp
-			}
-		}
-		if(respData) {
-			//log.debug "respData: ${respData}"
-			if(respData?.status == 200) {
-				LogAction("sendFirebaseData: ${typeDesc} Data Sent SUCCESSFULLY", "info", false)
-				if(typeDesc.toString() == "Remote Diag Logs") {
-
-				} else {
-					if(typeDesc?.toString() == "heartbeat") { updTimestampMap("lastAnalyticUpdDt", getDtNow()) }
-				}
-				result = true
-			}
-			else if(respData?.status == 400) {
-				LogAction("sendFirebaseData: 'Bad Request': ${respData?.status}", "error", true)
-			}
-			else {
-				LogAction("sendFirebaseData: 'Unexpected' Response: ${respData?.status}", "warn", true)
-			}
-		}
-	}
-	catch (ex) {
-		if(ex instanceof groovyx.net.http.HttpResponseException) {
-			LogAction("sendFirebaseData: 'HttpResponseException': ${ex?.message}", "error", true)
-		}
-		else { log.error "sendFirebaseData: ([$data, $pathVal, $cmdType, $type]) Exception:", ex }
-		sendExceptionData(ex, "sendFirebaseData")
-	}
-	return result
 }
 
 def sendDataToSlack(data, pathVal, cmdType=null, type=null) {

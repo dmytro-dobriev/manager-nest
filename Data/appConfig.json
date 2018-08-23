@@ -51,8 +51,8 @@
         },
         "database": {
             "disableExceptions": false,
-            "exceptionKey": "exceptionData",
-            "pullSettingFromFB": true
+            "exceptionKey": "exceptions",
+            "pullSettingFromFB": false
         },
         "reports": {
             "disVoiceZoneRprt": false,
