@@ -791,10 +791,8 @@ def reviewSetupPage() {
 			href "pollPrefPage", title: "Device | Structure\nPolling Preferences", description: (pollDesc != "" ? "${pollDesc}\n\nTap to modify" : "Tap to configure"), state: (pollDesc != "" ? "complete" : null), image: getAppImg("timer_icon.png")
 		}
 		showDevSharePrefs()
-		if(atomicState?.showHelp) {
-			section("") {
-				href "infoPage", title: "Donations and Info", description: "Tap to view", image: getAppImg("info.png")
-			}
+		section("") {
+			href "infoPage", title: "Donations and Info", description: "Tap to view", image: getAppImg("info.png")
 		}
 		if(!atomicState?.isInstalled) {
 			section("") {
@@ -910,12 +908,12 @@ def voiceRprtPrefPage() {
 	return dynamicPage(name: "voiceRprtPrefPage", title: "Voice Report Preferences", install: false, uninstall: false) {
 		section("Report Customization:") {
 			paragraph "These options allow you to configure how much info is included in the Thermostat voice reporting."
-			if(!atomicState?.appData?.reportPrefs?.disVoiceZoneRprt) {
+			if(!atomicState?.appData?.settings?.reports?.disVoiceZoneRprt) {
 				input ("vRprtIncSchedInfo", "bool", title: "Include Automation Source Schedule Info?", required: false, defaultValue: true, submitOnChange: false, image: getAppImg("nst_automations_5.png"))
 				input ("vRprtIncZoneInfo", "bool", title: "Include Current Zone Info?", required: false, defaultValue: true, submitOnChange: false, image: getAppImg("thermostat_icon.png"))
 				input ("vRprtIncExtWeatInfo", "bool", title: "Include External Info?", required: false, defaultValue: true, submitOnChange: false, image: getAppImg("weather_icon.png"))
 			}
-			if(!atomicState?.appData?.reportPrefs?.disVoiceUsageRprt) {
+			if(!atomicState?.appData?.settings?.reports?.disVoiceUsageRprt) {
 				input ("vRprtIncUsageInfo", "bool", title: "Include Usage Info?", required: false, defaultValue: true, submitOnChange: false, image: getAppImg("usage_icon.png"))
 			}
 		}
@@ -1489,7 +1487,7 @@ def notifPrefPage() {
 				def autoDesc = t1 ? "${t1}\n\n" : ""
 				href "notifConfigPage", title: "Automation Notifications", description: "${autoDesc}Tap to configure", params: [pType:"auto"], state: (autoDesc != "" ? "complete" : null),
 						image: getAppImg("nst_automations_5.png")
-				if(atomicState?.appData?.aaPrefs?.enAaMsgQueue == true) {
+				if(atomicState?.appData?.settings?.askAlexa?.enAaMsgQueue == true) {
 					t1 = getAskAlexaDesc()
 					def aaDesc = t1 ? "${t1}\n\n" : ""
 					href "notifConfigPage", title: "AskAlexa Integration", description: "${aaDesc}Tap to configure", params: [pType:"askAlexa"], state: (aaDesc != "" ? "complete" : null),
@@ -2069,7 +2067,7 @@ def getSafetyValuesDesc() {
 }
 
 def showVoiceRprtPrefs() {
-	if(atomicState?.thermostats && (!atomicState?.appData?.reportPrefs?.disVoiceZoneRprt || !atomicState?.appData?.reportPrefs?.disVoiceUsageRprt)) {
+	if(atomicState?.thermostats && (!atomicState?.appData?.settings?.reports?.disVoiceZoneRprt || !atomicState?.appData?.settings?.reports?.disVoiceUsageRprt)) {
 		def rPrefs = getVoiceRprtPrefDesc()
 		section("Voice Reports:") {
 			href "voiceRprtPrefPage", title: "Voice Report Preferences", description: (rPrefs ? "${rPrefs}\n\nTap to modify" : "Tap to configure"), state: (rPrefs ? "complete" : ""), image: getAppImg("speech2_icon.png")
@@ -2079,8 +2077,8 @@ def showVoiceRprtPrefs() {
 
 def getVoiceRprtPrefs() {
 	return [
-		"allowVoiceUsageRprt":(atomicState?.appData?.reportPrefs?.disVoiceUsageRprt == true) ? false : true,
-		"allowVoiceZoneRprt":(atomicState?.appData?.reportPrefs?.disVoiceZoneRprt == true) ? false : true,
+		"allowVoiceUsageRprt":(atomicState?.appData?.settings?.reports?.disVoiceUsageRprt == true) ? false : true,
+		"allowVoiceZoneRprt":(atomicState?.appData?.settings?.reports?.disVoiceZoneRprt == true) ? false : true,
 		"vRprtSched":(settings?.vRprtIncSchedInfo == false ? false : true),
 		"vRprtZone":(settings?.vRprtIncZoneInfo == false ? false : true),
 		"vRprtExtWeat":(settings?.vRprtIncExtWeatInfo == false ? false : true),
@@ -3300,7 +3298,7 @@ def getInstAutoTypesDesc() {
 
 def subscriber() {
 	subscribe(app, onAppTouch)
-	if(atomicState.appData?.aaPrefs?.enMultiQueue && settings?.allowAskAlexaMQ) {
+	if(atomicState.appData?.settings?.askAlexa?.enMultiQueue && settings?.allowAskAlexaMQ) {
 		subscribe(location, "askAlexaMQ", askAlexaMQHandler) //Refreshes list of available AA queues
 	}
 	//Pushover Manager Init/cleanup
@@ -4196,12 +4194,12 @@ def updateChildData(force = false) {
 		def mobClientType = settings?.mobileClientType
 		def vRprtPrefs = getVoiceRprtPrefs()
 		def clientBl = atomicState?.clientBlacklisted == true ? true : false
-		def hcCamTimeout = atomicState?.appData?.healthcheck?.camTimeout ?: 120
-		def hcProtWireTimeout = atomicState?.appData?.healthcheck?.protWireTimeout ?: 45
-		def hcProtBattTimeout = atomicState?.appData?.healthcheck?.protBattTimeout ?: 1500
-		def hcTstatTimeout = atomicState?.appData?.healthcheck?.tstatTimeout ?: 45
-		def hcLongTimeout = atomicState?.appData?.healthcheck?.longTimeout ?: 120
-		def hcRepairEnabled = atomicState?.appData?.healthcheck?.repairEnabled != false ? true : false
+		def hcCamTimeout = atomicState?.appData?.settings?.healthcheck?.camTimeout ?: 120
+		def hcProtWireTimeout = atomicState?.appData?.settings?.healthcheck?.protWireTimeout ?: 45
+		def hcProtBattTimeout = atomicState?.appData?.settings?.healthcheck?.protBattTimeout ?: 1500
+		def hcTstatTimeout = atomicState?.appData?.settings?.healthcheck?.tstatTimeout ?: 45
+		def hcLongTimeout = atomicState?.appData?.settings?.healthcheck?.longTimeout ?: 120
+		def hcRepairEnabled = atomicState?.appData?.settings?.healthcheck?.repairEnabled != false ? true : false
 		def locPresence = getLocationPresence()
 		def locSecurityState = getSecurityState()
 		def locEtaBegin = getEtaBegin()
@@ -6217,13 +6215,12 @@ def webResponse(resp, data) {
 			atomicState?.appData = newdata
 			clientBlacklisted()
 			updateHandler()
-			helpHandler()
 			setStateVar(true)
 		} else { LogAction("appData.json did not change", "info", false) }
 		if(atomicState?.appData && !appDevType() && atomicState?.clientBlacklisted) {
 			appUpdateNotify()
 		}
-		if(atomicState?.appData?.appSettings?.pullFromFB == true) {
+		if(atomicState?.appData?.settings?.database?.pullSettingsFromFB == true) {
 			getFbAppSettings(data?.type == "async" ? false : true )
 		}
 		updTimestampMap("lastWebUpdDt", getDtNow())
@@ -6307,8 +6304,8 @@ def getWebData(params, desc, text=true) {
 def clientBlacklisted() {
 	if(atomicState?.clientBlacklisted == null) { atomicState?.clientBlacklisted == false }
 	def curBlState = atomicState?.clientBlacklisted
-	if(atomicState?.isInstalled && atomicState?.appData?.clientBL) {
-		def clientList = atomicState?.appData?.clientBL?.clients
+	if(atomicState?.isInstalled && atomicState?.appData?.blacklists) {
+		def clientList = atomicState?.appData?.blacklists?.clients
 		if(clientList != null || clientList != []) {
 			def isBL = (atomicState?.installationId in clientList) ? true : false
 			if(curBlState != isBL) {
@@ -6340,12 +6337,6 @@ def broadcastCheck() {
 	}
 }
 
-def helpHandler() {
-	if(atomicState?.appData?.help) {
-		atomicState.showHelp = (atomicState?.appData?.help?.showHelp == false) ? false : true
-	}
-}
-
 def getHtmlInfo() {
 	return "not used"
 /*
@@ -6360,11 +6351,11 @@ def getHtmlInfo() {
 }
 
 def allowDbException() {
-	if(atomicState?.appData?.database?.disableExceptions != null) {
-		return atomicState?.appData?.database?.disableExceptions == true ? false : true
+	if(atomicState?.appData?.settings?.database?.disableExceptions != null) {
+		return atomicState?.appData?.settings?.database?.disableExceptions == true ? false : true
 	} else {
 		if(getWebFileData()) {
-			return atomicState?.appData?.database?.disableExceptions == true ? false : true
+			return atomicState?.appData?.settings?.database?.disableExceptions == true ? false : true
 		}
 	}
 }
@@ -6379,13 +6370,13 @@ def versionStr2Int(str) { return str ? str.toString()?.replaceAll("\\.", "")?.to
 def getChildWaitVal() { return settings?.tempChgWaitVal ? settings?.tempChgWaitVal.toInteger() : 4 }
 
 def getAskAlexaMQEn() {
-	if(atomicState?.appData?.aaPrefs?.enAaMsgQueue == true) {
+	if(atomicState?.appData?.settings?.askAlexa?.enAaMsgQueue == true) {
 		return settings?.allowAskAlexaMQ == null ? true : setting?.allowAskAlexaMQ
 	} else { return false }
 }
 
 def getAskAlexaMultiQueueEn() {
-	return atomicState?.appData?.aaPrefs?.enMultiQueue == true ? true : false
+	return atomicState?.appData?.settings?.askAlexa?.enMultiQueue == true ? true : false
 }
 
 def initAppMetricStore() {
@@ -7967,7 +7958,7 @@ def getObjType(obj, retType=false) {
 	else { return "unknown"}
 }
 
-def getShowHelp() { return atomicState?.showHelp == false ? false : true }
+def getShowHelp() { return true }
 
 def getTimeZone() {
 	def tz = null
@@ -9614,7 +9605,7 @@ def sendInstallSlackNotif(inst=true) {
 	sendDataToSlack(json, "", "post", "${typeStr} Slack Notif")
 }
 
-def getDbExceptPath() { return atomicState?.appData?.database?.newexceptionPath ?: "exceptions" }
+def getDbExceptPath() { return atomicState?.appData?.settings?.database?.exceptionKey ?: "exceptions" }
 
 def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 	try {
@@ -9622,7 +9613,7 @@ def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 		def labelstr = (settings?.debugAppendAppName || settings?.debugAppendAppName == null) ? "${app.label} | " : ""
 		//LogAction("${labelstr}sendExceptionData(method: $methodName, isChild: $isChild, autoType: $autoType)", "info", false)
 		LogAction("${labelstr}sendExceptionData(method: $methodName, isChild: $isChild, autoType: $autoType, ex: ${ex})", "error", showErrLog)
-		if(atomicState?.appData?.database?.disableExceptions == true) {
+		if(atomicState?.appData?.settings?.database?.disableExceptions == true) {
 			// Nothing to see here!
 		} else {
 			def exCnt = atomicState?.appExceptionCnt ?: 1

@@ -1,0 +1,84 @@
+{
+    "state": {
+        "stateVarVer": 2
+    },
+    "broadcast": {
+        "msgId": "",
+        "message": "",
+        "type": "info",
+        "devBannerMsg": {
+            "msgId": "7lVTfVCjHA",
+            "message": "You must obey me at all costs ;)",
+            "type": "warn",
+            "expireDt": "Wed Feb 15 00:00:00 EST 2017"
+        }
+    },
+    "updater": {
+        "updateVer": 1,
+        "updateMsg": "",
+        "updateDesc": "",
+        "updateType": "std",
+        "setupVersion": 2,
+        "versions": {
+            "app": {
+                "ver": "5.5.0"
+            },
+            "autoapp": {
+                "ver": "5.4.3"
+            },
+            "thermostat": {
+                "ver": "5.3.7"
+            },
+            "protect": {
+                "ver": "5.3.7"
+            },
+            "camera": {
+                "ver": "5.3.9"
+            },
+            "presence": {
+                "ver": "5.3.7"
+            },
+            "weather": {
+                "ver": "5.3.7"
+            }
+        },
+        "allowInApp": false
+    },
+    "settings": {
+        "askAlexa": {
+            "enAaMsgQueue": true,
+            "enMultiQueue": false
+        },
+        "database": {
+            "disableExceptions": false,
+            "exceptionKey": "exceptionData",
+            "pullSettingFromFB": true
+        },
+        "reports": {
+            "disVoiceZoneRprt": false,
+            "disVoiceUsageRprt": false
+        },
+        "schedules": {
+            "count": 8
+        },
+        "eventStreaming": {
+            "enabled": true,
+            "minVersion": "2.0.1"
+        },
+        "healthcheck": {
+            "camTimeout": 120,
+            "protWireTimeout": 45,
+            "protBattTimeout": 1500,
+            "tstatTimeout": 45,
+            "longTimeout": 120,
+            "timeout": 45,
+            "enabled": true,
+            "repairEnabled": false
+        }
+    },
+    "blacklists": {
+        "clients": [],
+        "metrics": [],
+        "exceptions": []
+    }
+}

@@ -5904,7 +5904,7 @@ def schMotSchedulePage(params) {
 }
 
 def getScheduleList() {
-	def cnt = parent ? parent?.state?.appData?.schedules?.count : null
+	def cnt = parent ? parent?.state?.appData?.settings?.schedules?.count : null
 	def maxCnt = cnt ? cnt.toInteger() : 8
 	maxCnt = Math.min( Math.max(maxCnt,4), 8)
 	if(maxCnt < atomicState?.lastScheduleList?.size()) {
