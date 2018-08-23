@@ -5235,7 +5235,8 @@ void schedNextWorkQ(useShort=false) {
 		timeVal = 0
 	}
 	def actStr = "ALREADY PENDING "
-	if(!atomicState?.workQrunInActive) {
+	if(cmdIsProc()) { actStr = "COMMAND RUNNING " }
+	if(!atomicState?.workQrunInActive && !cmdIsProc() ) {
 		atomicState?.workQrunInActive = true
 		if(timeVal != 0) {
 			actStr = "RUNIN "
@@ -5245,7 +5246,7 @@ void schedNextWorkQ(useShort=false) {
 			workQueue()
 		}
 	}
-	LogAction("schedNextWorkQ ${actStr} │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${queueItemsAvail} │ last seconds: ${lastCommandSent} │ cmdDelay: ${cmdDelay} │ allowAsync: ${allowAsync} | runInActive: ${atomicState?.workQrunInActive} | Api Limited: ${atomicState?.apiRateLimited}", "info", true)
+	LogAction("schedNextWorkQ ${actStr} │ ${str}queue: ${qnum} │ schedTime: ${timeVal} │ recentSendCmd: ${queueItemsAvail} │ last seconds: ${lastCommandSent} │ cmdDelay: ${cmdDelay} │ allowAsync: ${allowAsync} | runInActive: ${atomicState?.workQrunInActive} | command proc: ${cmdIsProc()} | Api Limited: ${atomicState?.apiRateLimited}", "info", true)
 }
 
 private getRecentSendCmd(qnum) {
