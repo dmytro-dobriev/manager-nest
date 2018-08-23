@@ -2974,12 +2974,12 @@ def startStopStream() {
 		return
 	}
 	if(strEn && settings?.restStreaming && !atomicState?.restStreamingOn) {
-		//LogAction("Sending restStreamHandler(Start) Event to local node service", "debug", true)
+		LogTrace("startStopStream: Stream not on, Sending restStreamHandler(Start) Event to local node service")
 		restStreamHandler()
 		runIn(45, "restStreamCheck", [overwrite: true])
 	}
 	else if ((!settings?.restStreaming || !strEn) && atomicState?.restStreamingOn) {
-		//LogAction("Sending restStreamHandler(Stop) Event to local node service", "debug", true)
+		LogTrace("startStopStream: Streaming should not be running Sending restStreamHandler(Stop) Event to local node service")
 		restStreamHandler(true)
 		atomicState?.restStreamingOn = false
 		runIn(45, "restStreamCheck", [overwrite: true])
@@ -3100,7 +3100,7 @@ def receiveStreamStatus(eventData=null) {
 		}
 		atomicState?.restStreamingOn = t0
 		if(!settings?.restStreaming && t0) {		// suppose to be off
-			//LogAction("Sending restStreamHandler(Stop) Event to local node service", "debug", false)
+			//LogAction("receiveStreamStatus: Sending restStreamHandler(Stop) Event to local node service", "debug", true)
 			restStreamHandler(true)
 		} else if (settings?.restStreaming && !atomicState?.restStreamingOn) {		// suppose to be on
 			runIn(45, "startStopStream", [overwrite: true])
@@ -3857,7 +3857,7 @@ def receiveEventData(eventData=null) {
 		//LogAction("evtData: $evtData", "trace", true)
 		def devChgd = false
 		def gotSomething = false
-		if(evtData?.data && settings?.restStreaming) {
+		if(evtData?.data && settings?.restStreaming && atomicState?.restStreamingOn) {
 			if(evtData?.data?.devices) {
 				//LogTrace("API Device Resp.Data: ${evtData?.data?.devices}")
 				gotSomething = true
@@ -3887,8 +3887,15 @@ def receiveEventData(eventData=null) {
 				if(!chg) { LogTrace("got metaData") }
 			}
 		} else {
-			LogTrace("receiveEventData: Sending restStreamHandler(Stop)")
-			restStreamHandler(true)
+			def forceStop = false
+			if(!settings?.restStreaming) { forceStop = true }
+			if(!forceStop && !atomicState?.restStreamingOn) {
+				LogAction("receiveEventData: stream not on yet, ignoring", "debug", true)
+			}
+			if(forceStop) {
+				LogAction("receiveEventData: Sending restStreamHandler(Stop)", "warn", true)
+				restStreamHandler(true)
+			}
 		}
 		if(gotSomething) {
 			updTimestampMap("lastHeardFromNestDt", getDtNow())
