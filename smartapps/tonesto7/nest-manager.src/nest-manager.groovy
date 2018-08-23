@@ -2015,11 +2015,6 @@ def devPageFooter(var, eTime) {
 	def data = atomicState?.usageMetricsStore ?: [:]
 	data[var] = data[var] != null ? data[var.toString()].toInteger() + 1 : 1
 	atomicState?.usageMetricsStore = data
-	// if(getDevOpt()) {
-	// 	res += 	section() {
-	// 		paragraph "    Page Loads: (${atomicState?.usageMetricsStore["${var}"] ?: 0}) | LoadTime: (${eTime ? (now()-eTime) : 0}ms)"
-	// 	}
-	// }
 	return res?.size() ? res : ""
 }
 
@@ -3384,15 +3379,13 @@ private gcd(input = []) {
 }
 
 def onAppTouch(event) {
-
-/*
-// ERS Debug to remove
-		def sData = atomicState?.swVer ?: [:]
-		sData["mgrVer"] = "tester"
-		atomicState?.swVer = sData
-		return
-*/
-
+	/*
+	// ERS Debug to remove
+			def sData = atomicState?.swVer ?: [:]
+			sData["mgrVer"] = "tester"
+			atomicState?.swVer = sData
+			return
+	*/
 	stateCleanup()
 	createSavedNest()
 	poll(true)
@@ -3475,18 +3468,7 @@ def poll(force = false, type = null) {
 			return
 		}
 		startStopStream()
-
-		//def pollStrTime = !settings?.pollStrValue ? 180 : settings?.pollStrValue.toInteger()
-		//if(pollTime < 60 || pollStrTime < 60) {
-		// if(pollTime < 60 && !atomicState?.apiRateLimited) {
-		// 	if(atomicState?.pollTock) {
-		// 		atomicState.pollTock = false
-		// 		runIn(30, "pollFollow", [overwrite: true])
-		// 	} else {
-		// 		atomicState.pollTock = true
-		// 	}
-		// }
-
+		
 		def okStruct = ok2PollStruct()
 		def okDevice = ok2PollDevice()
 		def okMeta = ok2PollMetaData()
@@ -5926,7 +5908,7 @@ def updateHandler() {
 			atomicState?.lastCritUpdateInfo = ["dt":getDtNow(), "ver":atomicState?.appData?.updater?.updateVer?.toInteger()]
 		}
 		def t0 = atomicState?.appData?.updater?.updateMsg
-		LogAction("updateHandler: t0 is ${t0}", "info", true)
+		// LogAction("updateHandler: t0 is ${t0}", "info", true)
 		if(t0 != null && t0 != "" && t0 != atomicState?.lastUpdateMsg) {
 			if(getLastUpdateMsgSec() > 86400) {
 				if(sendMsg("Info", "${t0}")) {
@@ -9573,7 +9555,7 @@ def sendInstallData() {
 }
 
 def removeInstallData() {
-	return removeFirebaseData("installData/clients/${atomicState?.installationId}.json")
+	return removeFirebaseData("clients/${atomicState?.installationId}.json")
 }
 
 def sendInstallSlackNotif(inst=true) {
