@@ -9630,7 +9630,6 @@ def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 					exData = ["methodName":methodName, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exString, "errorDt":getDtNow().toString()]
 				}
 				def results = new groovy.json.JsonOutput().toJson(exData)
-				log.debug "sendExceptionData | url: ${getFbExceptionsUrl()} | results: $results | dbPath: ${getDbExceptPath()}/${appType}/${methodName}/${atomicState?.installationId}"
 				sendFirebaseData(getFbExceptionsUrl(), results, "${getDbExceptPath()}/${appType}/${methodName}/${atomicState?.installationId}.json", "post", "Exception")
 			}
 		}
