@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
 
 preferences { }
 
-def devVer() { return "5.3.7" }
+def devVer() { return "5.4.0" }
 
 metadata {
 	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
@@ -204,10 +204,8 @@ def modifyDeviceStatus(status) {
 }
 
 def ping() {
-//	if(useTrackedHealth()) {
-		Logger("ping...")
-		keepAwakeEvent()
-//	}
+	Logger("ping...")
+	keepAwakeEvent()
 }
 
 def keepAwakeEvent() {
@@ -340,13 +338,11 @@ def processEvent(data) {
 			state.enRemDiagLogging = eventData?.enRemDiagLogging == true ? true : false
 			state.healthMsg = eventData?.healthNotify?.healthMsg == true ? true : false
 			state.healthMsgWait = eventData?.healthNotify?.healthMsgWait
-//			if(useTrackedHealth()) {
-				if((eventData.hcBattTimeout && (state?.hcBattTimeout != eventData?.hcBattTimeout || !state?.hcBattTimeout)) || (eventData.hcWireTimeout && (state?.hcWireTimeout != eventData?.hcWireTimeout || !state?.hcWireTimeout))) {
-					state.hcBattTimeout = eventData?.hcBattTimeout
-					state.hcWireTimeout = eventData?.hcWireTimeout
-					verifyHC()
-				}
-//			}
+			if((eventData.hcBattTimeout && (state?.hcBattTimeout != eventData?.hcBattTimeout || !state?.hcBattTimeout)) || (eventData.hcWireTimeout && (state?.hcWireTimeout != eventData?.hcWireTimeout || !state?.hcWireTimeout))) {
+				state.hcBattTimeout = eventData?.hcBattTimeout
+				state.hcWireTimeout = eventData?.hcWireTimeout
+				verifyHC()
+			}
 			state?.useMilitaryTime = eventData?.mt ? true : false
 			state.clientBl = eventData?.clientBl == true ? true : false
 			state.mobileClientType = eventData?.mobileClientType
@@ -365,7 +361,6 @@ def processEvent(data) {
 			softwareVerEvent(results?.software_version.toString())
 			deviceVerEvent(eventData?.latestVer.toString())
 			state?.devBannerData = eventData?.devBannerData ?: null
-			if(eventData?.htmlInfo) { state?.htmlInfo = eventData?.htmlInfo }
 			if(eventData?.allowDbException) { state?.allowDbException = eventData?.allowDbException = false ? false : true }
 			determinePwrSrc()
 
