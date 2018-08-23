@@ -52,7 +52,7 @@
     },
     "database": {
         "allowRemoteDiag": true,
-        "disableExceptions": false,
+        "disableExceptions": true,
         "exceptionPath": "exceptionData",
         "newexceptionPath": "newexceptionData",
         "remoteDiagPath": "remoteDiagLogs"
