@@ -7843,7 +7843,7 @@ def weatherApiKey()			{ return "b82aba1bb9a9d7f1" }
 def getFbLegacyAppUrl() 	{ return "https://st-nest-manager.firebaseio.com" }
 def getFbMetricsUrl() 		{ return atomicState?.appData?.settings?.database?.metricsUrl ?: "https://nst-manager-metrics.firebaseio.com" }
 def getFbExceptionsUrl() 	{ return atomicState?.appData?.settings?.database?.exceptionUrl ?: "https://nst-manager-exceptions.firebaseio.com" }
-def getAppSettingsUrl() 	{ return "https://raw.githubusercontent.com/${gitPath()}/Data/appConfig.json"
+def getAppSettingsUrl() 	{ return "https://raw.githubusercontent.com/${gitPath()}/Data/appConfig.json" }
 def getAppSettingsFBUrl() 	{ return "https://st-nest-manager.firebaseio.com/appSettings.json" }
 def getAppImg(imgName, on = null)	{ return (!disAppIcons || on) ? "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Images/App/$imgName" : "" }
 def getDevImg(imgName, on = null)	{ return (!disAppIcons || on) ? "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Images/Devices/$imgName" : "" }
