@@ -6144,7 +6144,7 @@ def getWeatherDeviceInst() {
 
 def getWebFileData(now = true) {
 	LogTrace("getWebFileData $now")
-	def params = [ uri: "https://raw.githubusercontent.com/${gitPath()}/Data/appConfig.json", contentType: 'application/json' ]
+	def params = [ uri: getAppSettingsUrl(), contentType: 'application/json' ]
 	def result = false
 	try {
 		def allowAsync = false
@@ -6210,7 +6210,7 @@ def webResponse(resp, data) {
 }
 
 def getFbAppSettings(now = true) {
-	def params = [ uri: "https://st-nest-manager.firebaseio.com/appSettings.json", contentType: 'application/json' ]
+	def params = [ uri: getAppSettingsFBUrl(), contentType: 'application/json' ]
 	def result = false
 	try {
 		def allowAsync = false
@@ -7841,8 +7841,10 @@ def slackMsgWebHookUrl()	{ return "https://hooks.slack.com/services/T10NQTZ40/B3
 def getAutoHelpPageUrl()	{ return "http://thingsthataresmart.wiki/index.php?title=NST_Manager#Nest_Automations" }
 def weatherApiKey()			{ return "b82aba1bb9a9d7f1" }
 def getFbLegacyAppUrl() 	{ return "https://st-nest-manager.firebaseio.com" }
-def getFbMetricsUrl() 		{ return "https://nst-manager-metrics.firebaseio.com" }
-def getFbExceptionsUrl() 	{ return "https://nst-manager-exceptions.firebaseio.com" }
+def getFbMetricsUrl() 		{ return atomicState?.appData?.settings?.database?.metricsUrl ?: "https://nst-manager-metrics.firebaseio.com" }
+def getFbExceptionsUrl() 	{ return atomicState?.appData?.settings?.database?.exceptionUrl ?: "https://nst-manager-exceptions.firebaseio.com" }
+def getAppSettingsUrl() 	{ return "https://raw.githubusercontent.com/${gitPath()}/Data/appConfig.json"
+def getAppSettingsFBUrl() 	{ return "https://st-nest-manager.firebaseio.com/appSettings.json" }
 def getAppImg(imgName, on = null)	{ return (!disAppIcons || on) ? "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Images/App/$imgName" : "" }
 def getDevImg(imgName, on = null)	{ return (!disAppIcons || on) ? "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Images/Devices/$imgName" : "" }
 private Integer convertHexToInt(hex) { Integer.parseInt(hex,16) }
@@ -9597,7 +9599,7 @@ def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 		LogAction("${labelstr}sendExceptionData(method: $methodName, isChild: $isChild, autoType: $autoType, ex: ${ex})", "error", showErrLog)
 		if(atomicState?.appData?.settings?.database?.disableExceptions == true) {
 			// Nothing to see here!
-		} else if(atomicState?.cltMetBlacklisted) {
+		} else if(atomicState?.cltExcBlacklisted) {
 			LogAction("Exception Data Upload has been BLACKLISTED for this client.", "warn", true)
 		} else {
 			def exCnt = atomicState?.appExceptionCnt ?: 1
@@ -9735,8 +9737,11 @@ def removeFirebaseData(pathVal) {
 	LogAction("removeFirebaseData(${pathVal})", "trace", false)
 	def result = true
 	try {
+		httpDelete(uri: "${getFbMetricsUrl()}/${pathVal}") { resp ->
+			LogAction("cur FB resp: ${resp?.status}", "info", true)
+		}
 		httpDelete(uri: "${getFbLegacyAppUrl()}/${pathVal}") { resp ->
-			LogAction("resp: ${resp?.status}", "info", true)
+			LogAction("old FB resp: ${resp?.status}", "info", true)
 		}
 	}
 	catch (ex) {

@@ -53,7 +53,9 @@
         "database": {
             "disableExceptions": false,
             "exceptionKey": "exceptions",
-            "pullSettingFromFB": false
+            "pullSettingFromFB": false,
+            "metricsUrl": "https://nst-manager-metrics.firebaseio.com",
+            "exceptionUrl": "https://nst-manager-exceptions.firebaseio.com"
         },
         "reports": {
             "disVoiceZoneRprt": false,
