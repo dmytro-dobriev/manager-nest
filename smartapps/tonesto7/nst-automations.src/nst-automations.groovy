@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.4.3" }
-def appVerDate() { "08-22-2018" }
+def appVerDate() { "08-24-2018" }
 
 preferences {
 	//startPage
@@ -4350,11 +4350,29 @@ def checkNestMode() {
 			}
 			if(t2) { atomicState?.nModeTstatLocAway = true }
 
+			def homeChgd = false
+			def nestModeChgd = false
+			if(atomicState?.nModeLastHome != home) {
+				homeChgd = true;
+				LogAction("NestMode Home Changed: ${homeChgd} Home: ${home}", "info", true)
+				atomicState.nModeLastHome = home
+			}
+			def t5 = getNestLocPres()
+			if(atomicState?.nModeLastNestMode != t5) {
+				nestModeChgd = true;
+				def t6 = "info"
+				if(!homeChgd) {
+					t6 = "warn"
+				}
+				LogAction("Nest location mode Changed: ${t5}", t6, true)
+				atomicState.nModeLastNestMode = t5
+			}
+
 			def didsomething = false
 
 // Manage state changes
 			if(away && !nestModeAway) {
-				LogAction("checkNestMode: ${awayDesc} Nest 'Away'", "info", true)
+				LogAction("checkNestMode: ${awayDesc} Nest 'Away' ${away}  ${nestModeAway}", "info", true)
 				if(getnModeEvalDtSec() < 4*60) {
 					LogAction("checkNestMode did change recently - SKIPPING", "warn", true)
 					scheduleAutomationEval(90)
@@ -4363,6 +4381,7 @@ def checkNestMode() {
 				}
 				didsomething = true
 				setAway(true)
+				atomicState.nModeLastNestMode = "away"
 				atomicState?.nModeTstatLocAway = true
 				if(nModeSetEco) {
 					parent.setNModeActive(true) // set nMode has it in manager
@@ -4374,7 +4393,7 @@ def checkNestMode() {
 				if(nModeCamOnAway) { adjustCameras(true, pName) }
 
 			} else if(home && nestModeAway) {
-				LogAction("checkNestMode: ${homeDesc} Nest 'Home'", "info", true)
+				LogAction("checkNestMode: ${homeDesc} Nest 'Home' ${home}  ${nestModeAway}", "info", true)
 				if(getnModeEvalDtSec() < 4*60) {
 					LogAction("checkNestMode did change recently - SKIPPING", "warn", true)
 					scheduleAutomationEval(90)
@@ -4384,6 +4403,7 @@ def checkNestMode() {
 				didsomething = true
 				setAway(false)
 				parent.setNModeActive(false)		// clear nMode has it in manager
+				atomicState.nModeLastNestMode = "home"
 				atomicState?.nModeTstatLocAway = false
 				if(nModeSetEco) { adjustEco(false, pName) }
 				if(allowNotif) {
