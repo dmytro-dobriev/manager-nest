@@ -14,7 +14,7 @@ preferences { }
 def devVer() { return "5.4.0" }
 
 metadata {
-	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
+	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7", ocfDeviceType: "x.com.st.d.sensor.smoke", vid: "generic-smoke-co") {
 		//capability "Polling"
 		capability "Actuator"
 		capability "Sensor"
