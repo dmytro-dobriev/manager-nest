@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.4.3" }
-def appVerDate() { "08-24-2018" }
+def appVerDate() { "08-28-2018" }
 
 preferences {
 	//startPage
@@ -393,7 +393,7 @@ def mainAutoPage(params) {
 				}
 			}
 			section("Automation Options:") {
-				if(atomicState?.isInstalled && (isNestModesConfigured() || isWatchdogConfigured() || isSchMotConfigured())) {
+				if(/* atomicState?.isInstalled && */ (isNestModesConfigured() || isWatchdogConfigured() || isSchMotConfigured())) {
 					//paragraph title:"Enable/Disable this Automation", ""
 					input "disableAutomationreq", "bool", title: "Disable this Automation?", required: false, defaultValue: false /* atomicState?.disableAutomation */, submitOnChange: true, image: getAppImg("disable_icon2.png")
 					setAutomationStatus()
