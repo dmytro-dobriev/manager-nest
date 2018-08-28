@@ -1,13 +1,15 @@
 {
     "broadcast": {
-        "msgId": "",
-        "message": "",
-        "type": "info",
+        "msgId": "7lswwqfVCjHA",
+        "message": "A critical SmartApp update was just published for NST Manager.  Please update your NST Manager SmartApps and Devices to avoid any disruptions",
+        "type": "warn",
+        "minVer": "5.0.0",
         "devBannerMsg": {
-            "msgId": "7lVTfVCjHA",
-            "message": "You must obey me at all costs ;)",
+            "msgId": "",
+            "message": "",
             "type": "warn",
-            "expireDt": "Wed Feb 15 00:00:00 EST 2017"
+            "minVer": "5.5.0",
+            "expireDt": "Wed Feb 20 00:00:00 EST 2018"
         }
     },
     "updater": {
@@ -24,19 +26,19 @@
                 "ver": "5.4.3"
             },
             "thermostat": {
-                "ver": "5.3.7"
+                "ver": "5.4.0"
             },
             "protect": {
-                "ver": "5.3.7"
+                "ver": "5.4.0"
             },
             "camera": {
-                "ver": "5.3.9"
+                "ver": "5.4.0"
             },
             "presence": {
-                "ver": "5.3.7"
+                "ver": "5.4.0"
             },
             "weather": {
-                "ver": "5.3.7"
+                "ver": "5.4.0"
             },
             "stream": {
                 "ver": "2.0.1"
@@ -51,7 +53,9 @@
         "database": {
             "disableExceptions": false,
             "exceptionKey": "exceptions",
-            "pullSettingFromFB": false
+            "pullSettingFromFB": false,
+            "metricsUrl": "https://nst-manager-metrics.firebaseio.com",
+            "exceptionUrl": "https://nst-manager-exceptions.firebaseio.com"
         },
         "reports": {
             "disVoiceZoneRprt": false,
