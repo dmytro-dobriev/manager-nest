@@ -78,7 +78,6 @@ preferences {
 	page(name: "nestTokenResetPage")
 	page(name: "uninstallPage")
 	page(name: "forceUninstallPage")
-	page(name: "diagnosticPage")
 	page(name: "custWeatherPage")
 	page(name: "automationsPage")
 	page(name: "automationKickStartPage")
@@ -306,7 +305,9 @@ def mainPage() {
 			section("Having Trouble?:") {
 				href "helpPage", title: "Get Help | Diagnostics", description: "", image: getAppImg("help_ring_icon.png")
 				if(settings?.enDiagWebPage) {
-					href url: getAppEndpointUrl("diagHome"), style:"external", title:"NST Diagnostic Web Page", description:"Tap to view", required: true,state: "complete", image: getAppImg("web_icon.png")
+					String diagTime = (getTimestampVal("remDiagLogActivatedDt") != null) ? "\n• Will Disable in:\n  └ ${getDiagLogTimeRemaining()}" : ""
+					String diagStr = (settings?.enRemDiagLogging) ? "Diagnostic Logs: (ACTIVE)${diagTime}\n\nTap to view" : "Tap to view"
+					href url: getAppEndpointUrl("diagHome"), style:"external", title:"NST Diagnostic Web Page", description: diagStr, required: true, state: "complete", image: getAppImg("web_icon.png")
 				}
 			}
 			section("Remove All Apps, Automations, and Devices:") {
@@ -824,14 +825,45 @@ def showDevSharePrefs() {
 def helpPage () {
 	def execTime = now()
 	dynamicPage(name: "helpPage", title: "Help and Diagnostics", install: false) {
+		section("App Info") {
+			paragraph "Current State Usage:\n${getStateSizePerc()}% (${getStateSize()} bytes)", required: true, state: (getStateSizePerc() <= 70 ? "complete" : null),
+					image: getAppImg("progress_bar.png")
+			if(atomicState?.isInstalled && atomicState?.structures && (atomicState?.thermostats || atomicState?.protects || atomicState?.cameras || atomicState?.weatherDevice)) {
+				input "enDiagWebPage", "bool", title: "Enable Diagnostic Web Page?", description: "", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("diagnostic_icon.png")
+				if(settings?.enDiagWebPage) {
+					href url: getAppEndpointUrl("diagHome"), style:"external", title:"NST Diagnostic Web Page", description:"Tap to view", required: true,state: "complete", image: getAppImg("web_icon.png")
+				}
+			}
+		}
+		if(getDevOpt()) {
+			settingUpdate("enDiagWebPage","true", "bool")
+		}
+		if(settings?.enDiagWebPage) {
+			section("How's Does Log Collection Work:", hideable: true, hidden: true) {
+				paragraph title: "How will the log collection work?", "When logs are enabled this SmartApp will create a child diagnostic app to store your logs which you can view under the diagnostics web page or share the url with the developer for remote troubleshooting.\n\n Turn off to remove the diag app and all data."
+			}
+			section("Log Collection:") {
+				def formatVal = settings?.useMilitaryTime ? "MMM d, yyyy - HH:mm:ss" : "MMM d, yyyy - h:mm:ss a"
+				def tf = new SimpleDateFormat(formatVal)
+				if(getTimeZone()) { tf.setTimeZone(getTimeZone()) }
+				paragraph "Logging will automatically turn off in 48 hours and all logs will be purged."
+				input (name: "enRemDiagLogging", type: "bool", title: "Enable Log Collection?", required: false, defaultValue: (atomicState?.enRemDiagLogging ?: false), submitOnChange: true, image: getAppImg("log.png"))
+				if(atomicState?.enRemDiagLogging) {
+					def str = "Press Done/Save all the way back to the main smartapp page to allow the Diagnostic App to Install"
+					paragraph str, required: true, state: "complete"
+				}
+			}
+		}
+		diagLogProcChange((settings?.enDiagWebPage && settings?.enRemDiagLogging))
 		section("Help and Feedback:") {
 			href url: getWikiPageUrl(), style:"embedded", required:false, title:"View the Projects Wiki", description:"Tap to open in browser", state: "complete", image: getAppImg("web_icon.png")
 			href url: getIssuePageUrl(), style:"embedded", required:false, title:"Report | View Issues", description:"Tap to open in browser", state: "complete", image: getAppImg("issue_icon.png")
 			href "feedbackPage", title: "Send Developer Feedback", description: "", image: getAppImg("feedback_icon.png")
 		}
-		section("Diagnostic Data:") {
-			def t1 = getRemDiagDesc()
-			href "diagnosticPage", title: "View Diagnostic Info", description: (t1 ? "${t1 ?: ""}\n\nTap to view" : "Tap to view"), state: (t1) ? "complete" : null, image: getAppImg("diagnostic_icon.png")
+		section("SmartApp Security") {
+			paragraph title:"What does resetting do?", "If you share a url with someone and want to remove their access you can reset your token and this will invalidate any URL you shared and create a new one for you."
+			input (name: "resetSTAccessToken", type: "bool", title: "Reset SmartThings Access Token?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset_icon.png"))
+			resetSTAccessToken(settings?.resetSTAccessToken == true)
 		}
 		devPageFooter("helpLoadCnt", execTime)
 	}
@@ -1850,7 +1882,7 @@ def debugPrefPage() {
 		}
 		section("Diagnostics:") {
 			def t1 = getRemDiagDesc()
-			href "diagnosticPage", title: "View Diagnostic Info", description: (t1 ? "${t1 ?: ""}\n\nTap to view" : "Tap to view"), state: (t1) ? "complete" : null, image: getAppImg("diagnostic_icon.png")
+			href "helpPage", title: "View Diagnostic Info", description: (t1 ? "${t1 ?: ""}\n\nTap to view" : "Tap to view"), state: (t1) ? "complete" : null, image: getAppImg("diagnostic_icon.png")
 		}
 		section ("Reset Application Data") {
 			input (name: "resetAllData", type: "bool", title: "Reset Application Data?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset_icon.png"))
@@ -1866,64 +1898,21 @@ def debugPrefPage() {
 	}
 }
 
-def diagnosticPage () {
-	def execTime = now()
-	dynamicPage(name: "diagnosticPage", title: "Diagnostics Page", install: false) {
-		section("App Info") {
-			paragraph "Current State Usage:\n${getStateSizePerc()}% (${getStateSize()} bytes)", required: true, state: (getStateSizePerc() <= 70 ? "complete" : null),
-					image: getAppImg("progress_bar.png")
-			if(atomicState?.isInstalled && atomicState?.structures && (atomicState?.thermostats || atomicState?.protects || atomicState?.cameras || atomicState?.weatherDevice)) {
-				input "enDiagWebPage", "bool", title: "Enable Diagnostic Web Page?", description: "", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("diagnostic_icon.png")
-				if(settings?.enDiagWebPage) {
-					href url: getAppEndpointUrl("diagHome"), style:"external", title:"NST Diagnostic Web Page", description:"Tap to view", required: true,state: "complete", image: getAppImg("web_icon.png")
-				}
-			}
-		}
-		if(getDevOpt()) {
-			settingUpdate("enDiagWebPage","true", "bool")
-		}
-		if(settings?.enDiagWebPage) {
-			section("Log Collection:") {
-				def formatVal = settings?.useMilitaryTime ? "MMM d, yyyy - HH:mm:ss" : "MMM d, yyyy - h:mm:ss a"
-				def tf = new SimpleDateFormat(formatVal)
-				if(getTimeZone()) { tf.setTimeZone(getTimeZone()) }
-				paragraph title: "How will the log collection work?", "Once enabled this SmartApp will create a child app to store your logs in this diagnostic app and you can view the page or share the url with the developer. Turn off to remove the diag app and all data."
-				paragraph "This will automatically turn off 48 hours"
-				input (name: "enRemDiagLogging", type: "bool", title: "Enable Log Collection?", required: false, defaultValue: (atomicState?.enRemDiagLogging ?: false), submitOnChange: true, image: getAppImg("log.png"))
-				if(atomicState?.enRemDiagLogging) {
-					def str = "Press Done/Save all the way back to the main smartapp page to allow the Diagnostic App to Install"
-					paragraph str, required: true, state: "complete"
-				}
-			}
-		}
-		diagLogProcChange((settings?.enDiagWebPage && settings?.enRemDiagLogging))
-
-		section("SmartApp Security") {
-			paragraph title:"What does resetting do?", "If you share a url with someone and want to remove their access you can reset your token and this will invalidate any URL you shared and create a new one for you."
-			input (name: "resetSTAccessToken", type: "bool", title: "Reset SmartThings Access Token?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("reset_icon.png"))
-			if(settings?.resetSTAccessToken) { resetSTAccessToken() }
-		}
-
-		devPageFooter("diagLoadCnt", execTime)
-	}
-}
-
 def getRemDiagApp() {
 	def remDiagApp = getChildApps()?.find { it?.getAutomationType() == "remDiag" && it?.name == autoAppName() }
 	if(remDiagApp) {
-		if(remDiagApp?.label != getRemDiagAppChildLabel()) { storApp?.updateLabel(getRemDiagAppChildLabel()) }
+		if(remDiagApp?.label != getRemDiagAppChildLabel()) { remDiagApp?.updateLabel(getRemDiagAppChildLabel()) }
 		return remDiagApp
 	} else {
 		return null
 	}
 }
 
-void diagLogProcChange(setOn) {
-	def diagAllowed = true
-	//log.debug "diagAllowed: $diagAllowed"
+private diagLogProcChange(setOn) {
+	// log.trace "diagLogProcChange($setOn)"
 	def doInit = false
 	def msg = "Remote Diagnostic Logs "
-	if(diagAllowed && setOn) {
+	if(setOn) {
 		if(!atomicState?.enRemDiagLogging && getTimestampVal("remDiagLogActivatedDt") == null) {
 			msg += "activated"
 			doInit = true
@@ -1942,11 +1931,10 @@ void diagLogProcChange(setOn) {
 		kdata.each { kitem ->
 			state.remove(kitem?.key.toString())
 		}
-		if(diagAllowed && setOn) {
-			atomicState?.remDiagDataSentDt = getDtNow() // allow us some time for child to start
-			atomicState?.enRemDiagLogging = true
-			updTimestampMap("remDiagLogActivatedDt", getDtNow())
-		}
+		atomicState?.remDiagDataSentDt = getDtNow() // allow us some time for child to start
+		atomicState?.enRemDiagLogging = true
+		updTimestampMap("remDiagLogActivatedDt", getDtNow())
+		
 		initRemDiagApp()
 		LogAction(msg, "info", true)
 		if(!atomicState?.enRemDiagLogging) { //when turning off, tell automations; turn on - user does done
@@ -7264,7 +7252,8 @@ def getAccessToken() {
 	}
 }
 
-void resetSTAccessToken() {
+void resetSTAccessToken(reset) {
+	if(reset != true) { return }
 	LogAction("Resetting SmartApp Access Token....", "info", true)
 	restStreamHandler(true)
 	atomicState?.restStreamingOn = false
@@ -7559,10 +7548,35 @@ def Logger(msg, type, logSrc=null, noSTlogger=false) {
 	else { log.error "${labelstr}Logger Error - type: ${type} | msg: ${msg} | logSrc: ${logSrc}" }
 }
 
+def getDiagLogTimeRemaining() {
+	return sec2PrettyTime((3600*48) - Math.abs((getRemDiagActSec() ?: 0)))
+}
+
+String sec2PrettyTime(Integer timeSec) {
+    Integer years = Math.floor(timeSec / 31536000); timeSec -= years * 31536000;
+    Integer months = Math.floor(timeSec / 31536000); timeSec -= months * 2592000;
+    Integer days = Math.floor(timeSec / 86400); timeSec -= days * 86400;
+    Integer hours = Math.floor(timeSec / 3600); timeSec -= hours * 3600;
+    Integer minutes = Math.floor(timeSec / 60); timeSec -= minutes * 60;
+    Integer seconds = Integer.parseInt((timeSec % 60) as String, 10);
+    Map dt = [y: years, mn: months, d: days, h: hours, m: minutes, s: seconds]
+	String dtStr = ""
+	// dtStr += dt?.y ? "${dt?.y}yr${dt?.y>1?"s":""}, " : ""
+	// dtStr += dt?.mn ? "${dt?.mn}mon${dt?.mn>1?"s":""}, " : ""
+	// dtStr += dt?.d ? "${dt?.d}day${dt?.d>1?"s":""}, " : ""
+	// dtStr += dt?.h ? "${dt?.h}hr${dt?.h>1?"s":""} " : ""
+	// dtStr += dt?.m ? "${dt?.m}min${dt?.m>1?"s":""} " : ""
+	// dtStr += dt?.s ? "${dt?.s}sec" : ""
+	dtStr += dt?.d ? "${dt?.d}d " : ""
+	dtStr += dt?.h ? "${dt?.h}h " : ""
+	dtStr += dt?.m ? "${dt?.m}m " : ""
+	dtStr += dt?.s ? "${dt?.s}s" : ""
+	return dtStr
+}
+
 def saveLogtoRemDiagStore(String msg, String type, String logSrcType=null, frc=false) {
 	def retVal = false
-	//log.trace "saveLogtoRemDiagStore($msg, $type, $logSrcType)"
-
+	// log.trace "saveLogtoRemDiagStore($msg, $type, $logSrcType)"
 	if(atomicState?.enRemDiagLogging && settings?.enRemDiagLogging) {
 		def turnOff = false
 		def reasonStr = ""

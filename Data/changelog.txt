@@ -1,3 +1,12 @@
+V5.0.0 (August 28th, 2018):
+▔▔▔▔▔▔▔▔▔▔▔
+Manager App:
+ • UPDATED: NST Streaming is now communicates via local network (when enabled)
+ • FIXED: Bug Fixes
+
+Automation App 5.4.3:
+ • FIXED: Bug Fixes
+
 V5.4.0 (August 10th, 2018):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
