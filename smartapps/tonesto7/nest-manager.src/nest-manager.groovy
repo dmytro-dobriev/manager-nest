@@ -3134,7 +3134,7 @@ def uninstManagerApp() {
 			}
 			//If any client related data exists on firebase it will be removed
 			//clearRemDiagData(true)
-			clearAllAutomationBackupData()
+			// clearAllAutomationBackupData()
 			//sends notification of uninstall
 			sendNotificationEvent("${appName()} is uninstalled")
 		}
