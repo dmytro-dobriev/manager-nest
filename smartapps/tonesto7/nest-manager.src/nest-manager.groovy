@@ -34,8 +34,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.5.0" }
-def appVerDate() { "08-23-2018" }
+def appVersion() { "5.5.1" }
+def appVerDate() { "08-29-2018" }
 def minVersions() {
 	return [
 		"automation":["val":543, "desc":"5.4.3"],
@@ -3134,7 +3134,7 @@ def uninstManagerApp() {
 			}
 			//If any client related data exists on firebase it will be removed
 			//clearRemDiagData(true)
-			clearAllAutomationBackupData()
+			//clearAllAutomationBackupData()
 			//sends notification of uninstall
 			sendNotificationEvent("${appName()} is uninstalled")
 		}
