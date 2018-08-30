@@ -9754,7 +9754,7 @@ def removeFirebaseData(pathVal) {
 		httpDelete(uri: "${getFbMetricsUrl()}/${pathVal}") { resp ->
 			LogAction("cur FB resp: ${resp?.status}", "info", true)
 		}
-		httpDelete(uri: "${getFbLegacyAppUrl()}/${pathVal}") { resp ->
+		httpDelete(uri: "${getFbLegacyAppUrl()}/installData/${pathVal}") { resp ->
 			LogAction("old FB resp: ${resp?.status}", "info", true)
 		}
 	}
