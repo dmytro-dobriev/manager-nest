@@ -13,7 +13,7 @@ import groovy.time.TimeCategory
 
 preferences { }
 
-def devVer() { return "5.4.0" }
+def devVer() { return "5.4.1" }
 
 metadata {
 	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
@@ -542,7 +542,7 @@ def videoHistEnabledEvent(on) {
 
 def publicShareEnabledEvent(on) {
 	def isOn = device.currentState("publicShareEnabled")?.value
-	def val = on ? "Enabled" : "Disabled"
+	def val = on?.toString() == "true" ? "Enabled" : "Disabled"
 	state?.publicShareEnabled = val
 	if(isStateChange(device, "publicShareEnabled", val?.toString())) {
 		Logger("UPDATED | Public Sharing Status is: (${val}) | Original State: (${isOn})")
