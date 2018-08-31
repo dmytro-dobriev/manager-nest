@@ -151,12 +151,10 @@ metadata {
 
 mappings {
 	path("/getInHomeURL") {action: [GET: "getInHomeURL"]}
-	path("/getOutHomeURL") {action: [GET: "getOutHomeURL"]}
 	path("/getCamHtml") {action: [GET: "getCamHtml"]}
 }
 
-def getInHomeURL() { return [InHomeURL: getCamPlaylistURL()?.toString()] }
-def getOutHomeURL() { return [OutHomeURL: getCamPlaylistURL()?.toString()] }
+def getInHomeURL() { return [InHomeURL: (getCamPlaylistURL() ?: "")] }
 
 def initialize() {
 	Logger("initialized...")
@@ -257,12 +255,13 @@ void refresh() {
 
 void cltLiveStreamStart() {
 	//log.trace "video stream start()"
-	def url = getCamPlaylistURL()?.toString()
-	def imgUrl = "http://cdn.device-icons.smartthings.com/camera/dlink-indoor@2x.png"
-	//def imgUrl = state?.snapshot_url
-	def dataLiveVideo = [OutHomeURL: url, InHomeURL: url, ThumbnailURL: imgUrl, cookie: [key: "key", value: "value"]]
-	def evtData = groovy.json.JsonOutput.toJson(dataLiveVideo)
-	sendEvent(name: "stream", value: evtData.toString(), data: evtData, descriptionText: "Starting the livestream", eventType: "VIDEO", displayed: false, isStateChange: true)
+	String url = getCamPlaylistURL()
+	String imgUrl = "http://cdn.device-icons.smartthings.com/camera/dlink-indoor@2x.png"
+	if(url && imgUrl) {
+		Map dataLiveVideo = [OutHomeURL: url, InHomeURL: url, ThumbnailURL: imgUrl, cookie: [key: "key", value: "value"]]
+		def evtData = groovy.json.JsonOutput.toJson(dataLiveVideo)
+		sendEvent(name: "stream", value: evtData.toString(), data: evtData, descriptionText: "Starting the Live Video Stream", eventType: "VIDEO", displayed: false, isStateChange: true)
+	}
 }
 
 // parent calls this method to queue data.
@@ -1279,8 +1278,8 @@ def getStreamHostUrl() {
 	return data ?: null
 }
 
-def getCamPlaylistURL() {
-	def hUrl = getStreamHostUrl()
+String getCamPlaylistURL() {
+	String hUrl = getStreamHostUrl()
 	if(hUrl && state?.camUUID) { return "https://${hUrl}/nexus_aac/${state?.camUUID}/playlist.m3u8" }
 	return null
 }
