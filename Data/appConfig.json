@@ -51,7 +51,7 @@
             "enMultiQueue": false
         },
         "database": {
-            "disableExceptions": false,
+            "disableExceptions": true,
             "exceptionKey": "exceptions",
             "pullSettingFromFB": false,
             "metricsUrl": "https://nst-manager-metrics.firebaseio.com",
