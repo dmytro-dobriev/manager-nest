@@ -13,7 +13,7 @@
 import java.text.SimpleDateFormat
 import groovy.time.*
 
-def devVer() { return "5.4.0" }
+def devVer() { return "5.4.1" }
 
 // for the UI
 metadata {
@@ -323,10 +323,19 @@ void checkStateClear() {
 		Logger("checkStateClear...resetting ALL toggle")
 		state.resetAllData = false
 	}
+	if(before > 65) {
+		Logger("checkStateClear...Clearing HISTORY ${before}")
+		def data = getState()?.findAll {
+			(it?.key in ["today", "temperatureTable", "operatingStateTable", "humidityTable", "coolSetpointTable", "heatSetpointTable", "extTempTable", "fanModeTable", "historyStoreMap", "temperatureTableYesterday", "operatingStateTableYesterday", "humidityTableYesterday", "coolSetpointTableYesterday", "heatSetpointTableYesterday", "extTempTableYesterday", "fanModeTableYesterday" ])
+		}
+		data.each { item ->
+			state.remove(item?.key.toString())
+		}
+	}
 	if(!state?.resetHistoryOnly && resetHistoryOnly) {
 		Logger("checkStateClear...Clearing HISTORY")
 		def data = getState()?.findAll {
-			(it?.key in ["today", "temperatureTable", "operatingStateTable", "humidityTable", "historyStoreMap", "temperatureTableYesterday", "operatingStateTableYesterday", "humidityTableYesterday"])
+			(it?.key in ["today", "temperatureTable", "operatingStateTable", "humidityTable", "coolSetpointTable", "heatSetpointTable", "extTempTable", "fanModeTable", "historyStoreMap", "temperatureTableYesterday", "operatingStateTableYesterday", "humidityTableYesterday", "coolSetpointTableYesterday", "heatSetpointTableYesterday", "extTempTableYesterday", "fanModeTableYesterday" ])
 		}
 		data.each { item ->
 			state.remove(item?.key.toString())

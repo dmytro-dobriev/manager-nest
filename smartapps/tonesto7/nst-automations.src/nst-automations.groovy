@@ -26,8 +26,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.4.3" }
-def appVerDate() { "08-28-2018" }
+def appVersion() { "5.4.4" }
+def appVerDate() { "09-07-2018" }
 
 preferences {
 	//startPage
@@ -2149,24 +2149,26 @@ def getRemSenCoolSetTemp(curMode=null, isEco=false, useCurrent=true) {
 				coolTemp = !useMotion ? hvacSettings?.ctemp : hvacSettings?.mctemp ?: hvacSettings?.ctemp
 			}
 // ERS if Remsensor is enabled
-			if(theMode == "cool" && coolTemp == null /* && isEco */) {
-				if(atomicState?.extTmpLastDesiredTemp) { coolTemp = atomicState?.extTmpLastDesiredTemp }
-			}
-			if(theMode == "auto" && coolTemp == null /* && isEco */) {
-				if(atomicState?.extTmpLastDesiredCTemp) { coolTemp = atomicState?.extTmpLastDesiredCTemp }
-			}
+			if(atomicState?.isRemSenConfigured) {
+				if(theMode == "cool" && coolTemp == null /* && isEco */) {
+					if(atomicState?.extTmpLastDesiredTemp) { coolTemp = atomicState?.extTmpLastDesiredTemp }
+				}
+				if(theMode == "auto" && coolTemp == null /* && isEco */) {
+					if(atomicState?.extTmpLastDesiredCTemp) { coolTemp = atomicState?.extTmpLastDesiredCTemp }
+				}
 
-			if(coolTemp == null && remSenDayCoolTemp) {
-				coolTemp = remSenDayCoolTemp.toDouble()
-			}
+				if(coolTemp == null && remSenDayCoolTemp) {
+					coolTemp = remSenDayCoolTemp.toDouble()
+				}
 
-			if(coolTemp == null) {
-				def desiredCoolTemp = getGlobalDesiredCoolTemp()
-				if(desiredCoolTemp) { coolTemp = desiredCoolTemp.toDouble() }
-			}
+				if(coolTemp == null) {
+					def desiredCoolTemp = getGlobalDesiredCoolTemp()
+					if(desiredCoolTemp) { coolTemp = desiredCoolTemp.toDouble() }
+				}
 
-			if(coolTemp) {
-				coolTemp = fixTempSetting(coolTemp)
+				if(coolTemp) {
+					coolTemp = fixTempSetting(coolTemp)
+				}
 			}
 		}
 	}
@@ -2198,24 +2200,26 @@ def getRemSenHeatSetTemp(curMode=null, isEco=false, useCurrent=true) {
 				heatTemp = !useMotion ? hvacSettings?.htemp : hvacSettings?.mhtemp ?: hvacSettings?.htemp
 			}
 // ERS if Remsensor is enabled
-			if(theMode == "heat" && heatTemp == null /* && isEco */) {
-				if(atomicState?.extTmpLastDesiredTemp) { heatTemp = atomicState?.extTmpLastDesiredTemp }
-			}
-			if(theMode == "auto" && heatTemp == null /* && isEco */) {
-				if(atomicState?.extTmpLastDesiredHTemp) { heatTemp = atomicState?.extTmpLastDesiredHTemp }
-			}
+			if(atomicState?.isRemSenConfigured) {
+				if(theMode == "heat" && heatTemp == null /* && isEco */) {
+					if(atomicState?.extTmpLastDesiredTemp) { heatTemp = atomicState?.extTmpLastDesiredTemp }
+				}
+				if(theMode == "auto" && heatTemp == null /* && isEco */) {
+					if(atomicState?.extTmpLastDesiredHTemp) { heatTemp = atomicState?.extTmpLastDesiredHTemp }
+				}
 
-			if(heatTemp == null && remSenDayHeatTemp) {
-				heatTemp = remSenDayHeatTemp.toDouble()
-			}
+				if(heatTemp == null && remSenDayHeatTemp) {
+					heatTemp = remSenDayHeatTemp.toDouble()
+				}
 
-			if(heatTemp == null) {
-				def desiredHeatTemp = getGlobalDesiredHeatTemp()
-				if(desiredHeatTemp) { heatTemp = desiredHeatTemp.toDouble() }
-			}
+				if(heatTemp == null) {
+					def desiredHeatTemp = getGlobalDesiredHeatTemp()
+					if(desiredHeatTemp) { heatTemp = desiredHeatTemp.toDouble() }
+				}
 
-			if(heatTemp) {
-				heatTemp = fixTempSetting(heatTemp)
+				if(heatTemp) {
+					heatTemp = fixTempSetting(heatTemp)
+				}
 			}
 		}
 	}
