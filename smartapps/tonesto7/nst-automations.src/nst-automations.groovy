@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.4.4" }
-def appVerDate() { "09-07-2018" }
+def appVerDate() { "09-08-2018" }
 
 preferences {
 	//startPage
@@ -1567,7 +1567,7 @@ def remSenDayCoolTempOk()	{ return (!remSenCoolTempsReq() || (remSenCoolTempsReq
 
 def isRemSenConfigured() {
 	def devOk = (settings?.remSensorDay) ? true : false
-	return (devOk && settings?.remSenRuleType && remSenDayHeatTempOk() && remSenDayCoolTempOk() ) ? true : false
+	return (settings?.schMotRemoteSensor && devOk && settings?.remSenRuleType && remSenDayHeatTempOk() && remSenDayCoolTempOk() ) ? true : false
 }
 
 def getLastMotionActiveSec(mySched) {
@@ -2149,7 +2149,7 @@ def getRemSenCoolSetTemp(curMode=null, isEco=false, useCurrent=true) {
 				coolTemp = !useMotion ? hvacSettings?.ctemp : hvacSettings?.mctemp ?: hvacSettings?.ctemp
 			}
 // ERS if Remsensor is enabled
-			if(atomicState?.isRemSenConfigured) {
+			if(isRemSenConfigured()) {
 				if(theMode == "cool" && coolTemp == null /* && isEco */) {
 					if(atomicState?.extTmpLastDesiredTemp) { coolTemp = atomicState?.extTmpLastDesiredTemp }
 				}
@@ -2200,7 +2200,7 @@ def getRemSenHeatSetTemp(curMode=null, isEco=false, useCurrent=true) {
 				heatTemp = !useMotion ? hvacSettings?.htemp : hvacSettings?.mhtemp ?: hvacSettings?.htemp
 			}
 // ERS if Remsensor is enabled
-			if(atomicState?.isRemSenConfigured) {
+			if(isRemSenConfigured()) {
 				if(theMode == "heat" && heatTemp == null /* && isEco */) {
 					if(atomicState?.extTmpLastDesiredTemp) { heatTemp = atomicState?.extTmpLastDesiredTemp }
 				}
@@ -2791,7 +2791,7 @@ def getCirculateFanTempOk(Double senTemp, Double reqsetTemp, Double threshold, B
 def humCtrlPrefix() { return "humCtrl" }
 
 def isHumCtrlConfigured() {
-	return ((settings?.humCtrlUseWeather || settings?.humCtrlTempSensor) && settings?.humCtrlHumidity && settings?.humCtrlSwitches) ? true : false
+	return (settings?.schMotHumidityControl && (settings?.humCtrlUseWeather || settings?.humCtrlTempSensor) && settings?.humCtrlHumidity && settings?.humCtrlSwitches) ? true : false
 }
 
 def getDeviceVarAvg(items, var) {
@@ -2995,7 +2995,7 @@ def humCtrlCheck() {
 def extTmpPrefix() { return "extTmp" }
 
 def isExtTmpConfigured() {
-	return ((settings?.extTmpUseWeather || settings?.extTmpTempSensor) && settings?.extTmpDiffVal) ? true : false
+	return (settings?.schMotExternalTempOff && (settings?.extTmpUseWeather || settings?.extTmpTempSensor) && settings?.extTmpDiffVal) ? true : false
 }
 
 def getLastextConditionsEvalSec() { return !atomicState?.lastgetExtCond ? 100000 : GetTimeDiffSeconds(atomicState?.lastgetExtCond, null, "getLastextConditionsEvalSec").toInteger() }
@@ -3260,9 +3260,9 @@ def extTmpTempOk(disp=false, last=false) {
 			LogAction("extTmpTempOk: ${retval} Dewpoint: (${curDp}${tUnitStr()}) is ${dpOk ? "ok" : "TOO HIGH"}", "info", showRes)
 		} else {
 			if(!modeAuto) {
-				LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${desiredTemp}${tUnitStr()}) is ${tempOk ? "" : "Not"} ${str} $diffThresh\u00b0 of Outside Temp: (${extTemp}${tUnitStr()}) ${retval ? "AND" : "OR"} Inside Temp: (${intTemp}) is ${tempOk ? "" : "Not"} within Inside Threshold: ${insideThresh} of desired (${desiredTemp})", "info", showRes)
+				LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${desiredTemp}${tUnitStr()}) is ${tempOk ? "Not" : ""} ${str} $diffThresh\u00b0 of Outside Temp: (${extTemp}${tUnitStr()}) ${retval ? "AND" : "OR"} Inside Temp: (${intTemp}) is ${tempOk ? "" : "Not"} within Inside Threshold: ${insideThresh} of desired (${desiredTemp})", "info", showRes)
 			} else {
-				LogAction("extTmpTempOk: ${retval} Exterior Temperature (${extTemp}${tUnitStr()}) is ${tempOk ? "" : "Not"} ${str} using $diffThresh\u00b0 offset |  Inside Temp: (${intTemp}${tUnitStr()})", "info", showRes)
+				LogAction("extTmpTempOk: ${retval} Exterior Temperature (${extTemp}${tUnitStr()}) is ${tempOk ? "Not" : ""} ${str} using $diffThresh\u00b0 offset |  Inside Temp: (${intTemp}${tUnitStr()})", "info", showRes)
 
 			}
 		}
@@ -3581,7 +3581,7 @@ def conWatContactDesc() {
 }
 
 def isConWatConfigured() {
-	return (settings?.conWatContacts && settings?.conWatOffDelay) ? true : false
+	return (settings?.schMotContactOff && settings?.conWatContacts && settings?.conWatOffDelay) ? true : false
 }
 
 def getConWatContactsOk() { return settings?.conWatContacts?.currentState("contact")?.value.contains("open") ? false : true }
@@ -3853,7 +3853,7 @@ def leakWatSensorsDesc() {
 }
 
 def isLeakWatConfigured() {
-	return (settings?.leakWatSensors) ? true : false
+	return (settings?.schMotWaterOff && settings?.leakWatSensors) ? true : false
 }
 
 def getLeakWatSensorsOk() { return settings?.leakWatSensors?.currentState("water")?.value.contains("wet") ? false : true }
