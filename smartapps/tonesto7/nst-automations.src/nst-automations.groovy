@@ -3147,7 +3147,8 @@ def extTmpTempOk(disp=false, last=false) {
 		LogAction("extTmpTempOk: Inside Temp: ${intTemp} | curMode: ${curMode} | modeOff: ${modeOff} | modeEco: ${modeEco} | modeAuto: ${modeAuto} || extTmpTstatOffRequested: ${atomicState?.extTmpTstatOffRequested}", "debug", false)
 
 		def retval = true
-		def tempOk = true
+		def externalTempOk = true
+		def internalTempOk = true
 
 		def dpOk = (curDp < dpLimit || !canCool) ? true : false
 		if(!dpOk) { retval = false }
@@ -3168,7 +3169,7 @@ def extTmpTempOk(disp=false, last=false) {
 
 		if(!getSafetyTempsOk(extTmpTstat)) {
 			retval = false
-			tempOk = false
+			externalTempOk = false
 			str = "within safety Temperatures "
 			LogAction("extTmpTempOk: Safety Temps not OK", "warn", true)
 		}
@@ -3207,7 +3208,7 @@ def extTmpTempOk(disp=false, last=false) {
 		if(modeAuto && retval && desiredHeatTemp && desiredCoolTemp) {
 			if( !(extTemp >= (desiredHeatTemp+diffThresh) && extTemp <= (desiredCoolTemp-diffThresh)) ) {
 				retval = false
-				tempOk = false
+				externalTempOk = false
 				str = "within range (${desiredHeatTemp} ${desiredCoolTemp})"
 			}
 //ERS
@@ -3237,20 +3238,20 @@ def extTmpTempOk(disp=false, last=false) {
 
 				if(diffThresh && tempDiff < diffThresh) {
 					retval = false
-					tempOk = false
+					externalTempOk = false
 				}
 				def extTempHigh = (extTemp >= desiredTemp) ? true : false
 				def extTempLow = (extTemp <= desiredTemp) ? true : false
 				def oldMode = atomicState?.extTmpRestoreMode
 				if(modeCool || oldMode == "cool" || (!canHeat && canCool)) {
 					str = "greater than"
-					if(extTempHigh) { retval = false; tempOk = false }
-					else if (intTemp > desiredTemp+insideThresh) { retval = false; tempOk = false } // too hot inside
+					if(extTempHigh) { retval = false; externalTempOk = false }
+					if(intTemp > desiredTemp+insideThresh) { retval = false; internalTempOk = false } // too hot inside
 				}
 				if(modeHeat || oldMode == "heat" || (!canCool && canHeat)) {
 					str = "less than"
-					if(extTempLow) { retval = false; tempOk = false }
-					else if (intTemp < desiredTemp-insideThresh) { retval = false; tempOk = false } // too cold inside
+					if(extTempLow) { retval = false; externalTempOk = false }
+					if(intTemp < desiredTemp-insideThresh) { retval = false; internalTempOk = false } // too cold inside
 				}
 				LogAction("extTmpTempOk: extTempHigh: ${extTempHigh} | extTempLow: ${extTempLow}", "debug", false)
 			}
@@ -3260,9 +3261,9 @@ def extTmpTempOk(disp=false, last=false) {
 			LogAction("extTmpTempOk: ${retval} Dewpoint: (${curDp}${tUnitStr()}) is ${dpOk ? "ok" : "TOO HIGH"}", "info", showRes)
 		} else {
 			if(!modeAuto) {
-				LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${desiredTemp}${tUnitStr()}) is ${tempOk ? "Not" : ""} ${str} $diffThresh\u00b0 of Outside Temp: (${extTemp}${tUnitStr()}) ${retval ? "AND" : "OR"} Inside Temp: (${intTemp}) is ${tempOk ? "" : "Not"} within Inside Threshold: ${insideThresh} of desired (${desiredTemp})", "info", showRes)
+				LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${desiredTemp}${tUnitStr()}) is ${externalTempOk ? "" : "Not"} ${str} $diffThresh\u00b0 of Outside Temp: (${extTemp}${tUnitStr()}) ${retval ? "AND" : "OR"} Inside Temp: (${intTemp}) is ${internalTempOk ? "" : "Not"} within Inside Threshold: ${insideThresh} of desired (${desiredTemp})", "info", showRes)
 			} else {
-				LogAction("extTmpTempOk: ${retval} Exterior Temperature (${extTemp}${tUnitStr()}) is ${tempOk ? "Not" : ""} ${str} using $diffThresh\u00b0 offset |  Inside Temp: (${intTemp}${tUnitStr()})", "info", showRes)
+				LogAction("extTmpTempOk: ${retval} Exterior Temperature (${extTemp}${tUnitStr()}) is ${externalTempOk ? "" : "Not"} ${str} using $diffThresh\u00b0 offset |  Inside Temp: (${intTemp}${tUnitStr()})", "info", showRes)
 
 			}
 		}
