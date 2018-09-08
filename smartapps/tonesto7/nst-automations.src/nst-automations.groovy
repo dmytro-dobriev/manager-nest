@@ -26,8 +26,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.4.3" }
-def appVerDate() { "08-28-2018" }
+def appVersion() { "5.4.4" }
+def appVerDate() { "09-08-2018" }
 
 preferences {
 	//startPage
@@ -1567,7 +1567,7 @@ def remSenDayCoolTempOk()	{ return (!remSenCoolTempsReq() || (remSenCoolTempsReq
 
 def isRemSenConfigured() {
 	def devOk = (settings?.remSensorDay) ? true : false
-	return (devOk && settings?.remSenRuleType && remSenDayHeatTempOk() && remSenDayCoolTempOk() ) ? true : false
+	return (settings?.schMotRemoteSensor && devOk && settings?.remSenRuleType && remSenDayHeatTempOk() && remSenDayCoolTempOk() ) ? true : false
 }
 
 def getLastMotionActiveSec(mySched) {
@@ -2149,24 +2149,26 @@ def getRemSenCoolSetTemp(curMode=null, isEco=false, useCurrent=true) {
 				coolTemp = !useMotion ? hvacSettings?.ctemp : hvacSettings?.mctemp ?: hvacSettings?.ctemp
 			}
 // ERS if Remsensor is enabled
-			if(theMode == "cool" && coolTemp == null /* && isEco */) {
-				if(atomicState?.extTmpLastDesiredTemp) { coolTemp = atomicState?.extTmpLastDesiredTemp }
-			}
-			if(theMode == "auto" && coolTemp == null /* && isEco */) {
-				if(atomicState?.extTmpLastDesiredCTemp) { coolTemp = atomicState?.extTmpLastDesiredCTemp }
-			}
+			if(isRemSenConfigured()) {
+				if(theMode == "cool" && coolTemp == null /* && isEco */) {
+					if(atomicState?.extTmpLastDesiredTemp) { coolTemp = atomicState?.extTmpLastDesiredTemp }
+				}
+				if(theMode == "auto" && coolTemp == null /* && isEco */) {
+					if(atomicState?.extTmpLastDesiredCTemp) { coolTemp = atomicState?.extTmpLastDesiredCTemp }
+				}
 
-			if(coolTemp == null && remSenDayCoolTemp) {
-				coolTemp = remSenDayCoolTemp.toDouble()
-			}
+				if(coolTemp == null && remSenDayCoolTemp) {
+					coolTemp = remSenDayCoolTemp.toDouble()
+				}
 
-			if(coolTemp == null) {
-				def desiredCoolTemp = getGlobalDesiredCoolTemp()
-				if(desiredCoolTemp) { coolTemp = desiredCoolTemp.toDouble() }
-			}
+				if(coolTemp == null) {
+					def desiredCoolTemp = getGlobalDesiredCoolTemp()
+					if(desiredCoolTemp) { coolTemp = desiredCoolTemp.toDouble() }
+				}
 
-			if(coolTemp) {
-				coolTemp = fixTempSetting(coolTemp)
+				if(coolTemp) {
+					coolTemp = fixTempSetting(coolTemp)
+				}
 			}
 		}
 	}
@@ -2198,24 +2200,26 @@ def getRemSenHeatSetTemp(curMode=null, isEco=false, useCurrent=true) {
 				heatTemp = !useMotion ? hvacSettings?.htemp : hvacSettings?.mhtemp ?: hvacSettings?.htemp
 			}
 // ERS if Remsensor is enabled
-			if(theMode == "heat" && heatTemp == null /* && isEco */) {
-				if(atomicState?.extTmpLastDesiredTemp) { heatTemp = atomicState?.extTmpLastDesiredTemp }
-			}
-			if(theMode == "auto" && heatTemp == null /* && isEco */) {
-				if(atomicState?.extTmpLastDesiredHTemp) { heatTemp = atomicState?.extTmpLastDesiredHTemp }
-			}
+			if(isRemSenConfigured()) {
+				if(theMode == "heat" && heatTemp == null /* && isEco */) {
+					if(atomicState?.extTmpLastDesiredTemp) { heatTemp = atomicState?.extTmpLastDesiredTemp }
+				}
+				if(theMode == "auto" && heatTemp == null /* && isEco */) {
+					if(atomicState?.extTmpLastDesiredHTemp) { heatTemp = atomicState?.extTmpLastDesiredHTemp }
+				}
 
-			if(heatTemp == null && remSenDayHeatTemp) {
-				heatTemp = remSenDayHeatTemp.toDouble()
-			}
+				if(heatTemp == null && remSenDayHeatTemp) {
+					heatTemp = remSenDayHeatTemp.toDouble()
+				}
 
-			if(heatTemp == null) {
-				def desiredHeatTemp = getGlobalDesiredHeatTemp()
-				if(desiredHeatTemp) { heatTemp = desiredHeatTemp.toDouble() }
-			}
+				if(heatTemp == null) {
+					def desiredHeatTemp = getGlobalDesiredHeatTemp()
+					if(desiredHeatTemp) { heatTemp = desiredHeatTemp.toDouble() }
+				}
 
-			if(heatTemp) {
-				heatTemp = fixTempSetting(heatTemp)
+				if(heatTemp) {
+					heatTemp = fixTempSetting(heatTemp)
+				}
 			}
 		}
 	}
@@ -2787,7 +2791,7 @@ def getCirculateFanTempOk(Double senTemp, Double reqsetTemp, Double threshold, B
 def humCtrlPrefix() { return "humCtrl" }
 
 def isHumCtrlConfigured() {
-	return ((settings?.humCtrlUseWeather || settings?.humCtrlTempSensor) && settings?.humCtrlHumidity && settings?.humCtrlSwitches) ? true : false
+	return (settings?.schMotHumidityControl && (settings?.humCtrlUseWeather || settings?.humCtrlTempSensor) && settings?.humCtrlHumidity && settings?.humCtrlSwitches) ? true : false
 }
 
 def getDeviceVarAvg(items, var) {
@@ -2991,7 +2995,7 @@ def humCtrlCheck() {
 def extTmpPrefix() { return "extTmp" }
 
 def isExtTmpConfigured() {
-	return ((settings?.extTmpUseWeather || settings?.extTmpTempSensor) && settings?.extTmpDiffVal) ? true : false
+	return (settings?.schMotExternalTempOff && (settings?.extTmpUseWeather || settings?.extTmpTempSensor) && settings?.extTmpDiffVal) ? true : false
 }
 
 def getLastextConditionsEvalSec() { return !atomicState?.lastgetExtCond ? 100000 : GetTimeDiffSeconds(atomicState?.lastgetExtCond, null, "getLastextConditionsEvalSec").toInteger() }
@@ -3143,7 +3147,8 @@ def extTmpTempOk(disp=false, last=false) {
 		LogAction("extTmpTempOk: Inside Temp: ${intTemp} | curMode: ${curMode} | modeOff: ${modeOff} | modeEco: ${modeEco} | modeAuto: ${modeAuto} || extTmpTstatOffRequested: ${atomicState?.extTmpTstatOffRequested}", "debug", false)
 
 		def retval = true
-		def tempOk = true
+		def externalTempOk = true
+		def internalTempOk = true
 
 		def dpOk = (curDp < dpLimit || !canCool) ? true : false
 		if(!dpOk) { retval = false }
@@ -3164,7 +3169,7 @@ def extTmpTempOk(disp=false, last=false) {
 
 		if(!getSafetyTempsOk(extTmpTstat)) {
 			retval = false
-			tempOk = false
+			externalTempOk = false
 			str = "within safety Temperatures "
 			LogAction("extTmpTempOk: Safety Temps not OK", "warn", true)
 		}
@@ -3203,7 +3208,7 @@ def extTmpTempOk(disp=false, last=false) {
 		if(modeAuto && retval && desiredHeatTemp && desiredCoolTemp) {
 			if( !(extTemp >= (desiredHeatTemp+diffThresh) && extTemp <= (desiredCoolTemp-diffThresh)) ) {
 				retval = false
-				tempOk = false
+				externalTempOk = false
 				str = "within range (${desiredHeatTemp} ${desiredCoolTemp})"
 			}
 //ERS
@@ -3229,24 +3234,24 @@ def extTmpTempOk(disp=false, last=false) {
 				tempDiff = Math.abs(extTemp - desiredTemp)
 				str = "enough different (${tempDiff})"
 				insideThresh = getExtTmpInsideTempDiffVal()
-				LogAction("extTmpTempOk: Outside Temp: ${extTemp} | Desired Temp: ${desiredTemp} | Inside Temp Threshold: ${insideThresh} | Outside Temp Threshold: ${diffThresh} | Actual Difference: ${tempDiff} | Outside Dew point: ${curDp} | Dew point Limit: ${dpLimit}", "debug", false)
+				LogAction("extTmpTempOk: Outside Temp: ${extTemp} | Inside Temp: ${intTemp} | Desired Temp: ${desiredTemp} | Inside Temp Threshold: ${insideThresh} | Outside Temp Threshold: ${diffThresh} | Actual Difference: ${tempDiff} | Outside Dew point: ${curDp} | Dew point Limit: ${dpLimit}", "debug", true)
 
 				if(diffThresh && tempDiff < diffThresh) {
 					retval = false
-					tempOk = false
+					externalTempOk = false
 				}
 				def extTempHigh = (extTemp >= desiredTemp) ? true : false
 				def extTempLow = (extTemp <= desiredTemp) ? true : false
 				def oldMode = atomicState?.extTmpRestoreMode
 				if(modeCool || oldMode == "cool" || (!canHeat && canCool)) {
 					str = "greater than"
-					if(extTempHigh) { retval = false; tempOk = false }
-					else if (intTemp > desiredTemp+insideThresh) { retval = false; tempOk = false } // too hot inside
+					if(extTempHigh) { retval = false; externalTempOk = false }
+					if(intTemp > desiredTemp+insideThresh) { retval = false; internalTempOk = false } // too hot inside
 				}
 				if(modeHeat || oldMode == "heat" || (!canCool && canHeat)) {
 					str = "less than"
-					if(extTempLow) { retval = false; tempOk = false }
-					else if (intTemp < desiredTemp-insideThresh) { retval = false; tempOk = false } // too cold inside
+					if(extTempLow) { retval = false; externalTempOk = false }
+					if(intTemp < desiredTemp-insideThresh) { retval = false; internalTempOk = false } // too cold inside
 				}
 				LogAction("extTmpTempOk: extTempHigh: ${extTempHigh} | extTempLow: ${extTempLow}", "debug", false)
 			}
@@ -3256,9 +3261,9 @@ def extTmpTempOk(disp=false, last=false) {
 			LogAction("extTmpTempOk: ${retval} Dewpoint: (${curDp}${tUnitStr()}) is ${dpOk ? "ok" : "TOO HIGH"}", "info", showRes)
 		} else {
 			if(!modeAuto) {
-				LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${desiredTemp}${tUnitStr()}) is ${tempOk ? "" : "Not"} ${str} $diffThresh\u00b0 of Outside Temp: (${extTemp}${tUnitStr()}) ${retval ? "AND" : "OR"} Inside Temp: (${intTemp}) is ${tempOk ? "" : "Not"} within Inside Threshold: ${insideThresh} of desired (${desiredTemp})", "info", showRes)
+				LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${desiredTemp}${tUnitStr()}) is ${externalTempOk ? "" : "Not"} ${str} $diffThresh\u00b0 of Outside Temp: (${extTemp}${tUnitStr()}) ${retval ? "AND" : "OR"} Inside Temp: (${intTemp}) is ${internalTempOk ? "" : "Not"} within Inside Threshold: ${insideThresh} of desired (${desiredTemp})", "info", showRes)
 			} else {
-				LogAction("extTmpTempOk: ${retval} Exterior Temperature (${extTemp}${tUnitStr()}) is ${tempOk ? "" : "Not"} ${str} using $diffThresh\u00b0 offset |  Inside Temp: (${intTemp}${tUnitStr()})", "info", showRes)
+				LogAction("extTmpTempOk: ${retval} Exterior Temperature (${extTemp}${tUnitStr()}) is ${externalTempOk ? "" : "Not"} ${str} using $diffThresh\u00b0 offset |  Inside Temp: (${intTemp}${tUnitStr()})", "info", showRes)
 
 			}
 		}
@@ -3577,7 +3582,7 @@ def conWatContactDesc() {
 }
 
 def isConWatConfigured() {
-	return (settings?.conWatContacts && settings?.conWatOffDelay) ? true : false
+	return (settings?.schMotContactOff && settings?.conWatContacts && settings?.conWatOffDelay) ? true : false
 }
 
 def getConWatContactsOk() { return settings?.conWatContacts?.currentState("contact")?.value.contains("open") ? false : true }
@@ -3849,7 +3854,7 @@ def leakWatSensorsDesc() {
 }
 
 def isLeakWatConfigured() {
-	return (settings?.leakWatSensors) ? true : false
+	return (settings?.schMotWaterOff && settings?.leakWatSensors) ? true : false
 }
 
 def getLeakWatSensorsOk() { return settings?.leakWatSensors?.currentState("water")?.value.contains("wet") ? false : true }
@@ -7650,8 +7655,8 @@ def setTstatAutoTemps(tstat, coolSetpoint, heatSetpoint, pName, mir=null) {
 		if(!reqCool && !reqHeat) { retVal = false; setStr += "Missing COOL and HEAT Setpoints" }
 
 		if(hvacMode in ["auto"]) {
-			if(!reqCool && reqHeat) { reqCool = (double) (curCoolSetpoint > (reqHeat + diff)) ? curCoolSetpoint : (reqHeat + diff) }
-			if(!reqHeat && reqCool) { reqHeat = (double) (curHeatSetpoint < (reqCool - diff)) ? curHeatSetpoint : (reqCool - diff) }
+			if(!reqCool && reqHeat) { reqCool = (double) ((curCoolSetpoint > (reqHeat + diff)) ? curCoolSetpoint : (reqHeat + diff)) }
+			if(!reqHeat && reqCool) { reqHeat = (double) ((curHeatSetpoint < (reqCool - diff)) ? curHeatSetpoint : (reqCool - diff)) }
 			if((reqCool && reqHeat) && (reqCool >= (reqHeat + diff))) {
 				if(reqHeat <= curHeatSetpoint) { heatFirst = true }
 					else if(reqCool >= curCoolSetpoint) { heatFirst = false }
