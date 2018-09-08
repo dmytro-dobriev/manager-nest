@@ -35,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.5.1" }
-def appVerDate() { "08-30-2018" }
+def appVerDate() { "09-08-2018" }
 def minVersions() {
 	return [
 		"automation":["val":544, "desc":"5.4.4"],
@@ -9605,32 +9605,43 @@ def sendInstallSlackNotif(inst=true) {
 
 def getDbExceptPath() { return atomicState?.appData?.settings?.database?.exceptionKey ?: "exceptions" }
 
+def ok2SendException(ex) {
+	def retVal = true
+	if(atomicState?.appData?.settings?.database?.disableExceptions == true) {
+		retVal = false
+		// Nothing to see here!
+	} else if(atomicState?.cltExcBlacklisted) {
+		LogAction("Exception Data Upload has been BLACKLISTED for this client.", "warn", true)
+		retVal = false
+	} else if(!(settings?.optInSendExceptions || settings?.optInSendExceptions == null)) {
+		retVal = false
+	}
+	if(ex instanceof java.util.concurrent.TimeoutException) {
+		retVal = false
+	}
+	return retVal
+}
+
 def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 	try {
 		def showErrLog = (atomicState?.enRemDiagLogging && settings?.enRemDiagLogging) ? true : false
 		def labelstr = (settings?.debugAppendAppName || settings?.debugAppendAppName == null) ? "${app.label} | " : ""
 		//LogAction("${labelstr}sendExceptionData(method: $methodName, isChild: $isChild, autoType: $autoType)", "info", false)
 		LogAction("${labelstr}sendExceptionData(method: $methodName, isChild: $isChild, autoType: $autoType, ex: ${ex})", "error", showErrLog)
-		if(atomicState?.appData?.settings?.database?.disableExceptions == true) {
-			// Nothing to see here!
-		} else if(atomicState?.cltExcBlacklisted) {
-			LogAction("Exception Data Upload has been BLACKLISTED for this client.", "warn", true)
-		} else {
-			def exCnt = atomicState?.appExceptionCnt ?: 1
-			atomicState?.appExceptionCnt = exCnt?.toInteger() + 1
+		def exCnt = atomicState?.appExceptionCnt ?: 1
+		atomicState?.appExceptionCnt = exCnt?.toInteger() + 1
+		if(ok2SendException(ex)) {
 			def exString = "${ex}"
-			if(settings?.optInSendExceptions || settings?.optInSendExceptions == null) {
-				generateInstallId()
-				def appType = isChild && autoType ? "automationApp/${autoType}" : "managerApp"
-				def exData =[:]
-				if(isChild) {
-					exData = ["methodName":methodName, "automationType":autoType, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exString, "errorDt":getDtNow().toString()]
-				} else {
-					exData = ["methodName":methodName, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exString, "errorDt":getDtNow().toString()]
-				}
-				def results = new groovy.json.JsonOutput().toJson(exData)
-				sendFirebaseData(getFbExceptionsUrl(), results, "${getDbExceptPath()}/${appType}/${methodName}/${atomicState?.installationId}.json", "post", "Exception")
+			generateInstallId()
+			def appType = isChild && autoType ? "automationApp/${autoType}" : "managerApp"
+			def exData =[:]
+			if(isChild) {
+				exData = ["methodName":methodName, "automationType":autoType, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exString, "errorDt":getDtNow().toString()]
+			} else {
+				exData = ["methodName":methodName, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exString, "errorDt":getDtNow().toString()]
 			}
+			def results = new groovy.json.JsonOutput().toJson(exData)
+			sendFirebaseData(getFbExceptionsUrl(), results, "${getDbExceptPath()}/${appType}/${methodName}/${atomicState?.installationId}.json", "post", "Exception")
 		}
 		if(ex instanceof physicalgraph.exception.StateCharacterLimitExceededException) {
 			state.remove("remDiagLogDataStore")
@@ -9639,18 +9650,18 @@ def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
 			runIn(20, "updated", [overwrite: true])
 		}
 	} catch (e) {
-		log.debug "other exception caught"
+		log.debug "sendExceptionData: other exception caught"
 	}
 }
 
 def sendChildExceptionData(devType, devVer, ex, methodName) {
 	def showErrLog = (atomicState?.enRemDiagLogging && settings?.enRemDiagLogging) ? true : false
-	def exString = "${ex}"
 	LogAction("sendChildExceptionData(device: $deviceType, devVer: $devVer, method: $methodName, ex: ${ex}", "error", showErrLog)
 	def exCnt = atomicState?.childExceptionCnt ?: 1
 	atomicState?.childExceptionCnt = exCnt.toInteger() + 1
-	if(settings?.optInSendExceptions || settings?.optInSendExceptions == null) {
+	if(ok2SendException(ex)) {
 		generateInstallId()
+		def exString = "${ex}"
 		def exData = ["deviceType":devType, "devVersion":(devVer ?: "Not Available"), "methodName":methodName, "errorMsg":exString, "errorDt":getDtNow().toString()]
 		def results = new groovy.json.JsonOutput().toJson(exData)
 		sendFirebaseData(getFbExceptionsUrl(), results, "${getDbExceptPath()}/${devType}/${methodName}/${atomicState?.installationId}.json", "post", "Exception")
@@ -9690,7 +9701,7 @@ def queueFirebaseData(url, data, pathVal, cmdType=null, type=null) {
 
 	} catch(ex) {
 		log.error "queueFirebaseData (type: $typeDesc) Exception:", ex
-		sendExceptionData(ex, "queueFirebaseData")
+		//sendExceptionData(ex, "queueFirebaseData")
 	}
 	return result
 }
