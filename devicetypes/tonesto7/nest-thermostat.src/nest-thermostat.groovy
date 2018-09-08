@@ -2731,12 +2731,12 @@ def updateOperatingHistory(today) {
 
 	if(dayChange) {
 		try {
-			def Op_coolingusage = getSumUsage(state.operatingStateTableYesterday, "cooling").toInteger()
-			def Op_heatingusage = getSumUsage(state.operatingStateTableYesterday, "heating").toInteger()
-			def Op_idle = getSumUsage(state.operatingStateTableYesterday, "idle").toInteger()
-			def Op_fanonly = getSumUsage(state.operatingStateTableYesterday, "fan only").toInteger()
-			def fan_on = getSumUsage(state.fanModeTableYesterday, "on").toInteger()
-			def fan_auto = getSumUsage(state.fanModeTableYesterday, "auto").toInteger()
+			long Op_coolingusage = getSumUsage(state.operatingStateTableYesterday, "cooling")
+			long Op_heatingusage = getSumUsage(state.operatingStateTableYesterday, "heating")
+			long Op_idle = getSumUsage(state.operatingStateTableYesterday, "idle")
+			long Op_fanonly = getSumUsage(state.operatingStateTableYesterday, "fan only")
+			long fan_on = getSumUsage(state.fanModeTableYesterday, "on")
+			long fan_auto = getSumUsage(state.fanModeTableYesterday, "auto")
 
 			log.info "fanon ${fan_on}  fanauto: ${fan_auto} opidle: ${Op_idle}  cool: ${Op_coolingusage} heat: ${Op_heatingusage} fanonly: ${Op_fanonly}"
 
@@ -2761,17 +2761,17 @@ def updateOperatingHistory(today) {
 			hm."FanMode_Day${hm.currentDay}_On" = 0L
 			hm."FanMode_Day${hm.currentDay}_auto" = 0L
 
-			def t1 = hm["OperatingState_Month${hm.currentMonth}_cooling"]?.toInteger() ?: 0L
+			long t1 = hm?."OperatingState_Month${hm.currentMonth}_cooling"?.toInteger() ?: 0L
 			hm."OperatingState_Month${hm.currentMonth}_cooling" = t1 + Op_coolingusage
-			t1 = hm["OperatingState_Month${hm.currentMonth}_heating"]?.toInteger() ?: 0L
+			t1 = hm?."OperatingState_Month${hm.currentMonth}_heating"?.toInteger() ?: 0L
 			hm."OperatingState_Month${hm.currentMonth}_heating" = t1 + Op_heatingusage
-			t1 = hm["OperatingState_Month${hm.currentMonth}_idle"]?.toInteger() ?: 0L
+			t1 = hm?."OperatingState_Month${hm.currentMonth}_idle"?.toInteger() ?: 0L
 			hm."OperatingState_Month${hm.currentMonth}_idle" = t1 + Op_idle
-			t1 = hm["OperatingState_Month${hm.currentMonth}_fanonly"]?.toInteger() ?: 0L
+			t1 = hm?."OperatingState_Month${hm.currentMonth}_fanonly"?.toInteger() ?: 0L
 			hm."OperatingState_Month${hm.currentMonth}_fanonly" = t1 + Op_fanonly
-			t1 = hm["FanMode_Month${hm.currentMonth}_On"]?.toInteger() ?: 0L
+			t1 = hm?."FanMode_Month${hm.currentMonth}_On"?.toInteger() ?: 0L
 			hm."FanMode_Month${hm.currentMonth}_On" = t1 + fan_on
-			t1 = hm["FanMode_Month${hm.currentMonth}_auto"]?.toInteger() ?: 0L
+			t1 = hm?."FanMode_Month${hm.currentMonth}_auto"?.toInteger() ?: 0L
 			hm."FanMode_Month${hm.currentMonth}_auto" = t1 + fan_auto
 
 			if(monthChange) {
@@ -2789,17 +2789,17 @@ def updateOperatingHistory(today) {
 				hm."FanMode_Month${hm.currentMonth}_auto" = 0L
 			}
 
-			t1 = hm[OperatingState_thisYear_cooling]?.toInteger() ?: 0L
+			t1 = hm?.OperatingState_thisYear_cooling?.toInteger() ?: 0L
 			hm.OperatingState_thisYear_cooling = t1 + Op_coolingusage
-			t1 = hm[OperatingState_thisYear_heating]?.toInteger() ?: 0L
+			t1 = hm?.OperatingState_thisYear_heating?.toInteger() ?: 0L
 			hm.OperatingState_thisYear_heating = t1 + Op_heatingusage
-			t1 = hm[OperatingState_thisYear_idle]?.toInteger() ?: 0L
+			t1 = hm?.OperatingState_thisYear_idle?.toInteger() ?: 0L
 			hm.OperatingState_thisYear_idle = t1 + Op_idle
-			t1 = hm[OperatingState_thisYear_fanonly]?.toInteger() ?: 0L
+			t1 = hm?.OperatingState_thisYear_fanonly?.toInteger() ?: 0L
 			hm.OperatingState_thisYear_fanonly = t1 + Op_fanonly
-			t1 = hm[FanMode_thisYear_On]?.toInteger() ?: 0L
+			t1 = hm?.FanMode_thisYear_On?.toInteger() ?: 0L
 			hm.FanMode_thisYear_On = t1 + fan_on
-			t1 = hm[FanMode_thisYear_auto]?.toInteger() ?: 0L
+			t1 = hm?.FanMode_thisYear_auto?.toInteger() ?: 0L
 			hm.FanMode_thisYear_auto = t1 + fan_auto
 
 			if(yearChange) {
@@ -2830,8 +2830,8 @@ def updateOperatingHistory(today) {
 
 def getSumUsage(table, String strtyp) {
 	//log.trace "getSumUsage...$strtyp Table size: ${table?.size()}"
-	def totseconds = 0L
-	def newseconds = 0L
+	long totseconds = 0L
+	long newseconds = 0L
 
 	def hr
 	def mins
@@ -2879,7 +2879,7 @@ def getSumUsage(table, String strtyp) {
 	}
 	//log.info "$strtyp totseconds: $totseconds"
 
-	return totseconds.toInteger()
+	return totseconds
 }
 
 def initHistoryStore() {
@@ -3049,12 +3049,12 @@ def getHistoryStore() {
 	}
 	def hm = thm.clone()
 
-	def Op_coolingusage = getSumUsage(state.operatingStateTable, "cooling").toInteger()
-	def Op_heatingusage = getSumUsage(state.operatingStateTable, "heating").toInteger()
-	def Op_idle = getSumUsage(state.operatingStateTable, "idle").toInteger()
-	def Op_fanonly = getSumUsage(state.operatingStateTable, "fan only").toInteger()
-	def fan_on = getSumUsage(state.fanModeTable, "on").toInteger()
-	def fan_auto = getSumUsage(state.fanModeTable, "auto").toInteger()
+	long Op_coolingusage = getSumUsage(state.operatingStateTable, "cooling")
+	long Op_heatingusage = getSumUsage(state.operatingStateTable, "heating")
+	long Op_idle = getSumUsage(state.operatingStateTable, "idle")
+	long Op_fanonly = getSumUsage(state.operatingStateTable, "fan only")
+	long fan_on = getSumUsage(state.fanModeTable, "on")
+	long fan_auto = getSumUsage(state.fanModeTable, "auto")
 
 	//log.info "fanon ${fan_on}  fanauto: ${fan_auto} opidle: ${Op_idle}  cool: ${Op_coolingusage} heat: ${Op_heatingusage}"
 	//log.debug "currentDay ${hm.currentDay} | currentMonth ${hm.currentMonth}  | currentYear: ${hm.currentYear}"
@@ -3066,30 +3066,30 @@ def getHistoryStore() {
 	hm."FanMode_Day${hm.currentDay}_On" = fan_on
 	hm."FanMode_Day${hm.currentDay}_auto" = fan_auto
 
-	def t1 = hm["OperatingState_Month${hm.currentMonth}_cooling"]?.toInteger() ?: 0L
+	long t1 = hm?."OperatingState_Month${hm.currentMonth}_cooling"?.toInteger() ?: 0L
 	hm."OperatingState_Month${hm.currentMonth}_cooling" = t1 + Op_coolingusage
-	t1 = hm["OperatingState_Month${hm.currentMonth}_heating"]?.toInteger() ?: 0L
+	t1 = hm?."OperatingState_Month${hm.currentMonth}_heating"?.toInteger() ?: 0L
 	hm."OperatingState_Month${hm.currentMonth}_heating" = t1 + Op_heatingusage
-	t1 = hm["OperatingState_Month${hm.currentMonth}_idle"]?.toInteger() ?: 0L
+	t1 = hm?."OperatingState_Month${hm.currentMonth}_idle"?.toInteger() ?: 0L
 	hm."OperatingState_Month${hm.currentMonth}_idle" = t1 + Op_idle
-	t1 = hm["OperatingState_Month${hm.currentMonth}_fanonly"]?.toInteger() ?: 0L
+	t1 = hm?."OperatingState_Month${hm.currentMonth}_fanonly"?.toInteger() ?: 0L
 	hm."OperatingState_Month${hm.currentMonth}_fanonly" = t1 + Op_fanonly
-	t1 = hm["FanMode_Month${hm.currentMonth}_On"]?.toInteger() ?: 0L
+	t1 = hm?."FanMode_Month${hm.currentMonth}_On"?.toInteger() ?: 0L
 	hm."FanMode_Month${hm.currentMonth}_On" = t1 + fan_on
-	t1 = hm["FanMode_Month${hm.currentMonth}_auto"]?.toInteger() ?: 0L
+	t1 = hm?."FanMode_Month${hm.currentMonth}_auto"?.toInteger() ?: 0L
 	hm."FanMode_Month${hm.currentMonth}_auto" = t1 + fan_auto
 
-	t1 = hm[OperatingState_thisYear_cooling]?.toInteger() ?: 0L
+	t1 = hm?.OperatingState_thisYear_cooling?.toInteger() ?: 0L
 	hm.OperatingState_thisYear_cooling = t1 + Op_coolingusage
-	t1 = hm[OperatingState_thisYear_heating]?.toInteger() ?: 0L
+	t1 = hm?.OperatingState_thisYear_heating?.toInteger() ?: 0L
 	hm.OperatingState_thisYear_heating = t1 + Op_heatingusage
-	t1 = hm[OperatingState_thisYear_idle]?.toInteger() ?: 0L
+	t1 = hm?.OperatingState_thisYear_idle?.toInteger() ?: 0L
 	hm.OperatingState_thisYear_idle = t1 + Op_idle
-	t1 = hm[OperatingState_thisYear_fanonly]?.toInteger() ?: 0L
+	t1 = hm?.OperatingState_thisYear_fanonly?.toInteger() ?: 0L
 	hm.OperatingState_thisYear_fanonly = t1 + Op_fanonly
-	t1 = hm[FanMode_thisYear_On]?.toInteger() ?: 0L
+	t1 = hm?.FanMode_thisYear_On?.toInteger() ?: 0L
 	hm.FanMode_thisYear_On = t1 + fan_on
-	t1 = hm[FanMode_thisYear_auto]?.toInteger() ?: 0L
+	t1 = hm?.FanMode_thisYear_auto?.toInteger() ?: 0L
 	hm.FanMode_thisYear_auto = t1 + fan_auto
 
 	return hm
