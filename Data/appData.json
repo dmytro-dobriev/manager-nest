@@ -33,23 +33,23 @@
                 "ver": "5.4.1"
             },
             "protect": {
-                "ver": "5.4.0"
+                "ver": "5.4.1"
             },
             "camera": {
                 "ver": "5.4.1"
             },
             "presence": {
-                "ver": "5.4.0"
+                "ver": "5.4.1"
             },
             "weather": {
-                "ver": "5.4.0"
+                "ver": "5.4.1"
             }
         },
         "allowInApp": false
     },
     "database": {
         "allowRemoteDiag": true,
-        "disableExceptions": false,
+        "disableExceptions": true,
         "exceptionPath": "exceptionData",
         "newexceptionPath": "newexceptionData",
         "remoteDiagPath": "remoteDiagLogs"

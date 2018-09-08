@@ -270,7 +270,8 @@ void cltLiveStreamStart() {
 def generateEvent(Map eventData) {
 	//log.trace("generateEvent Parsing data ${eventData}")
 	state.eventData = eventData
-	runIn(1, "processEvent", [overwrite: true] )
+	//runIn(1, "processEvent", [overwrite: true] )
+	processEvent()
 }
 
 def processEvent() {
@@ -284,7 +285,7 @@ def processEvent() {
 	state.eventData = null
 	def dtNow = getDtNow()
 	//log.trace("processEvent Parsing data ${eventData}")
-	try {
+//	try {
 		LogAction("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			def results = eventData?.data
@@ -344,13 +345,14 @@ def processEvent() {
 			// Logger("Device Health Status: ${device.getStatus()}")
 		}
 		return null
-	}
+/*	}
 	catch (ex) {
 		def s = ""
 		if(ex && ex?.message) { s = ex?.message?.toString() }
 		log.error "processEvent Exception: ${s}", ex
 		exceptionDataHandler(s, "processEvent")
 	}
+*/
 }
 
 def getStateSize()      { return state?.toString().length() }
@@ -660,16 +662,17 @@ void motionEvtHandler(data, zoneOk) {
 	def motionPerStat = "inactive"
 	if(state?.restStreaming == true && data && zoneOk != false) {
 		if(data?.endDt && data?.hasMotion && !data?.sentMUpd) {
-			def t0 = getTimeDiffSeconds(data?.startDt, data?.endDt)
-			def newDur = Math.min( Math.max(3, t0) , state?.motionSndChgWaitVal)
+			int t0 = getTimeDiffSeconds(data?.startDt, data?.endDt)
+			int t1 = state?.motionSndChgWaitVal ?: 4
+			int newDur = Math.min( Math.max(3, t0) , t1)
 
 			t0 = getTimeDiffSeconds(data?.endDt)
 			def howRecent = Math.max(1, t0)
 			//Logger("MOTION NewDur: ${newDur}    howRecent: ${howRecent}")
 
-			t0 = state?.lastCamEvtData
-			t0.sentMUpd = true
-			state.lastCamEvtData = t0
+			def tt0 = state?.lastCamEvtData
+			tt0.sentMUpd = true
+			state.lastCamEvtData = tt0
 			if(howRecent <= 60) {
 				def motGo = (data?.motionOnPersonOnly == true && data?.hasPerson != true) ? false : true
 				if(motGo) {
@@ -694,16 +697,17 @@ void soundEvtHandler(data) {
 	def sndStat = "not detected"
 	if(state?.restStreaming == true && data) {
 		if(data?.endDt && data?.hasSound && !data?.sentSUpd) {
-			def t0 = getTimeDiffSeconds(data?.startDt, data?.endDt)
-			def newDur = Math.min( Math.max(3, t0) , state?.motionSndChgWaitVal)
+			int t0 = getTimeDiffSeconds(data?.startDt, data?.endDt)
+			int t1 = state?.motionSndChgWaitVal ?: 4
+			int newDur = Math.min( Math.max(3, t0) , state?.motionSndChgWaitVal)
 
 			t0 = getTimeDiffSeconds(data?.endDt)
 			def howRecent = Math.max(1, t0)
 			//Logger("SOUND NewDur: ${newDur}    howRecent: ${howRecent}")
 
-			t0 = state?.lastCamEvtData
-			t0.sentSUpd = true
-			state.lastCamEvtData = t0
+			def tt0 = state?.lastCamEvtData
+			tt0.sentSUpd = true
+			state.lastCamEvtData = tt0
 			if(howRecent <= 60) {
 				sndStat = "detected"
 				runIn(newDur?.toInteger(), "motionSoundEvtHandler", [overwrite: true])

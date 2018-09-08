@@ -478,7 +478,7 @@ void processEvent(data) {
 	checkStateClear()
 
 	//LogAction("processEvent Parsing data ${eventData}", "trace")
-	try {
+//	try {
 		LogAction("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			state.isBeta = eventData?.isBeta == true ? true : false
@@ -653,11 +653,13 @@ void processEvent(data) {
 		//This will return all of the devices state data to the logs.
 		//LogAction("Device State Data: ${getState()}")
 		return null
+/*
 	}
 	catch (ex) {
 		log.error "generateEvent Exception:", ex
 		exceptionDataHandler(ex?.message, "generateEvent")
 	}
+*/
 }
 
 def getStateSize()	{ return state?.toString().length() }
