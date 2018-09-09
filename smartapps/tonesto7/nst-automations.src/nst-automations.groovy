@@ -26,8 +26,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.4.4" }
-def appVerDate() { "09-08-2018" }
+def appVersion() { "5.4.5" }
+def appVerDate() { "09-09-2018" }
 
 preferences {
 	//startPage
@@ -2077,8 +2077,8 @@ def getRemoteSenThreshold() {
 
 def getRemoteSenTemp() {
 	def mySched = getCurrentSchedule()
-	if(!atomicState.remoteTempSourceStr) { atomicState.remoteTempSourceStr = null }
-	if(!atomicState.currentSchedNum) { atomicState.currentSchedNum = null }
+	if(atomicState?.remoteTempSourceStr != null) { atomicState.remoteTempSourceStr = null }
+	if(atomicState?.currentSchedNum != null) { atomicState.currentSchedNum = null }
 	def sens
 	if(mySched) {
 		def sLbl = "schMot_${mySched}_"
@@ -2089,12 +2089,11 @@ def getRemoteSenTemp() {
 			return getDeviceTempAvg(sens).toDouble()
 		}
 	}
-	if(settings?.remSensorDay) {
+	if(isRemSenConfigured()) {
 		atomicState.remoteTempSourceStr = "Remote Sensor"
 		atomicState.currentSchedNum = null
 		return getDeviceTempAvg(settings?.remSensorDay).toDouble()
-	}
-	else {
+	} else {
 		atomicState.remoteTempSourceStr = "Thermostat"
 		atomicState.currentSchedNum = null
 		return getDeviceTemp(schMotTstat).toDouble()
