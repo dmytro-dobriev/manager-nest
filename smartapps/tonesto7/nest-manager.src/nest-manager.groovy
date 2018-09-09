@@ -40,9 +40,9 @@ def minVersions() {
 	return [
 		"automation":["val":544, "desc":"5.4.4"],
 		"thermostat":["val":541, "desc":"5.4.1"],
-		"protect":["val":540, "desc":"5.4.0"],
-		"presence":["val":540, "desc":"5.4.0"],
-		"weather":["val":540, "desc":"5.4.0"],
+		"protect":["val":541, "desc":"5.4.1"],
+		"presence":["val":541, "desc":"5.4.1"],
+		"weather":["val":541, "desc":"5.4.1"],
 		"camera":["val":541, "desc":"5.4.1"],
 		"stream":["val":201, "desc":"2.0.1"]
 	]
