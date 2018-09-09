@@ -574,7 +574,7 @@ def devPrefPage() {
 		}
 		if(atomicState?.cameras) {
 			section("Camera Devices:") {
-				if(getDevOpt() || betaMarker()) {
+			//	if(getDevOpt() || betaMarker()) {
 					input "camTakeSnapOnEvt", "bool", title: "Take Snapshot on Motion Events?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("snapshot_icon.png")
 					input "motionSndChgWaitVal", "enum", title: "Delay before Motion/Sound Events are marked Inactive?", required: false, defaultValue: 60, metadata: [values:waitValAltEnum(true)], submitOnChange: true, image: getAppImg("delay_time_icon.png")
 					input "camEnMotionZoneFltr", "bool", title: "Allow filtering motion events by configured zones?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("motion_icon.png")
@@ -584,9 +584,9 @@ def devPrefPage() {
 						href "camMotionZoneFltrPage", title: "Restrict Motion to Certain Zones?", description: t0, params: [devices: atomicState?.cameras.sort{it?.value}, camZones: camZones], image: getAppImg("zone_icon.png"), state: (t0 ? "complete" : "")
 					}
 					atomicState.needChildUpd = true
-				} else {
-					paragraph "No Camera Device Options Yet..."
-				}
+			//	} else {
+			//		paragraph "No Camera Device Options Yet..."
+			//	}
 			}
 		}
 		if(atomicState?.protects) {
