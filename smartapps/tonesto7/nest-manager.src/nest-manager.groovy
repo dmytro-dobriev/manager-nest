@@ -35,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.5.2" }
-def appVerDate() { "09-09-2018" }
+def appVerDate() { "09-10-2018" }
 def minVersions() {
 	return [
 		"automation":["val":545, "desc":"5.4.5"],
@@ -322,8 +322,9 @@ def mainPage() {
 
 // NEW STORAGE SmartApp
 def storageInfoSect() {
-	if(!atomicState?.isInstalled || isAppLiteMode() || (stateSz < 55)) { return "" }
-	def storApp = getStorageApp()
+	//Integer stateSz = getStateSizePerc()
+	//if(!atomicState?.isInstalled || isAppLiteMode() || (stateSz < 50)) { return "" }
+	def storApp = getStorageApp(false)
 	section("Storage App Info:") {
 		if(storApp) {
 			def str = ""
@@ -376,8 +377,8 @@ public storageAppInst(Boolean available) {
 
 private getStorageApp(honorState = true) {
 	Integer stateSz = getStateSizePerc()
-	if(honorState && stateSz < 55) { return null }
-	if(isAppLiteMode()) { return null }
+	if(honorState && stateSz < 50) { return null }
+	if(honorState && isAppLiteMode()) { return null }
 	def storApp = getChildApps()?.find { it?.getAutomationType() == "storage" && it?.name == autoAppName() }
 	if(storApp) {
 		if(storApp?.label != getStorageAppChildLabel()) { storApp?.updateLabel(getStorageAppChildLabel()) }
@@ -2304,7 +2305,7 @@ def initBuiltin(btype) {
 			autoStr = "storage"
 			keepApp = true
 			def stateSz = getStateSizePerc()
-			if(stateSz < 59) { keepApp = false }
+			if(stateSz < 50) { keepApp = false }
 			else {
 				def kdata = getState()?.findAll { (it?.key in [ "curWeather", "curForecast", "curAstronomy", "curAlerts" ]) }
 				kdata.each { kitem ->
@@ -6090,17 +6091,25 @@ def getWeatherConditions(force = false) {
 }
 
 def getWeatherData(dataName) {
-	def storageApp = getStorageApp()
-	if(storageApp && !isAppLiteMode()) {
-		def t0 = getStorageVal(dataName)
+	def storageApp = getStorageApp(false)
+	def stateSz = getStateSizePerc()
+	def t1 = isAppLiteMode()
+	if(storageApp && (stateSz < 46 || t1)) {
+		initStorageApp() // should delete storageapp
+	}
+	storageApp = getStorageApp()
+	if(storageApp && !t1) {
+		def t0 = findStateStorageVal(dataName)
 		if(t0) {
 			return t0
 		} else { if(getWeatherConditions(true)) { return getStorageVal(dataName) } }
 	} else {
-		if(!isAppLiteMode() ) {
-			def stateSz = getStateSizePerc()
-			if(stateSz > 60) {
-				log.warn "storageApp not found getWeatherData"
+		if(stateSz > 62) {
+			log.warn "storageApp not found getWeatherData ${stateSz}%"
+		}
+		if(!t1) {
+			if(stateSz > 62) {
+				initStorageApp() // should create storage App
 			}
 		}
 		if(atomicState?."$dataName") {
