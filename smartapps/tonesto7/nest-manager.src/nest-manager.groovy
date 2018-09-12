@@ -6105,7 +6105,7 @@ def getWeatherData(dataName) {
 		} else { if(getWeatherConditions(true)) { return getStorageVal(dataName) } }
 	} else {
 		if(stateSz > 62) {
-			log.warn "storageApp not found getWeatherData ${stateSz}%"
+			LogAction("storageApp not found getWeatherData ${stateSz}%", "warn", true)
 		}
 		if(!t1) {
 			if(stateSz > 62) {
