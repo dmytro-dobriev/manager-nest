@@ -27,7 +27,7 @@ definition(
 }
 
 def appVersion() { "5.4.5" }
-def appVerDate() { "09-12-2018" }
+def appVerDate() { "09-18-2018" }
 
 preferences {
 	//startPage
@@ -2138,6 +2138,7 @@ def getRemSenCoolSetTemp(curMode=null, isEco=false, useCurrent=true) {
 		if(getLastOverrideCoolSec() < (3600 * 4)) {
 			if(atomicState?.coolOverride != null) {
 				coolTemp = fixTempSetting(atomicState?.coolOverride.toDouble())
+				atomicState.remoteCoolSetSourceStr = "Remote Sensor Override"
 			}
 		} else { atomicState?.coolOverride = null }
 
@@ -2202,6 +2203,7 @@ def getRemSenHeatSetTemp(curMode=null, isEco=false, useCurrent=true) {
 		if(getLastOverrideHeatSec() < (3600 * 4)) {
 			if(atomicState?.heatOverride != null) {
 				heatTemp = fixTempSetting(atomicState.heatOverride.toDouble())
+				atomicState.remoteHeatSetSourceStr = "Remote Sensor Override"
 			}
 		} else { atomicState?.heatOverride = null }
 
