@@ -730,7 +730,7 @@ def imageEvent(url) {
 			state.snapshot_url = url
 			clearUrl = false
 			if(isStateChange(device, "image", url?.toString())) {
-				Logger("UPDATED | Image Url: (${url}) | Original State: (${curImage})")
+				LogAction("UPDATED | Image Url: (${url}) | Original State: (${curImage})")
 				sendEvent(name: "image", value: url, descriptionText: "Image URL ${url}", displayed: false, isStateChange: true, state: url) 
 			}
 		}
