@@ -28,7 +28,7 @@
             "iconUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/nst_manager_5.png",
             "published": true,
             "oAuth": true,
-            "version": "5.5.2",
+            "version": "5.5.3",
             "appSettings": {
                 "clientId": "",
                 "clientSecret": "",
@@ -67,7 +67,7 @@
             "name": "Nest Camera",
             "iconUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/camera_icon.png",
             "published": true,
-            "version": "5.4.2",
+            "version": "5.4.3",
             "appUrl": "deviceTypes/tonesto7/nest-camera.src/nest-camera.groovy",
             "optional": false
         },
