@@ -34,11 +34,11 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.5.5" }
-def appVerDate() { "10-23-2018" }
+def appVersion() { "5.5.6" }
+def appVerDate() { "1l-11-2018" }
 def minVersions() {
 	return [
-		"automation":["val":546, "desc":"5.4.6"],
+		"automation":["val":547, "desc":"5.4.7"],
 		"thermostat":["val":543, "desc":"5.4.3"],
 		"protect":["val":542, "desc":"5.4.2"],
 		"presence":["val":542, "desc":"5.4.2"],
@@ -8085,7 +8085,7 @@ def strCapitalize(str) {
 
 def getInputEnumLabel(inputName, enumName) {
 	def result = "Not Set"
-	if(input && enumName) {
+	if(inputName && enumName) {
 		enumName.each { item ->
 			if(item?.key.toString() == inputName?.toString()) {
 				result = item?.value
