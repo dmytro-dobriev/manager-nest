@@ -1954,7 +1954,7 @@ private diagLogProcChange(setOn) {
 def getRemDiagActSec() { return !getTimestampVal("remDiagLogActivatedDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("remDiagLogActivatedDt"), null, "getRemDiagActSec").toInteger() }
 def getLastRemDiagSentSec() { return !atomicState?.remDiagDataSentDt ? 1000 : GetTimeDiffSeconds(atomicState?.remDiagDataSentDt, null, "getLastRemDiagSentSec").toInteger() }
 
-def changeLogPage () {
+def changeLogPage() {
 	def execTime = now()
 	dynamicPage(name: "changeLogPage", title: "", nextPage: "mainPage", install: false) {
 		section() {
