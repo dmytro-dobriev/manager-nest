@@ -1,7 +1,7 @@
 V5.5.6 (November 14th, 2018):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
- • Enabled echo speak suppport
+ • Enabled Echo Speaks device support for Voice Notifications
  • FIXED: Bug Fixes
 
 Automation App 5.4.7:
