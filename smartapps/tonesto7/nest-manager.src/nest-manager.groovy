@@ -34,11 +34,11 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.5.6" }
-def appVerDate() { "1l-11-2018" }
+def appVersion() { "5.5.7" }
+def appVerDate() { "1l-18-2018" }
 def minVersions() {
 	return [
-		"automation":["val":547, "desc":"5.4.7"],
+		"automation":["val":548, "desc":"5.4.8"],
 		"thermostat":["val":543, "desc":"5.4.3"],
 		"protect":["val":542, "desc":"5.4.2"],
 		"presence":["val":542, "desc":"5.4.2"],

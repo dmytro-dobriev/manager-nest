@@ -26,8 +26,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.4.7" }
-def appVerDate() { "11-08-2018" }
+def appVersion() { "5.4.8" }
+def appVerDate() { "11-18-2018" }
 
 preferences {
 	//startPage
@@ -2106,8 +2106,8 @@ def getRemoteSenTemp() {
 	}
 }
 
-def fixTempSetting(Double temp) {
-	def newtemp = temp
+def fixTempSetting(temp) {
+	Double newtemp = temp?.toDouble()
 	if(temp != null) {
 		if(getTemperatureScale() == "C") {
 			if(temp > 35) {    // setting was done in F
@@ -2128,7 +2128,7 @@ def setRemoteSenTstat(val) {
 }
 
 def getRemSenCoolSetTemp(curMode=null, isEco=false, useCurrent=true) {
-	def coolTemp
+	Double coolTemp
 	def theMode = curMode != null ? curMode : null
 	if(theMode == null) {
 		def tstat = schMotTstat
@@ -2155,13 +2155,13 @@ def getRemSenCoolSetTemp(curMode=null, isEco=false, useCurrent=true) {
 			if(isRemSenConfigured()) {
 				if(theMode == "cool" && coolTemp == null /* && isEco */) {
 					if(atomicState?.extTmpLastDesiredTemp) {
-						coolTemp = atomicState?.extTmpLastDesiredTemp
+						coolTemp = atomicState?.extTmpLastDesiredTemp.toDouble()
 						atomicState.remoteCoolSetSourceStr = "Last Desired Temp"
 					}
 				}
 				if(theMode == "auto" && coolTemp == null /* && isEco */) {
 					if(atomicState?.extTmpLastDesiredCTemp) {
-						coolTemp = atomicState?.extTmpLastDesiredCTemp
+						coolTemp = atomicState?.extTmpLastDesiredCTemp.toDouble()
 						atomicState.remoteCoolSetSourceStr = "Last Desired CTemp"
 					}
 				}
@@ -2193,7 +2193,7 @@ def getRemSenCoolSetTemp(curMode=null, isEco=false, useCurrent=true) {
 }
 
 def getRemSenHeatSetTemp(curMode=null, isEco=false, useCurrent=true) {
-	def heatTemp
+	Double heatTemp
 	def theMode = curMode != null ? curMode : null
 	if(theMode == null) {
 		def tstat = schMotTstat
@@ -2220,13 +2220,13 @@ def getRemSenHeatSetTemp(curMode=null, isEco=false, useCurrent=true) {
 			if(isRemSenConfigured()) {
 				if(theMode == "heat" && heatTemp == null /* && isEco */) {
 					if(atomicState?.extTmpLastDesiredTemp) {
-						heatTemp = atomicState?.extTmpLastDesiredTemp
+						heatTemp = atomicState?.extTmpLastDesiredTemp.toDouble()
 						atomicState.remoteHeatSetSourceStr = "Last Desired Temp"
 					}
 				}
 				if(theMode == "auto" && heatTemp == null /* && isEco */) {
 					if(atomicState?.extTmpLastDesiredHTemp) {
-						heatTemp = atomicState?.extTmpLastDesiredHTemp
+						heatTemp = atomicState?.extTmpLastDesiredHTemp.toDouble()
 						atomicState.remoteHeatSetSourceStr = "Last Desired HTemp"
 				 	}
 				}
@@ -7543,12 +7543,12 @@ def getSafetyTempsOk(tstat) {
 }
 
 def getGlobalDesiredHeatTemp() {
-	def t0 = parent?.settings?.locDesiredHeatTemp?.toDouble()
+	Double t0 = parent?.settings?.locDesiredHeatTemp?.toDouble()
 	return t0 ?: null
 }
 
 def getGlobalDesiredCoolTemp() {
-	def t0 = parent?.settings?.locDesiredCoolTemp?.toDouble()
+	Double t0 = parent?.settings?.locDesiredCoolTemp?.toDouble()
 	return t0 ?: null
 }
 
