@@ -46,8 +46,6 @@ metadata {
 		attribute "forecastIcon", "string"
 		attribute "feelsLike", "string"
 		attribute "percentPrecip", "string"
-		attribute "alert", "string"
-		attribute "alertKeys", "string"
 
 // original, not used
 //		attribute "sunriseDate", "string"
@@ -65,9 +63,9 @@ metadata {
 		attribute "percentPrecipLastHour", "string"
 		attribute "pressure", "string"
 */
-		attribute "solarradiation", "string"
+		//attribute "solarradiation", "string"
 		attribute "visibility", "string"
-		//attribute "pressureTrend", "string"
+	//	attribute "pressure_trend", "string"
 
 		attribute "dewpoint", "string"
 		attribute "wind_degrees", "string"
@@ -77,16 +75,19 @@ metadata {
 		attribute "pressure_mb", "string"
 		attribute "pressure_in", "string"
 		attribute "pressure_trend", "string"
-		attribute "alert2", "string"
-		attribute "alert3", "string"
-		attribute "alert4", "string"
 		attribute "weatherObservedDt", "string"
 		attribute "precip_today", "string"
 		attribute "precip_lasthour", "string"
 
+		attribute "alertKeys", "string"
+		attribute "alert", "string"
+		attribute "alert2", "string"
+		attribute "alert3", "string"
+		attribute "alert4", "string"
+
 // old versions compatibility
-		attribute "uvindex", "string"
-		attribute "windDir", "string"
+		//attribute "uvindex", "string"
+		//attribute "windDir", "string"
 	}
 
 	simulator { }
@@ -358,7 +359,7 @@ void processEvent() {
 
 			def curWeather = eventData?.data?.weatCond ?: null
 			if(curWeather == null ) {
-				Logger("There is an Issue getting the weather condition data", "warn")
+				Logger("There is an issue getting the weather condition data", "warn")
 				return
 			} else { state.curWeather = curWeather }
 
@@ -501,7 +502,7 @@ def dewpointEvent(Double tempVal) {
 	def rTempVal = wantMetric() ? tempVal.round(1) : tempVal.round(0).toInteger()
 	if(isStateChange(device, "dewpoint", rTempVal.toString())) {
 		LogAction("UPDATED | DewPoint Temperature is (${rTempVal}) | Original Temp: (${temp})")
-		sendEvent(name:'dewpoint', value: rTempVal, unit: state?.tempUnit, descriptionText: "Dew point Temperature is ${rTempVal}" , displayed: true, isStateChange: true)
+		sendEvent(name:'dewpoint', value: rTempVal, unit: state?.tempUnit, descriptionText: "Dew point Temperature is ${rTempVal}" , displayed: false, isStateChange: true)
 	} else { LogAction("DewPoint Temperature is (${rTempVal}) | Original Temp: (${temp})") }
 }
 
@@ -583,7 +584,7 @@ def checkHealth() {
 def getWeatherConditions(weatData, weatLocation) {
 //	try {
 		if(!weatData || !weatLocation) {
-			Logger("There is an Issue getting the weather condition data", "warn")
+			Logger("There is an issue getting the weather condition data", "warn")
 			return
 		} else {
 			def cur = weatData
@@ -596,7 +597,8 @@ def getWeatherConditions(weatData, weatLocation) {
 
 				state.curWeatherHum = cur?.relativeHumidity
 				def t0 = weatLocation?.location?.neighborhood != null ?  weatLocation?.location?.neighborhood.toString() + " " : ""
-				state.curWeatherLoc = t0.toString() + weatLocation?.location?.city.toString() + ", " + weatLocation?.location?.adminDistrict.toString()
+				def t1 = weatLocation?.location?.adminDistrictCode != null ? weatLocation?.location?.adminDistrictCode.toString() : (weatLocation?.location.countryCode ? weatLocation?.location.countryCode.toString() : "")
+				state.curWeatherLoc = t0.toString() + weatLocation?.location?.city.toString() + ", " + t1.toString()
 				state.curWeatherCond = cur?.wxPhraseMedium.toString()
 				state.curWeatherIcon = cur?.iconCode
 				state.zipCode = weatLocation?.location?.postalCode.toString()
@@ -629,7 +631,7 @@ def getWeatherConditions(weatData, weatLocation) {
 				wgust = Math.round(cur?.windGust ?: 0)
 				precip = Math.round(cur?.precip24Hour)
 				precip1hr = Math.round(cur?.precip1Hour)
-				sendEvent(name: "visibility", value: Math.round(cur?.visibility), unit: wantMetric() ? "km" : "miles")
+				sendEvent(name: "visibility", value: Math.round(cur?.visibility), unit: wantMetric() ? "km" : "miles", displayed:false)
 				sendEvent(name: "wind", value: wspeed as String, unit: wantMetric() ? "KPH" : "MPH")
 				sendEvent(name: "windgust", value: wgust as String, unit: wantMetric() ? "KPH" : "MPH")
 				sendEvent(name: "precip_today", value: precip as String, unit: wantMetric() ? "mm" : "in")
@@ -644,24 +646,24 @@ def getWeatherConditions(weatData, weatLocation) {
 					wgustStr += " MPH"
 				}
 				def wdir = cur?.windDirectionCardinal
-				sendEvent(name: "windDir", value: wdir) // obsolete;  for transition time
+				//sendEvent(name: "windDir", value: wdir) // obsolete;  for transition time
 				sendEvent(name: "winddirection", value: wdir)
 
 				sendEvent(name: "wind_degrees", value: cur?.windDirection)
 				state.windStr = "From the ${wdir} at ${wspeed} ${ wgust != 0 ? "Gusting to ${wgustStr}" : ""}"
 
-				sendEvent(name: "pressure_mb", value: cur?.pressureMeanSeaLevel) // MB
+				sendEvent(name: "pressure_mb", value: cur?.pressureMeanSeaLevel, displayed:false) // MB
 				t0 = cur?.pressureMeanSeaLevel.toDouble() * 0.0295301
-				sendEvent(name: "pressure_in", value: t0.round(1))
-				sendEvent(name: "pressure_trend", value: cur?.pressureTendencyTrend)
+				sendEvent(name: "pressure_in", value: t0.round(1), displayed:false)
+				sendEvent(name: "pressure_trend", value: cur?.pressureTendencyTrend, displayed:false)
 
 				sendEvent(name: "timeZoneOffset", value: weatLocation?.location?.inaTimeZone)
 				def cityValue = state?.curWeatherLoc
 				sendEvent(name: "city", value: cityValue)
 
-				sendEvent(name: "uvindex", value: cur?.uvIndex)
-				sendEvent(name: "ultravioletIndex", value: cur?.uvIndex)
-				//sendEvent(name: "solarradiation", value: cur?.current_observation?.solarradiation)
+				//sendEvent(name: "uvindex", value: cur?.uvIndex) // obsolete
+				sendEvent(name: "ultravioletIndex", value: cur?.uvIndex, displayed:false)
+				//sendEvent(name: "solarradiation", value: cur?.current_observation?.solarradiation) // not available from twc
 
 				def obsrDt = cur?.validTimeLocal
 				if(obsrDt) {
@@ -697,7 +699,7 @@ def getWeatherConditions(weatData, weatLocation) {
 def getWeatherForecast(Map weatForecast) {
 //	try {
 		if(!weatForecast) {
-			Logger("There is an Issue getting the weather forecast", "warn")
+			Logger("There is an issue getting the weather forecast", "warn")
 			return
 		} else {
 			def cur = weatForecast
@@ -721,7 +723,7 @@ def getWeatherForecast(Map weatForecast) {
 
 def getWeatherAstronomy(weatData) {
 	if(!weatData) {
-		Logger("There is an Issue getting the weather astronomy data", "warn")
+		Logger("There is an issue getting the weather astronomy data", "warn")
 	} else {
 		state.remove("curAstronomy")
 		if(getSunriseSunset(weatData)) {
@@ -768,8 +770,8 @@ def clearAlerts() {
 	while (cntr <= 4) {
 		sendEvent(name: "${aname}", value: noneString, descriptionText: "${device.displayName} has no current weather alerts")
 
-		state."walert${cntr}" = noneString
-		state."walertMessage${cntr}" = null
+		state.remove("walert${cntr}")	// = noneString
+		state.remove("walertMessage${cntr}")  // = null
 
 		cntr += 1
 		aname = "alert${cntr}"
@@ -785,7 +787,8 @@ def clearAlerts() {
 def getWeatherAlerts(weatData) {
 	try {
 		if(!weatData) {
-			Logger("There is an Issue getting the weather alert data", "warn")
+			Logger("There is an issue getting the weather alert data", "warn")
+			clearAlerts()
 			return
 		} else {
 			def cur = weatData
@@ -1729,7 +1732,7 @@ def getWeatherHTML() {
 								<b>Humidity:</b> ${state?.curWeatherHum}<br>
 								<b>Dew Point: </b>${getDewpoint()}<br>
 								<b>Pressure: </b> ${getPressure()} <br>
-								<b>UV Index: </b>${device.currentState("uvindex")?.value}<br>
+								<b>UV Index: </b>${device.currentState("ultravioletIndex")?.value}<br>
 								<b>Visibility:</b> ${getVisibility()} <br>
 								<b>Lux:</b> ${getLux()}<br>
 								<b>Sunrise:</b> ${state?.localSunrise} <br> <b>Sunset: </b> ${state?.localSunset} <br>
@@ -1814,7 +1817,7 @@ def getDeviceTile(devNum="") {
 							<b>Humidity:</b> ${state?.curWeatherHum}<br>
 							<b>Dew Point: </b>${getDewpoint()}<br>
 							<b>Pressure: </b> ${getPressure()} <br>
-							<b>UV Index: </b>${device.currentState("uvindex")?.value}<br>
+							<b>UV Index: </b>${device.currentState("ultravioletIndex")?.value}<br>
 							<b>Visibility:</b> ${getVisibility()} <br>
 							<b>Lux:</b> ${getLux()}<br>
 							<b>Sunrise:</b> ${state?.localSunrise} <br> <b>Sunset: </b> ${state?.localSunset} <br>
