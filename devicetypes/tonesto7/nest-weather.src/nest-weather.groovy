@@ -595,7 +595,8 @@ def getWeatherConditions(weatData, weatLocation) {
 				state.curFeelsTemp_c = wantMetric() ? Math.round(cur?.temperatureFeelsLike.toDouble()) : Math.round( ( (cur?.temperatureFeelsLike - 32.0) * (5/9) )).toDouble()
 
 				state.curWeatherHum = cur?.relativeHumidity
-				state.curWeatherLoc = weatLocation?.location?.neighborhood + " " + weatLocation?.location?.city.toString() + ", " + weatLocation?.location?.adminDistrict.toString()
+				def t0 = weatLocation?.location?.neighborhood != null ?  weatLocation?.location?.neighborhood.toString() + " " : ""
+				state.curWeatherLoc = t0.toString() + weatLocation?.location?.city.toString() + ", " + weatLocation?.location?.adminDistrict.toString()
 				state.curWeatherCond = cur?.wxPhraseMedium.toString()
 				state.curWeatherIcon = cur?.iconCode
 				state.zipCode = weatLocation?.location?.postalCode.toString()
@@ -650,7 +651,7 @@ def getWeatherConditions(weatData, weatLocation) {
 				state.windStr = "From the ${wdir} at ${wspeed} ${ wgust != 0 ? "Gusting to ${wgustStr}" : ""}"
 
 				sendEvent(name: "pressure_mb", value: cur?.pressureMeanSeaLevel) // MB
-				def t0 = cur?.pressureMeanSeaLevel.toDouble() * 0.0295301
+				t0 = cur?.pressureMeanSeaLevel.toDouble() * 0.0295301
 				sendEvent(name: "pressure_in", value: t0.round(1))
 				sendEvent(name: "pressure_trend", value: cur?.pressureTendencyTrend)
 
