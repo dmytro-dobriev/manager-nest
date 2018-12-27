@@ -35,7 +35,7 @@ definition(
 }
 
 def appVersion() { "5.5.8" }
-def appVerDate() { "12-26-2018" }
+def appVerDate() { "12-27-2018" }
 def minVersions() {
 	return [
 		"automation":["val":549, "desc":"5.4.9"],
@@ -6041,7 +6041,8 @@ def getWeatherConditions(force = false) {
 				curWeather = getTwcConditions()		//getWeatherFeature("conditions")	//getTwcConditions()
 				curLocation = getTwcLocation()
 			}
-			curAlerts = getTwcAlerts(curLocation?.location?.latitude.toString() + "," + curLocation?.location?.longitude.toString() )		// does not support loc    //getWeatherFeature("alerts", loc)	// getTwcAlerts(loc)
+			String myLoc = curLocation?.location?.latitude.toString() + "," + curLocation?.location?.longitude.toString()
+			curAlerts = getTwcAlerts(myLoc)		// does not support loc    //getWeatherFeature("alerts", loc)	// getTwcAlerts(loc)
 				//	atomicState?.curWeather = curWeather
 				//	atomicState?.curLocation = curLocation
 				//	atomicState?.curAlerts = curAlerts

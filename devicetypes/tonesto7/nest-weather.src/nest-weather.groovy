@@ -317,7 +317,7 @@ void refresh() {
 def generateEvent(Map eventData) {
 	//LogAction("generateEvent Parsing data ${eventData}", "trace")
 	state.eventData = eventData  // this data size is much larger than 2500 bytes
-	runIn(12, "processEvent", [overwrite: true] )
+	runIn(21, "processEvent", [overwrite: true] )
 }
 
 void processEvent() {
@@ -330,7 +330,6 @@ void processEvent() {
 	}
 	def eventData = state?.eventData
 	//LogAction("processEvent Parsing data ${eventData}", "trace")
-	state.eventData = null
 	checkStateClear()
 //	try {
 		LogAction("------------START OF API RESULTS DATA------------", "warn")
@@ -382,6 +381,7 @@ void processEvent() {
 		exceptionDataHandler(ex?.message, "generateEvent")
 	}
 */
+	state.eventData = null
 }
 
 def getStateSize()	{ return state?.toString().length() }
@@ -657,7 +657,7 @@ def getWeatherConditions(weatData, weatLocation) {
 				sendEvent(name: "pressure_in", value: t0.round(1), displayed:false)
 				sendEvent(name: "pressure_trend", value: cur?.pressureTendencyTrend, displayed:false)
 
-				sendEvent(name: "timeZoneOffset", value: weatLocation?.location?.inaTimeZone)
+				sendEvent(name: "timeZoneOffset", value: weatLocation?.location?.ianaTimeZone)
 				def cityValue = state?.curWeatherLoc
 				sendEvent(name: "city", value: cityValue)
 
@@ -794,10 +794,9 @@ def getWeatherAlerts(weatData) {
 			def cur = weatData
 			if(cur) {
 				state.curAlerts = cur
-return
 				//LogAction("cur: $cur")
-				def alerts = cur?.alerts
-				def newKeys = alerts?.collect{it.type + it.date_epoch} ?: []
+				def alerts = cur  // ?.alerts
+				def newKeys = alerts?.collect{it.messageType + it.eventTrackingNumber.toString() + it.expireTimeUTC.toString()} ?: []
 				//LogAction("${device.displayName}: newKeys: $newKeys")
 				//LogAction("${device.currentState("alertKeys")}", "trace")
 				def oldKeys = device.currentState("alertKeys")?.jsonValue
@@ -824,27 +823,28 @@ return
 
 					getWAlertFilters()
 					alerts.each { alert ->
-						def thisKey = alert.type + alert.date_epoch
-						if(alert?.description == null) {
-							Logger("null alert.description")
+						def thisKey = alert.messageType + alert.eventTrackingNumber.toString() + alert.expireTimeUTC.toString()
+						if(alert?.eventDescription == null) {
+							Logger("null alert.eventDescription")
 							return true
 						}
-						if(alert?.message == null) {
-							Logger("null alert.message")
+						if(alert?.headlineText == null) {
+							Logger("null alert.headlineText")
 							return true
 						}
-						def msg = "${alert.description} from ${alert.date} until ${alert.expires}"
+						def msg = alert.headlineText // "${alert.description} from ${alert.date} until ${alert.expires}"
 						def aname = "alert"
 						if(cntr > 1) {
 							aname = "alert${cntr}"
 						}
 						def statechange = oldKeys.contains(thisKey) ? false : true
-						sendEvent(name: "${aname}", value: pad(alert.description), descriptionText: msg, displayed: true)
+						sendEvent(name: "${aname}", value: pad(alert.eventDescription), descriptionText: msg, displayed: true)
 
 						if(statechange) { newAlerts = true }
 
-						def walert = pad(alert.description) // description
-						def walertMessage = pad(alert.message) // message
+						def curAlertDetail = getTwcAlertDetail(alert.detailKey.toString())
+						def walert = pad(alert.eventDescription) // description
+						def walertMessage = pad(curAlertDetail.alertDetail.texts[0].description) // message
 
 						// Try to format message some
 						walertMessage = walertMessage.replaceAll(/\.\.\. \.\.\./, '\n ')
@@ -859,11 +859,13 @@ return
 						state."walert${cntr}" = walert
 						state."walertMessage${cntr}" = walertMessage.take(700)
 
+						def t0 = pad(curAlertDetail.alertDetail.texts[0].description) // message
+
 						if(state?.weatherAlertNotify) {
 							if(statechange && !(thisKey in state?.lastWeatherAlertNotif)) {
-								def waf = state?.weatherAlertFilters?.findAll { alert?.message.contains(it) }
+								def waf = state?.weatherAlertFilters?.findAll { t0.contains(it) }
 								if(!waf) {
-									sendNofificationMsg("Warn", "WEATHER ALERT: ${alert?.message}")
+									sendNofificationMsg("Warn", "WEATHER ALERT: ${t0}")
 								}
 							}
 							newWalertNotif << thisKey
