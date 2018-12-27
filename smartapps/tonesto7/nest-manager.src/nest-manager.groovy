@@ -34,15 +34,15 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.5.7" }
-def appVerDate() { "1l-18-2018" }
+def appVersion() { "5.5.8" }
+def appVerDate() { "12-26-2018" }
 def minVersions() {
 	return [
-		"automation":["val":548, "desc":"5.4.8"],
+		"automation":["val":549, "desc":"5.4.9"],
 		"thermostat":["val":543, "desc":"5.4.3"],
 		"protect":["val":542, "desc":"5.4.2"],
 		"presence":["val":542, "desc":"5.4.2"],
-		"weather":["val":542, "desc":"5.4.2"],
+		"weather":["val":550, "desc":"5.5.0"],
 		"camera":["val":543, "desc":"5.4.3"],
 		"stream":["val":201, "desc":"2.0.1"]
 	]
@@ -686,6 +686,8 @@ def custWeatherPage() {
 			input ("useCustWeatherLoc", "bool", title: "Use Custom Location?", description: "", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("info_icon2.png"))
 		}
 		if(settings?.useCustWeatherLoc) {
+//ERS todo no more search
+/*
 			section("Select the Search method:") {
 				input ("custWeatherLocSrch", "bool", title: "Use semi-automated search?", description: "", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("info_icon2.png"))
 			}
@@ -701,14 +703,20 @@ def custWeatherPage() {
 					}
 				}
 			} else {
+*/
 				section("Manually Enter a Location:") {
+//ERS todo no more WU can set string...
+/*
 					href url:"https://www.wunderground.com/weatherstation/ListStations.asp", style:"embedded", required:false, title:"Weather Station ID Lookup",
 							description: "Lookup Weather Station ID", image: getAppImg("search_icon.png")
+*/
 					input("custLocStr", "text", title: "Manually Set Weather Location?", required: false, defaultValue: defZip, submitOnChange: true, image: getAppImg("weather_icon_grey.png"))
-					def validEnt = "\n\nWeather Stations: [pws:station_id]\nZipCodes: [90250]\nZWM: [zwm:zwm_number]"
+//ERS todo no more PWS
+					//def validEnt = "\n\nWeather Stations: [pws:station_id]\nZipCodes: [90250]\nZWM: [zwm:zwm_number]"
+					def validEnt = "ZipCodes: [90250]"
 					paragraph "Valid location entries are:${validEnt}", image: getAppImg("blank_icon.png")
 				}
-			}
+//			}
 		}
 		updTimestampMap("lastWeatherUpdDt", 0)
 		updTimestampMap("lastForecastUpdDt", 0)
@@ -716,6 +724,7 @@ def custWeatherPage() {
 	}
 }
 
+/*
 def getWeatherQueryResults(query) {
 	LogTrace("Getting Weather Query Results for '$query'")
 	def objMap = [:]
@@ -729,6 +738,7 @@ def getWeatherQueryResults(query) {
 	}
 	return objMap
 }
+*/
 
 def codeUpdatesPage(){
 	dynamicPage(name: "codeUpdatesPage", uninstall: false, install: false) {
@@ -2124,12 +2134,15 @@ def getWeatherConfDesc() {
 def getCustWeatherLoc(desc=false) {
 	def res = null
 	if(settings?.useCustWeatherLoc) {
+/*
 		if(settings?.custWeatherLocSrch == true) {
 			if(settings?.custWeatherResultItems != null) {
 				res = desc ? (settings?.custWeatherResultItems[0]?.split("\\:"))[1].split("\\.")[0] : settings?.custWeatherResultItems[0].toString()
 			}
-		} else if(settings?.custLocStr != null) {
-			res = settings?.custLocStr
+		} else
+*/
+		if(settings?.custLocStr != null) {
+			res = settings?.custLocStr.toString()
 		}
 	}
 	return res
@@ -3850,9 +3863,9 @@ def receiveEventData(eventData=null) {
 				atomicState?.ssdpOn = false
 				subscriber()
 			}
-			apiIssueEvent(false)
-			atomicState?.apiRateLimited = false
-			atomicState?.apiCmdFailData = null
+			//apiIssueEvent(false)
+			//atomicState?.apiRateLimited = false
+			//atomicState?.apiCmdFailData = null
 			incrementCntByKey("apiRestStrEvtCnt")
 		}
 		if(atomicState?.forceChildUpd || atomicState?.needChildUpd || devChgd) {
@@ -4179,8 +4192,8 @@ def updateChildData(force = false) {
 		if(atomicState?.thermostats && getWeatherDeviceInst()) {
 			def cur = getWeatherData("curWeather")
 			if(cur) {
-				curWeatherData["temp"] = getTemperatureScale() == "C" ? (cur?.current_observation?.temp_c ? Math.round(cur?.current_observation?.temp_c.toDouble()) : null) : (cur?.current_observation?.temp_f ? Math.round(cur?.current_observation?.temp_f).toInteger() : null)
-				curWeatherData["hum"] = cur?.current_observation?.relative_humidity ?: 0
+				curWeatherData["temp"] = cur?.temperature ?: null
+				curWeatherData["hum"] = cur?.relativeHumidity ?: 0
 			}
 		}
 		def showGraphs = settings?.tstatShowHistoryGraph == false ? false : true
@@ -4344,7 +4357,7 @@ def updateChildData(force = false) {
 			}
 			else if(devId && atomicState?.weatherDevice && devId == getNestWeatherId()) {
 				//devCodeIds["weather"] = it?.getDevTypeId()
-				def wData1 = ["weatCond":getWeatherData("curWeather"), "weatForecast":getWeatherData("curForecast"), "weatAstronomy":getWeatherData("curAstronomy"), "weatAlerts":getWeatherData("curAlerts")]
+				def wData1 = ["weatCond":getWeatherData("curWeather"), "weatForecast":getWeatherData("curForecast"), /* "weatAstronomy":getWeatherData("curAstronomy"),*/ "weatAlerts":getWeatherData("curAlerts"), weatLocation:getWeatherData("curLocation")]
 				def wData = ["data":wData1, "tz":nestTz, "mt":useMt, "debug":dbg, "logPrefix":logNamePrefix, "apiIssues":api,
 							"allowDbException":allowDbException, "weathAlertNotif":settings?.weathAlertNotif, "latestVer":latestWeathVer()?.ver?.toString(),
 							"clientBl":clientBl, "hcTimeout":hcLongTimeout, "mobileClientType":mobClientType, "enRemDiagLogging":remDiag, "hcRepairEnabled":hcRepairEnabled,
@@ -4378,7 +4391,8 @@ def updateChildData(force = false) {
 			else if(devId && atomicState?.vThermostats && atomicState?."vThermostat${devId}") {
 				def physdevId = atomicState?."vThermostatMirrorId${devId}"
 				if(physdevId && atomicState?.thermostats && atomicState?.deviceData?.thermostats && atomicState?.deviceData?.thermostats[physdevId]) {
-					def data = atomicState?.deviceData?.thermostats[physdevId]
+					def tmp_data = atomicState?.deviceData?.thermostats[physdevId]
+					def data = tmp_data
 					def defmin = fixTempSetting(atomicState?."${physdevId}_safety_temp_min" ?: null)
 					def defmax = fixTempSetting(atomicState?."${physdevId}_safety_temp_max" ?: null)
 					def safetyTemps = [ "min":defmin, "max":defmax ]
@@ -4389,6 +4403,7 @@ def updateChildData(force = false) {
 					def comfortHumidity = settings?."${physdevId}_comfort_humidity_max" ?: 80
 					def automationChildApp = getChildApps().find{ it.id == atomicState?."vThermostatChildAppId${devId}" }
 					if(automationChildApp != null && !automationChildApp.getIsAutomationDisabled()) {
+						data = new JsonSlurper().parseText(JsonOutput.toJson(tmp_data))  // This is a deep clone as object is same reference
 						def tempC = 0.0
 						def tempF = 0.0
 						if(getTemperatureScale() == "C") {
@@ -4696,64 +4711,80 @@ def apiVar() {
 	return api
 }
 
+// There are 3 different return values
+def getPdevId(Boolean virt, devId) {
+	def pChild
+	if(virt && atomicState?.vThermostats && devId) {
+		if(atomicState?."vThermostat${devId}") {
+			def pdevId = atomicState?."vThermostatMirrorId${devId}"
+			if(pdevId) { pChild = getChildDevice(pdevId) }
+			if(pChild) { return pChild }
+			else { return "00000" }
+		}
+	}
+	return pChild
+}
+
 def setEtaState(child, etaData, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? child?.toString() : child?.device?.deviceNetworkId.toString()
-	def virt = virtual.toBoolean()
+
+	def str1 = "setEtaState | "
+	def strAction = "BAD data"
+	def strArgs = " ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) | Trip_Id: ${etaData?.trip_id} | Begin: ${etaData?.estimated_arrival_window_begin} | End: ${etaData?.estimated_arrival_window_end}"
+
 	if(etaData?.trip_id && etaData?.estimated_arrival_window_begin && etaData?.estimated_arrival_window_end) {
 		def etaObj = [ "trip_id":"${etaData.trip_id}", "estimated_arrival_window_begin":"${etaData.estimated_arrival_window_begin}", "estimated_arrival_window_end":"${etaData.estimated_arrival_window_end}" ]
 		// "trip_id":"sample-trip-id","estimated_arrival_window_begin":"2014-10-31T22:42:00.000Z","estimated_arrival_window_end":"2014-10-31T23:59:59.000Z"
 		// new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))
 
-		if(virt && atomicState?.vThermostats && devId) {
-			if(atomicState?."vThermostat${devId}") {
-				def pdevId = atomicState?."vThermostatMirrorId${devId}"
-				def pChild
-				if(pdevId) { pChild = getChildDevice(pdevId) }
-
-				if(pChild) {
-					pChild.setNestEta(etaData?.trip_id, etaData?.estimated_arrival_window_begin, etaData.estimated_arrival_window_end) {
-					}
-				} else {
-					LogAction("setEtaState | CANNOT Set Eta (${child?.device?.displayName} - ${devId}) | Trip_Id: ${etaData.trip_id} | Begin: ${etaData?.estimated_arrival_window_begin} | End: ${etaData?.estimated_arrival_window_end}", "warn", true)
-				}
-			}
-		} else {
-			LogAction("setEtaState | Setting Eta (${child?.device?.displayName} - ${devId}) | Trip_Id: ${etaData?.trip_id} | Begin: ${etaData?.estimated_arrival_window_begin} | End: ${etaData?.estimated_arrival_window_end}", "debug", true)
+		strAction = "Setting Eta"
+		def pChild = getPdevId(virtual.toBoolean(), devId)
+		if(pChild == null) {
+			LogAction(str1+strAction+strArgs, "debug", true)
 			return sendNestApiCmd(atomicState?.structures, apiVar().rootTypes.struct, apiVar().cmdObjs.eta, etaObj, devId)
+		} else {
+			if(pChild != "00000") {
+				LogAction(str1+strAction+strArgs, "debug", true)
+				pChild.setNestEta(etaData?.trip_id, etaData?.estimated_arrival_window_begin, etaData.estimated_arrival_window_end) {
+				}
+				return
+			} else {
+				strAction = "CANNOT Set Eta"
+			}
 		}
-	} else {
-		LogAction("setEtaState | BAD data (${child?.device?.displayName} - ${devId}) | Trip_Id: ${etaData?.trip_id} | Begin: ${etaData?.estimated_arrival_window_begin} | End: ${etaData?.estimated_arrival_window_end}", "warn", true)
 	}
+	LogAction(str1+strAction+strArgs, "warn", true)
 }
 
 def cancelEtaState(child, trip_id, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? child?.toString() : child?.device?.deviceNetworkId.toString()
-	def virt = virtual.toBoolean()
+
+	def str1 = "cancelEtaState | "
+	def strAction = "BAD data"
+	def strArgs = " ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) | Trip_Id: ${trip_id}"
+
 	if(trip_id) {
 		def etaObj = [ "trip_id":"${trip_id}", "estimated_arrival_window_begin":0, "estimated_arrival_window_end":0 ]
 		// "trip_id":"sample-trip-id","estimated_arrival_window_begin":"2014-10-31T22:42:00.000Z","estimated_arrival_window_end":"2014-10-31T23:59:59.000Z"
 		// new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))
 
-		if(virt && atomicState?.vThermostats && devId) {
-			if(atomicState?."vThermostat${devId}") {
-				def pdevId = atomicState?."vThermostatMirrorId${devId}"
-				def pChild
-				if(pdevId) { pChild = getChildDevice(pdevId) }
-
-				if(pChild) {
-					pChild.cancelNestEta(trip_id) {
-					}
-				} else {
-					LogAction("cancelEtaState | CANNOT Set Eta (${child?.device?.displayName} - ${devId}) | Trip_Id: ${trip_id}", "warn", true)
-				}
-			}
-		} else {
-			LogAction("cancelEtaState | Cancel Eta (${child?.device?.displayName} - ${devId}) | Trip_Id: ${trip_id}", "debug", true)
+		strAction = "Cancel Eta"
+		def pChild = getPdevId(virtual.toBoolean(), devId)
+		if(pChild == null) {
+			LogAction(str1+strAction+strArgs, "debug", true)
 			return sendNestApiCmd(atomicState?.structures, apiVar().rootTypes.struct, apiVar().cmdObjs.eta, etaObj, devId)
+		} else {
+			if(pChild != "00000") {
+				LogAction(str1+strAction+strArgs, "debug", true)
+				pChild.cancelNestEta(trip_id) {
+				}
+				return
+			} else {
+				strAction = "CANNOT Cancel Eta"
+			}
 		}
-	} else {
-		LogAction("cancelEtaState | BAD data (${child?.device?.displayName} - ${devId}) | Trip_Id: ${trip_id}", "warn", true)
 	}
+	LogAction(str1+strAction+strArgs, "warn", true)
 }
 
 def setCamStreaming(child, streamOn) {
@@ -4763,19 +4794,17 @@ def setCamStreaming(child, streamOn) {
 	return sendNestApiCmd(devId, apiVar().rootTypes.cam, apiVar().cmdObjs.streaming, val, devId)
 }
 
-def setCamLabel(child, label, virtual=false) {
+def setCamLabel(child, label) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
 	def val = label
-	def virt = virtual.toBoolean()
 // This is not used anywhere. A command to set label is not available in the dth for a callback
 	LogAction("setCamLabel | Setting Camera (${child?.device?.displayName} - ${devId}) Label to (${val})", "debug", true)
 	return sendNestApiCmd(devId, apiVar().rootTypes.cam, apiVar().cmdObjs.setLabel, val, devId)
 }
 
-def setProtLabel(child, label, virtual=false) {
+def setProtLabel(child, label) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
 	def val = label
-	def virt = virtual.toBoolean()
 // This is not used anywhere. A command to set label is not available in the dth for a callback
 	LogAction("setProtLabel | Setting Protect (${child?.device?.displayName} - ${devId}) Label to (${val})", "debug", true)
 	return sendNestApiCmd(devId, apiVar().rootTypes.cos, apiVar().cmdObjs.setLabel, val, devId)
@@ -4784,24 +4813,15 @@ def setProtLabel(child, label, virtual=false) {
 def setStructureAway(child, value, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
 	def val = value?.toBoolean()
-	def virt = virtual.toBoolean()
 
-	if(virt && atomicState?.vThermostats && devId) {
-		if(atomicState?."vThermostat${devId}") {
-			def pdevId = atomicState?."vThermostatMirrorId${devId}"
-			def pChild
-			if(pdevId) { pChild = getChildDevice(pdevId) }
+	def str1 = "setStructureAway | "
+	def strAction = ""
+	strAction = "Setting Nest Location:"
+	def strArgs = " (${child?.device?.displayName} ${!devId ? "" : "-  ${devId}"} to (${val ? "Away" : "Home"})"
 
-			if(pChild) {
-				if(val) {
-					pChild.away()
-				} else {
-					pChild.present()
-				}
-			} else { LogAction("setStructureAway - CANNOT Set Thermostat${pdevId} Presence: (${val}) child ${pChild}", "warn", true) }
-		}
-	} else {
-		LogAction("setStructureAway - Setting Nest Location: (${child?.device?.displayName})${!devId ? "" : " ${devId}"} to (${val ? "Away" : "Home"})", "debug", true)
+	def pChild = getPdevId(virtual.toBoolean(), devId)
+	if(pChild == null) {
+		LogAction(str1+strAction+strArgs, "debug", true)
 		if(val) {
 			def ret = sendNestApiCmd(atomicState?.structures, apiVar().rootTypes.struct, apiVar().cmdObjs.away, "away", devId)
 			// Below is to ensure automations read updated value even if queued
@@ -4823,13 +4843,25 @@ def setStructureAway(child, value, virtual=false) {
 			}
 			return ret
 		}
+	} else {
+		if(pChild != "00000") {
+			LogAction(str1+strAction+strArgs, "debug", true)
+			if(val) {
+				pChild.away()
+			} else {
+				pChild.present()
+			}
+			return
+		} else {
+			strAction = "CANNOT Set Location"
+		}
 	}
+	LogAction(str1+strAction+strArgs, "warn", true)
 }
-
+	
 def setTstatTempScale(child, tScale, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
 	def tempScale = tScale.toString()
-	def virt = virtual.toBoolean()
 
 // INCOMPLETE: This is not used anywhere. A command to set Temp Scale is not available in the dth for a callback
 
@@ -4840,7 +4872,6 @@ def setTstatTempScale(child, tScale, virtual=false) {
 def setTstatLabel(child, label, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
 	def val = label
-	def virt = virtual.toBoolean()
 
 // INCOMPLETE: This is not used anywhere. A command to set label is not available in the dth for a callback
 
@@ -4851,171 +4882,194 @@ def setTstatLabel(child, label, virtual=false) {
 def setFanMode(child, fanOn, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
 	def val = fanOn.toBoolean()
-	def virt = virtual.toBoolean()
 
-	if(virt && atomicState?.vThermostats && devId) {
-		if(atomicState?."vThermostat${devId}") {
-			def pdevId = atomicState?."vThermostatMirrorId${devId}"
-			def pChild
-			if(pdevId) { pChild = getChildDevice(pdevId) }
+	def str1 = "setFanMode | "
+	def strAction = ""
+	strAction = "Setting"
+	def strArgs = " ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) Fan Mode to (${val ? "On" : "Auto"})"
 
-			if(pChild) {
-				if(val) {
-					pChild.fanOn()
-				} else {
-					pChild.fanAuto()
-				}
-			} else { LogAction("setFanMode - CANNOT Set Thermostat${pdevId} FanMode: (${fanOn}) child ${pChild}", "warn", true) }
-		}
-	} else {
-		LogAction("setFanMode | Setting ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) Fan Mode to (${val ? "On" : "Auto"})", "debug", true)
+	def pChild = getPdevId(virtual.toBoolean(), devId)
+	if(pChild == null) {
+		LogAction(str1+strAction+strArgs, "debug", true)
 		return sendNestApiCmd(devId, apiVar().rootTypes.tstat, apiVar().cmdObjs.fanActive, val, devId)
+	} else {
+		if(pChild != "00000") {
+			LogAction(str1+strAction+strArgs, "debug", true)
+			if(val) {
+				pChild.fanOn()
+			} else {
+				pChild.fanAuto()
+			}
+			return
+		} else {
+			strAction = "CANNOT Set"
+		}
 	}
+	LogAction(str1+strAction+strArgs, "warn", true)
 }
 
 def setHvacMode(child, mode, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
-	def virt = virtual.toBoolean()
 
-	if(virt && atomicState?.vThermostats && devId) {
-		if(atomicState?."vThermostat${devId}") {
-			def pdevId = atomicState?."vThermostatMirrorId${devId}"
-			def pChild
-			if(pdevId) { pChild = getChildDevice(pdevId) }
+	def str1 = "setHvacMode | "
+	def strAction = ""
+	strAction = "Setting"
+	def strArgs = " ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) HVAC Mode to (${mode})"
 
-			if(pChild) {
-				switch (mode) {
-					case "heat-cool":
-						pChild.auto()
-						break
-					case "heat":
-						pChild.heat()
-						break
-					case "cool":
-						pChild.cool()
-						break
-					case "eco":
-						pChild.eco()
-						break
-					case "off":
-						pChild.off()
-						break
-					case "emergency heat":
-						pChild.emergencyHeat()
-						break
-					default:
-						LogAction("setHvacMode: Invalid Request: ${mode}", "warn", true)
-						break
-				}
-			} else { LogAction("setHvacMode - CANNOT Set Thermostat${pdevId} Mode: (${mode}) child ${pChild}", "warn", true) }
-		}
-	} else {
-		LogAction("setHvacMode | Setting ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) HVAC Mode to (${mode})", "debug", true)
+	def pChild = getPdevId(virtual.toBoolean(), devId)
+	if(pChild == null) {
+		LogAction(str1+strAction+strArgs, "debug", true)
 		return sendNestApiCmd(devId, apiVar().rootTypes.tstat, apiVar().cmdObjs.hvacMode, mode.toString(), devId)
+	} else {
+		if(pChild != "00000") {
+			LogAction(str1+strAction+strArgs, "debug", true)
+			switch (mode) {
+				case "heat-cool":
+					pChild.auto()
+					break
+				case "heat":
+					pChild.heat()
+					break
+				case "cool":
+					pChild.cool()
+					break
+				case "eco":
+					pChild.eco()
+					break
+				case "off":
+					pChild.off()
+					break
+				case "emergency heat":
+					pChild.emergencyHeat()
+					break
+				default:
+					LogAction("setHvacMode: Invalid Request: ${mode}", "warn", true)
+					break
+			}
+			return
+		} else {
+			strAction = "CANNOT Set "
+		}
 	}
+
+	LogAction(str1+strAction+strArgs, "warn", true)
 }
 
 def setTargetTemp(child, unit, temp, mode, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
-	def virt = virtual.toBoolean()
 
-	if(virt && atomicState?.vThermostats && devId) {
-		if(atomicState?."vThermostat${devId}") {
-			def pdevId = atomicState?."vThermostatMirrorId${devId}"
-			def pChild
-			if(pdevId) { pChild = getChildDevice(pdevId) }
-			def appId = atomicState?."vThermostatChildAppId${devId}"
-			def automationChildApp
-			if(appId) { automationChildApp = getChildApps().find{ it?.id == appId } }
-			if(automationChildApp) {
-				def res = automationChildApp.remSenTempUpdate(temp,mode)
-				if(res) { return }
-			}
-			if(pChild) {
-				if(mode == 'cool') {
-					pChild.setCoolingSetpoint(temp)
-				} else if(mode == 'heat') {
-					pChild.setHeatingSetpoint(temp)
-				} else { LogAction("setTargetTemp - UNKNOWN MODE (${mode}) child ${pChild}", "warn", true) }
-			} else { LogAction("setTargetTemp - CANNOT Set Thermostat${pdevId} Temp: (${temp}${tUnitStr()} | Mode: (${mode}) | child ${pChild}", "warn", true) }
-		}
-	} else {
-		LogAction("setTargetTemp | Setting ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) Target Temp to (${temp}${tUnitStr()})", "debug", true)
+	def str1 = "setTargetTemp | "
+	def strAction = ""
+	strAction = "Setting"
+	def strArgs = " ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) Target Temp to (${temp}${tUnitStr()})"
+
+	def pChild = getPdevId(virtual.toBoolean(), devId)
+	if(pChild == null) {
+		LogAction(str1+strAction+strArgs, "debug", true)
 		if(unit == "C") {
 			return sendNestApiCmd(devId, apiVar().rootTypes.tstat, apiVar().cmdObjs.targetC, temp, devId)
 		}
 		else {
 			return sendNestApiCmd(devId, apiVar().rootTypes.tstat, apiVar().cmdObjs.targetF, temp, devId)
 		}
+	} else {
+		LogAction(str1+strAction+strArgs, "debug", true)
+		def appId = atomicState?."vThermostatChildAppId${devId}"
+		def automationChildApp
+		if(appId) { automationChildApp = getChildApps().find{ it?.id == appId } }
+		if(automationChildApp) {
+			def res = automationChildApp.remSenTempUpdate(temp,mode)
+			if(res) { return }
+		}
+		if(pChild != "00000") {
+			if(mode == 'cool') {
+				pChild.setCoolingSetpoint(temp)
+			} else if(mode == 'heat') {
+				pChild.setHeatingSetpoint(temp)
+			} else { LogAction("setTargetTemp - UNKNOWN MODE (${mode}) child ${pChild}", "warn", true) }
+			return
+		} else {
+			strAction = "CANNOT Set"
+		}
 	}
+
+	LogAction(str1+strAction+strArgs, "warn", true)
 }
 
 def setTargetTempLow(child, unit, temp, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
-	def virt = virtual.toBoolean()
 
-	if(virt && atomicState?.vThermostats && devId) {
-		if(atomicState?."vThermostat${devId}") {
-			def pdevId = atomicState?."vThermostatMirrorId${devId}"
-			def pChild
-			if(pdevId) { pChild = getChildDevice(pdevId) }
+	def str1 = "setTargetTempLow | "
+	def strAction = ""
+	strAction = "Setting"
+	def strArgs = " ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) Target Temp Low to (${temp}${tUnitStr()})"
 
-			def appId = atomicState?."vThermostatChildAppId${devId}"
-			def automationChildApp
-			if(appId) { automationChildApp = getChildApps().find{ it?.id == appId } }
-
-			if(automationChildApp) {
-				def res = automationChildApp.remSenTempUpdate(temp,"heat")
-				if(res) { return }
-			}
-
-			if(pChild) {
-					pChild.setHeatingSetpoint(temp)
-			} else { LogAction("setTargetTemp - CANNOT Set Thermostat${pdevId} HEAT: (${temp})${unit} child ${pChild}", "warn", true) }
-		}
-	} else {
-		LogAction("setTargetTempLow | Setting ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) Target Temp Low to (${temp}${tUnitStr()})", "debug", true)
+	def pChild = getPdevId(virtual.toBoolean(), devId)
+	if(pChild == null) {
+		LogAction(str1+strAction+strArgs, "debug", true)
 		if(unit == "C") {
 			return sendNestApiCmd(devId, apiVar().rootTypes.tstat, apiVar().cmdObjs.targetLowC, temp, devId)
 		}
 		else {
 			return sendNestApiCmd(devId, apiVar().rootTypes.tstat, apiVar().cmdObjs.targetLowF, temp, devId)
 		}
+	} else {
+		LogAction(str1+strAction+strArgs, "debug", true)
+		def appId = atomicState?."vThermostatChildAppId${devId}"
+		def automationChildApp
+		if(appId) { automationChildApp = getChildApps().find{ it?.id == appId } }
+
+		if(automationChildApp) {
+			def res = automationChildApp.remSenTempUpdate(temp,"heat")
+			if(res) { return }
+		}
+		if(pChild != "00000") {
+			pChild.setHeatingSetpoint(temp)
+			return
+		} else {
+			strAction = "CANNOT Set"
+		}
 	}
+
+	LogAction(str1+strAction+strArgs, "warn", true)
 }
 
 def setTargetTempHigh(child, unit, temp, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
-	def virt = virtual.toBoolean()
 
-	if(virt && atomicState?.vThermostats && devId) {
-		if(atomicState?."vThermostat${devId}") {
-			def pdevId = atomicState?."vThermostatMirrorId${devId}"
-			def pChild
-			if(pdevId) { pChild = getChildDevice(pdevId) }
+	def str1 = "setTargetTempHigh | "
+	def strAction = ""
+	strAction = "Setting"
+	def strArgs = " ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) Target Temp High to (${temp}${tUnitStr()})"
 
-			def appId = atomicState?."vThermostatChildAppId${devId}"
-			def automationChildApp
-			if(appId) { automationChildApp = getChildApps().find{ it?.id == appId } }
-
-			if(automationChildApp) {
-				def res = automationChildApp.remSenTempUpdate(temp,"cool")
-				if(res) { return }
-			}
-
-			if(pChild) {
-				pChild.setCoolingSetpoint(temp)
-			} else { LogAction("setTargetTemp - CANNOT Set Thermostat${pdevId} COOL: (${temp})${unit} child ${pChild}", "warn", true) }
-		}
-	} else {
-		LogAction("setTargetTempHigh | Setting ${virtual ? "Virtual " : ""}Thermostat (${child?.device?.displayName} - ${devId}) Target Temp High to (${temp}${tUnitStr()})", "debug", true)
+	def pChild = getPdevId(virtual.toBoolean(), devId)
+	if(pChild == null) {
+		LogAction(str1+strAction+strArgs, "debug", true)
 		if(unit == "C") {
 			return sendNestApiCmd(devId, apiVar().rootTypes.tstat, apiVar().cmdObjs.targetHighC, temp, devId)
 		}
 		else {
 			return sendNestApiCmd(devId, apiVar().rootTypes.tstat, apiVar().cmdObjs.targetHighF, temp, devId)
 		}
+	} else {
+		LogAction(str1+strAction+strArgs, "debug", true)
+		def appId = atomicState?."vThermostatChildAppId${devId}"
+		def automationChildApp
+		if(appId) { automationChildApp = getChildApps().find{ it?.id == appId } }
+
+		if(automationChildApp) {
+			def res = automationChildApp.remSenTempUpdate(temp,"cool")
+			if(res) { return }
+		}
+		if(pChild != "00000") {
+			pChild.setCoolingSetpoint(temp)
+			return
+		} else {
+			strAction = "CANNOT Set"
+		}
 	}
+
+	LogAction(str1+strAction+strArgs, "warn", true)
 }
 
 def sendNestApiCmd(cmdTypeId, cmdType, cmdObj, cmdObjVal, childId) {
@@ -5972,37 +6026,43 @@ def getWeatherConditions(force = false) {
 			def loc = ""
 			def curWeather = ""
 			def curForecast = ""
-			def curAstronomy = ""
+			def curLocation = ""
 			def curAlerts = ""
+			def curAlertdetail = ""
 			def err = false
 			def chgd = false
-			def custLoc = getCustWeatherLoc()
+			def custLoc = getCustWeatherLoc().toString()
+
 			if(custLoc) {
-				loc = custLoc
-				curWeather = getWeatherFeature("conditions", loc)
-				curAlerts = getWeatherFeature("alerts", loc)
+				loc = custLoc.toString()
+				curWeather = getTwcConditions(/*loc*/)	//getWeatherFeature("conditions", loc)	// getTwcConditions(loc)
+				curLocation = getTwcLocation(/*loc*/)
 			} else {
-				curWeather = getWeatherFeature("conditions")
-				curAlerts = getWeatherFeature("alerts")
+				curWeather = getTwcConditions()		//getWeatherFeature("conditions")	//getTwcConditions()
+				curLocation = getTwcLocation()
 			}
+			curAlerts = getTwcAlerts(curLocation?.location?.latitude.toString() + "," + curLocation?.location?.longitude.toString() )		// does not support loc    //getWeatherFeature("alerts", loc)	// getTwcAlerts(loc)
+				//	atomicState?.curWeather = curWeather
+				//	atomicState?.curLocation = curLocation
+				//	atomicState?.curAlerts = curAlerts
 			if( getLastForecastUpdSec() > (1800) ||
-			    (storageApp && (!getStorageVal("curForecast") || !getStorageVal("curAstronomy"))) ||
-			    (!storageApp && (!atomicState?.curForecast || !atomicState?.curAstronomy))) {
+			    (storageApp && (!getStorageVal("curForecast") /* || !getStorageVal("curAstronomy") */ )) ||
+			    (!storageApp && (!atomicState?.curForecast /* || !atomicState?.curAstronomy */ ))) {
 				if(custLoc) {
-					loc = custLoc
-					curForecast = getWeatherFeature("forecast", loc)
-					curAstronomy = getWeatherFeature("astronomy", loc)
+					loc = custLoc.toString()
+					curForecast = getTwcForecast(/*loc*/)			//getWeatherFeature("forecast", loc)	// getTwcForecast(loc)
+					//curAstronomy = getWeatherFeature("astronomy", loc)	// getTwcForecast(loc)
 				} else {
-					curForecast = getWeatherFeature("forecast")
-					curAstronomy = getWeatherFeature("astronomy")
+					curForecast = getTwcForecast()				//getWeatherFeature("forecast")		// getTwcForecast()
+					//curAstronomy = getWeatherFeature("astronomy")		// getTwcForecast()
 				}
-				if(curForecast && curAstronomy) {
+				if(curForecast /*&& curAstronomy*/) {
 					if(storageApp) {
 						updStorageVal("curForecast", curForecast)
-						updStorageVal("curAstronomy", curAstronomy)
+						//updStorageVal("curAstronomy", curAstronomy)
 					} else {
 						atomicState?.curForecast = curForecast
-						atomicState?.curAstronomy = curAstronomy
+						//atomicState?.curAstronomy = curAstronomy
 					}
 					chgd = true
 					updTimestampMap("lastForecastUpdDt", getDtNow())
@@ -6012,16 +6072,20 @@ def getWeatherConditions(force = false) {
 					err = true
 				}
 			}
-			if(curWeather && curAlerts) {
+			//if(curWeather && curAlerts) {
+			if(curWeather) {
 				if(storageApp) {
 					updStorageVal("curWeather", curWeather)
+					updStorageVal("curLocation", curLocation)
 				} else {
 					atomicState?.curWeather = curWeather
+					atomicState?.curLocation = curLocation
 				}
 				chgd = true
 /*
 	Try to reduce size of alerts if they are big to save state space
 */
+/*
 				def alrt = curAlerts?.alerts
 				def cntr = 0
 				alrt.each { al ->
@@ -6030,6 +6094,9 @@ def getWeatherConditions(force = false) {
 					}
 					cntr++
 				}
+ERS todo				curAlertdetail = ""
+				curAlertdetail = getTwcAlertDetail(alertId)
+*/
 				if(storageApp) {
 					updStorageVal("curAlerts", curAlerts)
 				} else {
@@ -6085,20 +6152,26 @@ def getWeatherData(dataName) {
 	return null
 }
 
+def getWLocation() {
+	return getWeatherData("curLocation") // getTwcConditions()
+}
+
 def getWData() {
-	return getWeatherData("curWeather")
+	return getWeatherData("curWeather") // getTwcConditions()
 }
 
 def getWForecastData() {
-	return getWeatherData("curForecast")
+	return getWeatherData("curForecast") // getTwcForecast()
 }
 
+/*
 def getWAstronomyData() {
 	return getWeatherData("curAstronomy")
 }
+*/
 
 def getWAlertsData() {
-	return getWeatherData("curAlerts")
+	return getWeatherData("curAlerts") // getTwcAlerts
 }
 
 def getWeatherDeviceInst() {
@@ -7044,7 +7117,7 @@ def addRemoveDevices(uninst = null) {
 			runIn(5, "cleanStorage", [overwrite: true]) // calling the child truncates logs
 			atomicState?.curWeather = null
 			atomicState?.curForecast = null
-			atomicState?.curAstronomy = null
+			//atomicState?.curAstronomy = null
 			atomicState?.curAlerts = null
 		}
 
@@ -7749,7 +7822,7 @@ def stateCleanup() {
 		"automationsActive", "temperatures", "powers", "energies", "use24Time", "useMilitaryTime", "advAppDebug", "appDebug", "awayModes", "homeModes", "childDebug", "updNotifyWaitVal",
 		"appApiIssuesWaitVal", "misPollNotifyWaitVal", "misPollNotifyMsgWaitVal", "devHealthMsgWaitVal", "nestLocAway", "heardFromRestDt", "autoSaVer", "lastHeardFromRestDt",
 		"remDiagApp", "remDiagClientId", "restorationInProgress", "diagManagAppStateFilters", "diagChildAppStateFilters", "lastFinishedPoll","tDevVer", "pDevVer", "camDevVer", "presDevVer", "weatDevVer", "vtDevVer", "streamDevVer",
-		/* "curAlerts", "curAstronomy", "curForecast", "curWeather", */ "detailEventHistory", "detailExecutionHistory", "evalExecutionHistory", "lastForecastUpdDt", "lastWeatherUpdDt",
+		/* "curAlerts", */ "curAstronomy", /* "curForecast", "curWeather", */ "detailEventHistory", "detailExecutionHistory", "evalExecutionHistory", "lastForecastUpdDt", "lastWeatherUpdDt",
 		"lastMsg", "lastMsgDt", "qFirebaseRequested", "qmetaRequested", "debugAppendAppName", "ReallyChanged", "tsMigrationDone", "pushTested", "lastDevHealthMsgData"
  	]
 
