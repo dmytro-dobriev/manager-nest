@@ -787,7 +787,7 @@ def clearAlerts() {
 def getWeatherAlerts(weatData) {
 	try {
 		if(!weatData) {
-			Logger("There is an issue getting the weather alert data", "warn")
+			//Logger("There is an issue getting the weather alert data", "warn")
 			clearAlerts()
 			return
 		} else {
@@ -1847,7 +1847,7 @@ def getDeviceTile(devNum="") {
 					</div>
 					<p style="font-size: 12px; font-weight: normal; text-align: center;">Tap Icon to View Forecast</p>
 
-					${historyGraphHtml()}
+					${historyGraphHtml(devNum)}
 
 					<div class="row topBorder">
 						<div class="centerText offset-by-three six columns">
@@ -1962,7 +1962,7 @@ def historyGraphHtml(devNum="") {
 				}
 			</script>
 			<h4 style="font-size: 22px; font-weight: bold; text-align: center; background: #00a1db; color: #f5f5f5;">Event History</h4>
-			<div id="chart_div" style="width: 100%; height: 225px;"></div>
+			<div id="chart_div${devNum}" style="width: 100%; height: 225px;"></div>
 			"""
 		} else {
 			html = """

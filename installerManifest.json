@@ -51,7 +51,7 @@
             "name": "Nest Thermostat",
             "iconUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/App/thermostat_icon.png",
             "published": true,
-            "version": "5.4.3",
+            "version": "5.4.4",
             "appUrl": "deviceTypes/tonesto7/nest-thermostat.src/nest-thermostat.groovy",
             "optional": false
         },
