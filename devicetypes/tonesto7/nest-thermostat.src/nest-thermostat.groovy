@@ -13,7 +13,7 @@
 import java.text.SimpleDateFormat
 import groovy.time.*
 
-def devVer() { return "5.4.3" }
+def devVer() { return "5.4.4" }
 
 // for the UI
 metadata {
@@ -3595,7 +3595,7 @@ def getDeviceTile(devNum) {
 				state?.temperatureTableYesterday?.size() > 0 &&
 				state?.humidityTable?.size() > 0 &&
 				state?.coolSetpointTable?.size() > 0 &&
-				state?.heatSetpointTable?.size() > 0) ? showChartHtml() : (state?.showGraphs ? hideChartHtml() : "")
+				state?.heatSetpointTable?.size() > 0) ? showChartHtml(devNum) : (state?.showGraphs ? hideChartHtml() : "")
 
 		def whoSetEco = device?.currentValue("whoSetEcoMode")
 		def whoSetEcoDt = state?.ecoDescDt
@@ -4093,13 +4093,13 @@ def showChartHtml(devNum="") {
 		  <div class="swiper-slide">
 		  	<section class="sectionBg">
 			  <h3>Event History</h3>
-	  		  <div id="main_graph" style="width: 100%; height: 425px;"></div>
+	  		  <div id="main_graph${devNum}" style="width: 100%; height: 425px;"></div>
 			</section>
   		  </div>
   		  <div class="swiper-slide">
 		  	<section class="sectionBg">
 				<h3>Usage History</h3>
-  		    	<div id="use_graph" style="width: 100%; height: 425px;"></div>
+  		    	<div id="use_graph${devNum}" style="width: 100%; height: 425px;"></div>
 			</section>
   		  </div>
 	  """
