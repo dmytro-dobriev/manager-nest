@@ -1223,7 +1223,7 @@ def getWeatCondFromUrl(url) {
 		"unknown",	// 44
 		"chancerain",
 		"chanceflurries",
-		"chancetstroms",
+		"chancetstorms",
 		"unknown",
 		"unknown" ]
 
