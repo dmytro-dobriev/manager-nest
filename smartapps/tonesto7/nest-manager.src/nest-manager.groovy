@@ -6207,8 +6207,9 @@ def getWeatherData(dataName) {
 	def t1 = isAppLiteMode()
 	if(storageApp && (stateSz < 33 || t1)) {
 		initStorageApp() // should delete storageapp
+		storageApp = null
 	}
-	storageApp = getStorageApp()
+	//storageApp = getStorageApp()
 	if(storageApp && !t1) {
 		def t0 = findStateStorageVal(dataName)
 		if(t0) {
