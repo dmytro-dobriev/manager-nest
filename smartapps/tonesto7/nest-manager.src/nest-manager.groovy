@@ -2408,7 +2408,7 @@ def initManagerApp() {
 	//restStreamHandler(true, false)   // stop the rest stream
 	unschedule()
 	unsubscribe()
-	state?.pollingOn = false
+	atomicState?.pollingOn = false
 	atomicState?.restStreamingOn = false
 	atomicState?.streamPolling = false
 	atomicState.ssdpOn = false
@@ -4720,8 +4720,8 @@ def ok2PollStruct() {
 def pollOk(typ, pTime, stVar) {
 	if(!atomicState?.authToken) { return false }
 	if(!atomicState?."${stVar}") { return true }
-	if(state?.pollBlocked) { return false }
-	if(state?."need${typ}Poll") { return true }
+	if(atomicState?.pollBlocked) { return false }
+	if(atomicState?."need${typ}Poll") { return true }
 	def pollTime = pTime as Integer
 	def val = pollTime / 3
 	val = Math.max(Math.min(val.toInteger(), 50),25)
