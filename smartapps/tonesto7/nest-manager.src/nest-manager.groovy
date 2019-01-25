@@ -35,10 +35,10 @@ definition(
 }
 
 def appVersion() { "5.5.9" }
-def appVerDate() { "01-05-2019" }
+def appVerDate() { "01-25-2019" }
 def minVersions() {
 	return [
-		"automation":["val":549, "desc":"5.4.9"],
+		"automation":["val":550, "desc":"5.5.0"],
 		"thermostat":["val":545, "desc":"5.4.5"],
 		"protect":["val":543, "desc":"5.4.3"],
 		"presence":["val":543, "desc":"5.4.3"],
@@ -70,7 +70,7 @@ preferences {
 	page(name: "devNamePage")
 	page(name: "alarmTestPage")
 	page(name: "simulateTestEventPage")
-	page(name: "devNameResetPage")
+//	page(name: "devNameResetPage")
 	page(name: "resetDiagQueuePage")
 	page(name: "devPrefPage")
 	page(name: "camMotionZoneFltrPage")
