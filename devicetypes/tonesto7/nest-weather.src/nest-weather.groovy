@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "5.5.0" }
+def devVer() { return "5.5.1" }
 
 metadata {
 	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
@@ -29,7 +29,7 @@ metadata {
 		command "log"
 
 		attribute "devVer", "string"
-		attribute "apiStatus", "string"
+//		attribute "apiStatus", "string"
 		attribute "debugOn", "string"
 		attribute "devTypeVer", "string"
 		attribute "lastUpdatedDt", "string"
@@ -100,10 +100,11 @@ metadata {
 		valueTile("lastUpdatedDt", "device.lastUpdatedDt", width: 4, height: 1, decoration: "flat", wordWrap: true) {
 			state("default", label: 'Data Last Received:\n${currentValue}')
 		}
-		valueTile("apiStatus", "device.apiStatus", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-			state "ok", label: "API Status:\nOK"
-			state "issue", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
-		}
+//		valueTile("apiStatus", "device.apiStatus", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+//                        state "Good", label: "API Status:\nOK"
+//                        state "Sporadic", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
+//                        state "Outage", label: "API Status:\nISSUE ", backgroundColor: "#FFFF33"
+//		}
 		valueTile("onlineStatus", "device.onlineStatus", width: 2, height: 1, wordWrap: true, decoration: "flat") {
 			state("default", label: 'Network Status:\n${currentValue}')
 		}
@@ -118,7 +119,7 @@ metadata {
 		}
 		htmlTile(name:"weatherHTML", action: "getWeatherHTML", width: 6, height: 16, whitelist: ["www.gstatic.com", "raw.githubusercontent.com", "cdn.rawgit.com"])
 		valueTile("remind", "device.blah", inactiveLabel: false, width: 6, height: 2, decoration: "flat", wordWrap: true) {
-			state("default", label: 'Reminder:\nHTML Content is Available in SmartApp')
+			state("default", label: 'Reminder:\nHTML Content is Available in SmartApp', defaultState: true)
 		}
 		main ("temp2")
 		details ("weatherHTML", "remind", "refresh")
@@ -354,7 +355,7 @@ void processEvent() {
 			state.mobileClientType = eventData?.mobileClientType
 			state.nestTimeZone = eventData?.tz ?: null
 			state.weatherAlertNotify = !eventData?.weathAlertNotif ? false : true
-			apiStatusEvent(eventData?.apiIssues)
+			//apiStatusEvent(eventData?.apiIssues)
 
 			def curWeather = eventData?.data?.weatCond ?: null
 			if(curWeather == null ) {
@@ -469,15 +470,16 @@ def lastUpdatedEvent(sendEvt=false) {
 	}
 }
 
+/*
 def apiStatusEvent(issue) {
 	def curStat = device.currentState("apiStatus")?.value
-	def newStat = issue ? "issue" : "ok"
-	state?.apiStatus = newStat
+	def newStat = issue
 	if(isStateChange(device, "apiStatus", newStat.toString())) {
 		Logger("UPDATED | API Status is: (${newStat}) | Original State: (${curStat})")
 		sendEvent(name: "apiStatus", value: newStat, descriptionText: "API Status is: ${newStat}", displayed: true, isStateChange: true, state: newStat)
 	} else { LogAction("API Status is: (${newStat}) | Original State: (${curStat})") }
 }
+*/
 
 def humidityEvent(humidity) {
 	def hum = device.currentState("humidity")?.value
