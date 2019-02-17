@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "5.4.3" }
+def devVer() { return "5.4.4" }
 
 // for the UI
 metadata {
@@ -216,8 +216,8 @@ def processEvent(data) {
 			if(eventData?.allowDbException) { state?.allowDbException = eventData?.allowDbException == false ? false : true }
 			lastUpdatedEvent(true)
 
-			if(eventData?.lastStrucDataUpd) {
-				def newDt = formatDt(Date.parse("E MMM dd HH:mm:ss z yyyy", eventData?.lastStrucDataUpd?.toString()))
+			if(eventData?.lastStrDataUpd) {
+				def newDt = formatDt(Date.parse("E MMM dd HH:mm:ss z yyyy", eventData?.lastStrDataUpd?.toString()))
 				//log.debug "newDt: $newDt"
 				def curDt = Date.parse("E MMM dd HH:mm:ss z yyyy", getDtNow())
 				def lastDt = Date.parse("E MMM dd HH:mm:ss z yyyy", newDt?.toString())

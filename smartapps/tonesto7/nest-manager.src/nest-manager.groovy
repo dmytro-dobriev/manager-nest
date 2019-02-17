@@ -34,14 +34,14 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.5.9" }
-def appVerDate() { "01-25-2019" }
+def appVersion() { "5.6.0" }
+def appVerDate() { "02-16-2019" }
 def minVersions() {
 	return [
 		"automation":["val":550, "desc":"5.5.0"],
 		"thermostat":["val":545, "desc":"5.4.5"],
 		"protect":["val":543, "desc":"5.4.3"],
-		"presence":["val":543, "desc":"5.4.3"],
+		"presence":["val":544, "desc":"5.4.4"],
 		"weather":["val":551, "desc":"5.5.1"],
 		"camera":["val":544, "desc":"5.4.4"],
 		"stream":["val":201, "desc":"2.0.1"]
