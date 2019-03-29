@@ -315,7 +315,7 @@ def mainPage() {
 			}
 		}
 		atomicState.ok2InstallAutoFlag = false
-		storageInfoSect()
+		// storageInfoSect()
 		devPageFooter("mainLoadCnt", execTime)
 	}
 }
