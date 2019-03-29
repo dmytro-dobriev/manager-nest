@@ -9754,7 +9754,7 @@ def getDbExceptPath() { return atomicState?.appData?.settings?.database?.excepti
 
 def ok2SendException(ex) {
 	def retVal = true
-	if(allowDbException() == true) {
+	if(allowDbException() != true) {
 		retVal = false
 		// Nothing to see here!
 	} else if(atomicState?.cltExcBlacklisted) {
@@ -9762,8 +9762,7 @@ def ok2SendException(ex) {
 		retVal = false
 	} else if(!(settings?.optInSendExceptions || settings?.optInSendExceptions == null)) {
 		retVal = false
-	}
-	if(ex instanceof java.util.concurrent.TimeoutException) {
+	} else if (ex instanceof java.util.concurrent.TimeoutException) {
 		retVal = false
 	}
 	return retVal
