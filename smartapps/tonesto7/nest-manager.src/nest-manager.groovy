@@ -34,8 +34,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.6.0" }
-def appVerDate() { "02-16-2019" }
+def appVersion() { "5.6.1" }
+def appVerDate() { "03-29-2019" }
 def minVersions() {
 	return [
 		"automation":["val":550, "desc":"5.5.0"],
@@ -144,7 +144,7 @@ def authPage() {
 	def preReqOk = (atomicState?.preReqTested == true) ? true : preReqCheck()
 	def stateSz = getStateSizePerc()
 	if(!atomicState?.devHandlersTested) { deviceHandlerTest() }
-	
+
 	if(!atomicState?.accessToken || !nestDevAccountCheckOk() || (!atomicState?.isInstalled && (!atomicState?.devHandlersTested || !preReqOk)) || (stateSz > 80)) {
 		return dynamicPage(name: "authPage", title: "Status Page", nextPage: "", install: (atomicState?.isInstalled == true ? true : false), uninstall: false) {
 			section () {
@@ -200,7 +200,7 @@ def authPage() {
 		def result = ((atomicState?.appData?.updater?.setupVersion && !atomicState?.setupVersion) || (atomicState?.setupVersion?.toInteger() < atomicState?.appData?.updater?.setupVersion?.toInteger())) ? true : false
 		if (result) { atomicState?.newSetupComplete = null }
 	}
-
+	if((settings.restStreamLocal == true) && (atomicState?.appData?.settings?.streaming.allowLocal != true)) { settingUpdate("restStreamLocal", "true", "bool") }
 	def description
 	def oauthTokenProvided = false
 
@@ -226,7 +226,7 @@ def authPage() {
 			devPageFooter("authLoadCnt", execTime)
 		}
 	}
-	
+
 	else if(showChgLogOk()) { return changeLogPage() }
 	else if(showDonationOk()) { return donationPage() }
 	else { return mainPage() }
@@ -970,7 +970,7 @@ def pollPrefPage() {
 	dynamicPage(name: "pollPrefPage", title: "Polling Preferences", install: false) {
 		section("Rest Streaming (Experimental):") {
 			input(name: "restStreaming", title:"Enable Rest Streaming?", type: "bool", defaultValue: false, required: false, submitOnChange: true, image: getAppImg("two_way_icon.png"))
-			if(!settings?.restStreaming) {	
+			if(!settings?.restStreaming) {
 				paragraph title: "Streaming is an Experimental Feature (Even though it's Stable)", "It requires the install of our local NodeJS streaming service running on your home network."
 				href url: streamLink(), style:"external", required: false, title:"Setup Instructions", description:"Tap to open in browser", state: "complete", image: getAppImg("web_icon.png")
 			}
@@ -983,11 +983,13 @@ def pollPrefPage() {
 					input(name: "restStreamIp", title:"Rest Service Address", type: "text", required: true, submitOnChange: true, image: getAppImg("ip_icon.png"))
 					input(name: "restStreamPort", title:"Rest Service Port", type: "number", defaultValue: 3000, required: true, submitOnChange: true, image: getAppImg("port_icon.png"))
 				}
-				input(name: "restStreamLocal", title:"Use Local Network to Send Events?", type: "bool", defaultValue: false, required: false, submitOnChange: true, image: getAppImg("two_way_icon.png"))
-				if(settings?.restStreamLocal == true) { 
-					input(name: "restStreamLocalHub", type: "hub", title: "Select Local Hub", description: "This is the hub Stream events will be sent to.", submitOnChange: true, image: getAppImg("hub_icon.png"))
-					if(settings?.restStreamLocal && settings?.restStreamLocalHub) { subscribe(location, null, lanStreamEvtHandler, [filterEvents:false]) }
-				} 
+				if(atomicState?.appData?.settings?.streaming.allowLocal == true) {
+					input(name: "restStreamLocal", title:"Use Local Network to Send Events?", type: "bool", defaultValue: false, required: false, submitOnChange: true, image: getAppImg("two_way_icon.png"))
+					if(settings?.restStreamLocal == true) {
+						input(name: "restStreamLocalHub", type: "hub", title: "Select Local Hub", description: "This is the hub Stream events will be sent to.", submitOnChange: true, image: getAppImg("hub_icon.png"))
+						if(settings?.restStreamLocal && settings?.restStreamLocalHub) { subscribe(location, null, lanStreamEvtHandler, [filterEvents:false]) }
+					}
+				}
 				getRestSrvcDesc()
 				paragraph title: "Notice", "This is still an experimental feature. It's subject to your local network and internet connections. If communication is lost the Manager will default back to standard polling."
 			}
@@ -1958,7 +1960,7 @@ private diagLogProcChange(setOn) {
 		//atomicState?.remDiagDataSentDt = getDtNow() // allow us some time for child to start
 		atomicState?.enRemDiagLogging = true
 		updTimestampMap("remDiagLogActivatedDt", getDtNow())
-		
+
 		initRemDiagApp()
 		LogAction(msg, "info", true)
 		if(!atomicState?.enRemDiagLogging) { //when turning off, tell automations; turn on - user does done
@@ -3322,7 +3324,7 @@ def subscriber() {
 	if(settings?.restStreaming && !getRestHost()) {
 		restSrvcSubscribe()
 	}
-	if(settings?.restStreaming && settings?.restStreamLocal && settings?.restStreamLocalHub) { 
+	if(settings?.restStreaming && settings?.restStreamLocal && settings?.restStreamLocalHub) {
 		subscribe(location, null, lanStreamEvtHandler, [filterEvents:false])
 	}
 }
@@ -3489,7 +3491,7 @@ def poll(force = false, type = null) {
 			return
 		}
 		startStopStream()
-		
+
 		def okStruct = ok2PollStruct()
 		def okDevice = ok2PollDevice()
 		def okMeta = ok2PollMetaData()
@@ -3924,7 +3926,7 @@ def lanStreamEvtHandler(evt) {
 					def slurper = new groovy.json.JsonSlurper()
 					msgData = slurper.parseText(msg?.body)
 					// log.debug "msgData: $msgData"
-					if(headerMap?.evtType) { 
+					if(headerMap?.evtType) {
 						switch(headerMap?.evtType) {
 							case "streamStatus":
 								status = receiveStreamStatus(msgData)
@@ -4921,7 +4923,7 @@ def setStructureAway(child, value, virtual=false) {
 	}
 	LogAction(str1+strAction+strArgs, "warn", true)
 }
-	
+
 def setTstatTempScale(child, tScale, virtual=false) {
 	def devId = !child?.device?.deviceNetworkId ? null : child?.device?.deviceNetworkId.toString()
 	def tempScale = tScale.toString()
@@ -6180,7 +6182,7 @@ ERS todo				curAlertdetail = ""
 				} else {
 					atomicState?.curAlerts = curAlerts
 				}
-				
+
 				if(!err) { updTimestampMap("lastWeatherUpdDt", getDtNow()) }
 			} else {
 				LogAction("Could Not Retrieve Local Weather Conditions or alerts... This issue is likely caused by Weather Underground API issues...", "warn", true)
@@ -6444,13 +6446,8 @@ private broadcastCheck() {
 }
 
 def allowDbException() {
-	if(atomicState?.appData?.settings?.database?.disableExceptions != null) {
-		return atomicState?.appData?.settings?.database?.disableExceptions == true ? false : true
-	} else {
-		if(getWebFileData()) {
-			return atomicState?.appData?.settings?.database?.disableExceptions == true ? false : true
-		}
-	}
+	if(atomicState?.appData?.settings?.database?.sendExceptions == null) { getWebFileData() }
+	return (atomicState?.appData?.settings?.database?.sendExceptions == true)
 }
 
 def ver2IntArray(val) {
@@ -8713,7 +8710,7 @@ def getWebHeaderHtml(title, clipboard=true, vex=false, swiper=false, charts=fals
 	html += swiper ? """<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/js/swiper.min.js"></script>""" : ""
 	html += charts ? """<script src="https://www.gstatic.com/charts/loader.js"></script>""" : ""
 	html += vex ? """<script>vex.defaultOptions.className = 'vex-theme-default'</script>""" : ""
-	
+
 	return html
 }
 
@@ -8794,7 +8791,7 @@ def renderDiagHome() {
 														<div class="col-xs-12 col-sm-6 install-content">
 															<span><b>Install ID:</b></br><small>${atomicState?.installationId}</small></span>
 														</div>
-														
+
 													<div class="col-xs-12 col-sm-6 install-content">
 														<span><b>Install Date:</b></br><small>${instData?.dt}</small></span>
 													</div>
@@ -9757,7 +9754,7 @@ def getDbExceptPath() { return atomicState?.appData?.settings?.database?.excepti
 
 def ok2SendException(ex) {
 	def retVal = true
-	if(atomicState?.appData?.settings?.database?.disableExceptions == true) {
+	if(allowDbException() == true) {
 		retVal = false
 		// Nothing to see here!
 	} else if(atomicState?.cltExcBlacklisted) {
