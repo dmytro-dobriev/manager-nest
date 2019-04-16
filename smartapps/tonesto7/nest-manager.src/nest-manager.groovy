@@ -34,8 +34,8 @@ definition(
 	appSetting "devOpt"
 }
 
-def appVersion() { "5.6.1" }
-def appVerDate() { "03-29-2019" }
+def appVersion() { "5.6.2" }
+def appVerDate() { "04-09-2019" }
 def minVersions() {
 	return [
 		"automation":["val":550, "desc":"5.5.0"],
@@ -1978,8 +1978,6 @@ private diagLogProcChange(setOn) {
 
 def getRemDiagActSec() { return getTimeSeconds("remDiagLogActivatedDt", 100000, "getRemDiagActSec").toInteger() }
 def getLastRemDiagSentSec() { return getTimeSeconds("remDiagDataSentDt", 1000, "getLastRemDiagSentSec").toInteger() }
-//def getRemDiagActSec() { return !getTimestampVal("remDiagLogActivatedDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("remDiagLogActivatedDt"), null, "getRemDiagActSec").toInteger() }
-//def getLastRemDiagSentSec() { return !getTimestampVal("remDiagDataSentDt") ? 1000 : GetTimeDiffSeconds(getTimestampVal("remDiagDataSentDt"), null, "getLastRemDiagSentSec").toInteger() }
 
 def changeLogPage() {
 	def execTime = now()
@@ -4431,7 +4429,8 @@ def updateChildData(force = false) {
 					def comfortHumidity = settings?."${physdevId}_comfort_humidity_max" ?: 80
 					def automationChildApp = getChildApps().find{ it.id == atomicState?."vThermostatChildAppId${devId}" }
 					if(automationChildApp != null && !automationChildApp.getIsAutomationDisabled()) {
-						data = new JsonSlurper().parseText(JsonOutput.toJson(tmp_data))  // This is a deep clone as object is same reference
+						//data = new JsonSlurper().parseText(JsonOutput.toJson(tmp_data))  // This is a deep clone as object is same reference
+						data = [:] + tmp_data
 						def tempC = 0.0
 						def tempF = 0.0
 						if(getTemperatureScale() == "C") {
@@ -4744,14 +4743,6 @@ def getLastChildUpdSec() { return getTimeSeconds("lastChildUpdDt", 100000, "getL
 def getLastChildForceUpdSec() { return getTimeSeconds("lastChildForceUpdDt", 100000, "getLastChildForceUpdSec").toInteger() }
 def getLastHeardFromNestSec() { return getTimeSeconds("lastHeardFromNestDt", 100000, "getLastHeardFromNestSec").toInteger() }
 
-//def getLastMetaPollSec() { return !getTimestampVal("lastMetaDataUpd") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastMetaDataUpd"), null, "getLastMetaPollSec").toInteger() }
-//def getLastDevPollSec() { return !getTimestampVal("lastDevDataUpd") ? 840 : GetTimeDiffSeconds(getTimestampVal("lastDevDataUpd"), null, "getLastDevPollSec").toInteger() }
-//def getLastStrPollSec() { return !getTimestampVal("lastStrDataUpd") ? 1000 : GetTimeDiffSeconds(getTimestampVal("lastStrDataUpd"), null, "getLastStrPollSec").toInteger() }
-//def getLastForcedPollSec() { return !getTimestampVal("lastForcePoll") ? 1000 : GetTimeDiffSeconds(getTimestampVal("lastForcePoll"), null, "getLastForcedPollSec").toInteger() }
-//def getLastChildUpdSec() { return !getTimestampVal("lastChildUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastChildUpdDt"), null, "getLastChildUpdSec").toInteger() }
-//def getLastChildForceUpdSec() { return !getTimestampVal("lastChildForceUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastChildForceUpdDt"), null, "getLastChildForceUpdSec").toInteger() }
-//def getLastHeardFromNestSec() { return !getTimestampVal("lastHeardFromNestDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastHeardFromNestDt"), null, "getLastHeardFromNestSec").toInteger() }
-
 /************************************************************************************************
 |										Nest API Commands										|
 *************************************************************************************************/
@@ -4759,7 +4750,6 @@ def getLastHeardFromNestSec() { return getTimeSeconds("lastHeardFromNestDt", 100
 private cmdProcState(Boolean value) { atomicState?.cmdIsProc = value }
 private cmdIsProc() { return (!atomicState?.cmdIsProc) ? false : true }
 private getLastProcSeconds() { return getTimeSeconds("cmdLastProcDt", 0, "getLastProcSeconds") }
-//private getLastProcSeconds() { return getTimestampVal("cmdLastProcDt") ? GetTimeDiffSeconds(getTimestampVal("cmdLastProcDt"), null, "getLastProcSeconds") : 0 }
 
 def apiVar() {
 	def api = [
@@ -5234,7 +5224,7 @@ private getQueueNumber(cmdTypeId) {
 	qnum = cmdQueueList.indexOf(cmdTypeId)
 	if(qnum == -1 || qnum == null) { LogAction("getQueueNumber: NOT FOUND", "warn", true ) }
 	else {
-		if(getLastCmdSentSeconds(qnum) > 3600) { setRecentSendCmd(qnum, 3) } // if nothing sent in last hour, reset = 3 command limit
+		if(getLastCmdSentSeconds(qnum) > 3600) { setRecentSendCmd(qnum, cmdMaxVal()) } // if nothing sent in last hour, reset command limit
 	}
 	return qnum
 }
@@ -5262,10 +5252,12 @@ def getQueueToWork() {
 	}
 	LogTrace("getQueueToWork queue: ${qnum}")
 	if(qnum != -1 && qnum != null) {
-		if(getLastCmdSentSeconds(qnum) > 3600) { setRecentSendCmd(qnum, 3) } // if nothing sent in last hour, reset = 3 command limit
+		if(getLastCmdSentSeconds(qnum) > 3600) { setRecentSendCmd(qnum, cmdMaxVal()) } // if nothing sent in last hour, reset command limit
 	}
 	return qnum
 }
+
+private cmdMaxVal() { return 2 }
 
 void schedNextWorkQ(useShort=false) {
 	def cmdDelay = getChildWaitVal()
@@ -5335,8 +5327,6 @@ def sendEcoActionDescToDevice(dev, desc) {
 
 private getLastAnyCmdSentSeconds() { return getTimeSeconds("lastCmdSentDt", 3601, "getLastAnyCmdSentSeconds") }
 private getLastCmdSentSeconds(qnum) { return getTimeSeconds("lastCmdSentDt${qnum}", 3601, "getLastCmdSentSeconds") }
-//private getLastAnyCmdSentSeconds() { return getTimestampVal("lastCmdSentDt") ? GetTimeDiffSeconds(getTimestampVal("lastCmdSentDt"), null, "getLastAnyCmdSentSeconds") : 3601 }
-//private getLastCmdSentSeconds(qnum) { return getTimestampVal("lastCmdSentDt${qnum}") ? GetTimeDiffSeconds(getTimestampVal("lastCmdSentDt${qnum}"), null, "getLastCmdSentSeconds") : 3601 }
 
 private setLastCmdSentSeconds(qnum, val) {
 	updTimestampMap("lastCmdSentDt${qnum}", val)
@@ -5397,7 +5387,7 @@ void workQueue() {
 				atomicState?."cmdQ${qnum}" = cmdQueue
 				def cmdres
 
-				if(getLastCmdSentSeconds(qnum) > 3600) { setRecentSendCmd(qnum, 3) } // if nothing sent in last hour, reset = 3 command limit
+				if(getLastCmdSentSeconds(qnum) > 3600) { setRecentSendCmd(qnum, cmdMaxVal()) } // if nothing sent in last hour, reset command limit
 
 				storeLastCmdData(cmd, qnum)
 
@@ -5516,10 +5506,10 @@ def adjThrottle(qnum, redir, callerStr) {
 			val -= 1
 		}
 		def t1 = getLastCmdSentSeconds(qnum)
-		if(t1 > 120 && t1 < 60*45 && val < 2) {
+		if(t1 > 120 && t1 < 60*45 && val < (cmdMaxVal() - 1) ) {
 			val += 1
 		}
-		if(t1 > 60*30 && t1 < 60*45 && val < 2) {
+		if(t1 > 60*30 && t1 < 60*45 && val < cmdMaxVal() ) {
 			val += 1
 		}
 		LogTrace("${callerStr} adjThrottle orig recentSendCmd: ${t0} | new: ${val} | last seconds: ${t1} queue: ${qnum}")
@@ -5742,13 +5732,6 @@ def getLastLogRemindMsgSec() { return getTimeSeconds("lastLogRemindMsgDt", 10000
 def getLastFailedCmdMsgSec() { return getTimeSeconds("lastFailedCmdMsgDt", 100000, "getLastFailedCmdMsgSec").toInteger() }
 def getDebugLogsOnSec() { return getTimeSeconds("debugEnableDt", 0, "getDebugLogsOnSec").toInteger() }
 
-//def getLastUpdMsgSec() { return !getTimestampVal("lastUpdMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastUpdMsgDt"), null, "getLastUpdMsgSec").toInteger() }
-//def getLastMissPollMsgSec() { return !getTimestampVal("lastMisPollMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastMisPollMsgDt"), null, "getLastMissPollMsgSec").toInteger() }
-//def getLastApiIssueMsgSec() { return !getTimestampVal("lastApiIssueMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastApiIssueMsgDt"), null, "getLastApiIssueMsgSec").toInteger() }
-//def getLastLogRemindMsgSec() { return !getTimestampVal("lastLogRemindMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastLogRemindMsgDt"), null, "getLastLogRemindMsgSec").toInteger() }
-//def getLastFailedCmdMsgSec() { return !getTimestampVal("lastFailedCmdMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastFailedCmdMsgDt"), null, "getLastFailedCmdMsgSec").toInteger() }
-//def getDebugLogsOnSec() { return !getTimestampVal("debugEnableDt") ? 0 : GetTimeDiffSeconds(getTimestampVal("debugEnableDt"), null, "getDebugLogsOnSec").toInteger() }
-
 //PushOver-Manager Input Generation Functions
 private getPushoverSounds(){return (Map) atomicState?.pushoverManager?.sounds?:[:]}
 private getPushoverDevices(){List opts=[];Map pmd=atomicState?.pushoverManager?:[:];pmd?.apps?.each{k,v->if(v&&v?.devices&&v?.appId){Map dm=[:];v?.devices?.sort{}?.each{i->dm["${i}_${v?.appId}"]=i};addInputGrp(opts,v?.appName,dm);}};return opts;}
@@ -5847,7 +5830,6 @@ def locationPresNotify(pres) {
 }
 
 def getApiIssueSec() { return getTimeSeconds("apiIssueDt", 100000, "getApiIssueSec").toInteger() }
-//def getApiIssueSec() { return !getTimestampVal("apiIssueDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("getApiIssueDt"), null, "getApiIssueSec").toInteger() }
 
 def apiIssueNotify(msgOn, rateOn, wait) {
 	if( (getApiIssueSec() > 600) && (getLastAnyCmdSentSeconds() > 600)) {
@@ -6063,12 +6045,6 @@ def getLastWeatherUpdSec() { return getTimeSeconds("lastWeatherUpdDt", 100000, "
 def getLastForecastUpdSec() { return getTimeSeconds("lastForecastUpdDt", 100000, "getLastForecastUpdSec").toInteger() }
 def getLastAnalyticUpdSec() { return getTimeSeconds("lastAnalyticUpdDt", 100000, "getLastAnalyticUpdSec").toInteger() }
 def getLastUpdateMsgSec() { return getTimeSeconds("lastUpdateMsgDt", 100000, "getLastUpdateMsgSec").toInteger() }
-
-//def getLastWebUpdSec() { return !getTimestampVal("lastWebUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastWebUpdDt"), null, "getLastWebUpdSec").toInteger() }
-//def getLastWeatherUpdSec() { return !getTimestampVal("lastWeatherUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastWeatherUpdDt"), null, "getLastWeatherUpdSec").toInteger() }
-//def getLastForecastUpdSec() { return !getTimestampVal("lastForecastUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastForecastUpdDt"), null, "getLastForecastUpdSec").toInteger() }
-//def getLastAnalyticUpdSec() { return !getTimestampVal("lastAnalyticUpdDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastAnalyticUpdDt"), null, "getLastAnalyticUpdSec").toInteger() }
-//def getLastUpdateMsgSec() { return !getTimestampVal("lastUpdateMsgDt") ? 100000 : GetTimeDiffSeconds(getTimestampVal("lastUpdateMsgDt"), null, "getLastUpdateMsgSec").toInteger() }
 
 def getStZipCode() { return location?.zipCode?.toString() }
 

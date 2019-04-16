@@ -1,3 +1,8 @@
+V5.6.2 (April 9th, 2019):
+▔▔▔▔▔▔▔▔▔▔▔
+Manager App:
+ • Adjust for more conservative nest throttling
+
 V5.6.1 (March 29th, 2019):
 ▔▔▔▔▔▔▔▔▔▔▔
 Manager App:
