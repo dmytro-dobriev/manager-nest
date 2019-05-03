@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "5.5.1" }
+def devVer() { return "5.5.2" }
 
 metadata {
 	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
@@ -874,7 +874,7 @@ def getWeatherAlerts(weatData) {
 						}
 						state.walertCount = cntr
 
-						if(cntr < 4) { cntr += 1 } else { log.error "Many Alerts"; return true }
+						if(cntr <= 4) { cntr += 1 } else { log.error "Many Alerts"; return true }
 					}
 					state?.lastWeatherAlertNotif = newWalertNotif
 

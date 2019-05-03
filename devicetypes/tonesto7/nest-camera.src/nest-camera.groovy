@@ -13,7 +13,7 @@ import groovy.time.TimeCategory
 
 preferences { }
 
-def devVer() { return "5.4.4" }
+def devVer() { return "5.4.5" }
 
 metadata {
 	definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
@@ -574,17 +574,17 @@ def lastEventDataEvent(data) {
 	def newEndDt = data?.end_time ? tf.format(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", data?.end_time?.toString())) : "Not Available"
 
 	def camMotionZones = state?.camMotionZones && state?.camMotionZones != [] ? state?.camMotionZones : []
-
-	def hasPerson = data?.has_person ? data?.has_person?.toBoolean() : false
-	state?.motionPerson = hasPerson
-	def hasMotion = data?.has_motion ? data?.has_motion?.toBoolean() : false
-	def hasSound = data?.has_sound ? data?.has_sound?.toBoolean() : false
+	
+	def hasPerson = data?.has_person != null ? data?.has_person.toBoolean() : false
+	state.motionPerson = hasPerson
+	def hasMotion = data?.has_motion != null ? data?.has_motion.toBoolean() : false
+	def hasSound = data?.has_sound != null ? data?.has_sound.toBoolean() : false
 	def actZones = state?.activityZones
 	def evtZoneIds = data?.activity_zone_ids
 	def evtZoneNames = null
 
-	String evtType = !hasMotion ? "Sound Event" : "Motion Event${hasPerson ? " (Person)${hasSound ? " (Sound)" : ""}" : ""}"
-	state?.lastEventTypeHtml = !hasMotion && hasSound ? "Sound Event" : "Motion Event${hasPerson ? "<br>(Person)${hasSound ? "<br>(Sound)" : ""}" : ""}"
+	String evtType = !hasMotion ? "Sound Event" : "Motion Event" + "${hasPerson ? " (Person) : ""}" + "${hasSound ? " (Sound)" : ""}"
+	state?.lastEventTypeHtml = !hasMotion && hasSound ? "Sound Event" : "Motion Event" + "${hasPerson ? "<br>(Person) : ""}" + "${hasSound ? "<br>(Sound)" : ""}"
 	if(actZones && evtZoneIds) {
 		evtZoneNames = actZones.findAll { it?.id?.toString() in evtZoneIds }.collect { it?.name }
 		def zstr = ""
@@ -605,7 +605,7 @@ def lastEventDataEvent(data) {
 
 	def tryPic = false
 
-	if(!state?.lastCamEvtData || (curStartDt != newStartDt || curEndDt != newEndDt) && (hasPerson || hasMotion || hasSound) || isStateChange(device, "lastEventType", evtType?.toString()) || isStateChange(device, "lastEventZones", evtZoneNames?.toString())) {
+	if(!state?.lastCamEvtData || (curStartDt != newStartDt || curEndDt != newEndDt) || (hasPerson || hasMotion || hasSound) || isStateChange(device, "lastEventType", evtType?.toString()) || isStateChange(device, "lastEventZones", evtZoneNames?.toString())) {
 		sendEvent(name: 'lastEventStart', value: newStartDt, descriptionText: "Last Event Start is ${newStartDt}", displayed: false)
 		sendEvent(name: 'lastEventEnd', value: newEndDt, descriptionText: "Last Event End is ${newEndDt}", displayed: false)
 		sendEvent(name: 'lastEventType', value: evtType, descriptionText: "Last Event Type was ${evtType}", displayed: false)
