@@ -542,7 +542,7 @@ void processEvent(data) {
 			safetyTempsEvent(eventData?.safetyTemps)
 			comfortHumidityEvent(eventData?.comfortHumidity)
 			comfortDewpointEvent(eventData?.comfortDewpoint)
-			emergencyHeatEvent((eventData?.data?.is_using_emergency_heat)
+			emergencyHeatEvent(eventData?.data?.is_using_emergency_heat)
 			state.voiceReportPrefs = eventData?.vReportPrefs
 			autoSchedDataEvent(eventData?.autoSchedData)
 			state?.devBannerData = eventData?.devBannerData ?: null
