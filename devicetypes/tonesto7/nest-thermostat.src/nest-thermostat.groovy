@@ -92,6 +92,7 @@ metadata {
 		attribute "sunlightCorrectionActive", "string"
 		attribute "timeToTarget", "string"
 		attribute "nestType", "string"
+		attribute "usingEmergencyHeat", "string"
 		attribute "pauseUpdates", "string"
 		attribute "nestReportData", "string"
 		attribute "previousthermostatMode", "string"
@@ -541,6 +542,7 @@ void processEvent(data) {
 			safetyTempsEvent(eventData?.safetyTemps)
 			comfortHumidityEvent(eventData?.comfortHumidity)
 			comfortDewpointEvent(eventData?.comfortDewpoint)
+			emergencyHeatEvent((eventData?.data?.is_using_emergency_heat)
 			state.voiceReportPrefs = eventData?.vReportPrefs
 			autoSchedDataEvent(eventData?.autoSchedData)
 			state?.devBannerData = eventData?.devBannerData ?: null
@@ -1284,6 +1286,16 @@ def autoSchedDataEvent(schedData) {
 		Logger("UPDATED | Automation Schedule Data for this device has been Updated", "info")
 	}
 	state?.curAutoSchedData = schedData
+}
+
+def emergencyHeatEvent(emerHeat) {
+	def curStat = device.currentState("usingEmergencyHeat")?.value
+	def newStat = emerHeat
+	if(isStateChange(device, "usingEmergencyHeat", newStat.toString())) {
+		state.is_using_emergency_heat = !!newStat
+		Logger("Using Emergency Heat is: (${newStat.toString().capitalize()}) | Previous State: (${curStat.toString().capitalize()})")
+		sendEvent(name: "usingEmergencyHeat", value: newStat, descriptionText: "Using Emergency Heat is: ${newStat}", displayed: true, isStateChange: true, state: newStat)
+	}
 }
 
 def canHeatCool(canHeat, canCool) {
