@@ -583,8 +583,8 @@ def lastEventDataEvent(data) {
 	def evtZoneIds = data?.activity_zone_ids
 	def evtZoneNames = null
 
-	String evtType = !hasMotion ? "Sound Event" : "Motion Event" + "${hasPerson ? " (Person) : ""}" + "${hasSound ? " (Sound)" : ""}"
-	state?.lastEventTypeHtml = !hasMotion && hasSound ? "Sound Event" : "Motion Event" + "${hasPerson ? "<br>(Person) : ""}" + "${hasSound ? "<br>(Sound)" : ""}"
+	String evtType = (!hasMotion ? "Sound Event" : "Motion Event") + "${hasPerson ? " (Person)" : ""}" + "${hasSound ? " (Sound)" : ""}"
+	state?.lastEventTypeHtml = (!hasMotion && hasSound ? "Sound Event" : "Motion Event") + "${hasPerson ? "<br>(Person)" : ""}" + "${hasSound ? "<br>(Sound)" : ""}"
 	if(actZones && evtZoneIds) {
 		evtZoneNames = actZones.findAll { it?.id?.toString() in evtZoneIds }.collect { it?.name }
 		def zstr = ""
