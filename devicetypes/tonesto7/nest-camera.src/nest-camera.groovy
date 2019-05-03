@@ -370,7 +370,7 @@ def getDeviceStateData() {
 }
 
 def evtSnapShotOk() {
-	if(state?.takeSnapOnEvt != true) { return false }
+	if(!state?.isOnline || !state?.isStreaming || !state?.takeSnapOnEvt) { return false }
 	return settings?.enableEvtSnapShot == false ? false : true
 }
 
@@ -605,7 +605,9 @@ def lastEventDataEvent(data) {
 
 	def tryPic = false
 
-	if(!state?.lastCamEvtData || (curStartDt != newStartDt || curEndDt != newEndDt) || (hasPerson || hasMotion || hasSound) || isStateChange(device, "lastEventType", evtType?.toString()) || isStateChange(device, "lastEventZones", evtZoneNames?.toString())) {
+	//if(!state?.lastCamEvtData || (curStartDt != newStartDt || curEndDt != newEndDt) || (hasPerson || hasMotion || hasSound) || isStateChange(device, "lastEventType", evtType?.toString()) || isStateChange(device, "lastEventZones", evtZoneNames?.toString())) {
+	if(!state?.lastCamEvtData || (curStartDt != newStartDt || curEndDt != newEndDt) || isStateChange(device, "lastEventType", evtType?.toString()) || isStateChange(device, "lastEventZones", evtZoneNames?.toString())) {
+	    if(hasPerson || hasMotion || hasSound) {
 		sendEvent(name: 'lastEventStart', value: newStartDt, descriptionText: "Last Event Start is ${newStartDt}", displayed: false)
 		sendEvent(name: 'lastEventEnd', value: newEndDt, descriptionText: "Last Event End is ${newEndDt}", displayed: false)
 		sendEvent(name: 'lastEventType', value: evtType, descriptionText: "Last Event Type was ${evtType}", displayed: false)
@@ -622,6 +624,7 @@ def lastEventDataEvent(data) {
 		Logger("│	Type: ${evtType}")
 		Logger(state?.enRemDiagLogging ? "┌───New Camera Event────" : "┌────────New Camera Event────────")
 		addCheckinReason("lastEventData")
+	    }
 	} else {
 		LogAction("Last Event Start Time: (${newStartDt}) - Zones: ${evtZoneNames} | Original State: (${curStartDt})")
 		LogAction("Last Event End Time: (${newEndDt}) - Zones: ${evtZoneNames} | Original State: (${curEndDt})")
