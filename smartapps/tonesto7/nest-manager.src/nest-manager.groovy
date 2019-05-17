@@ -6403,7 +6403,7 @@ private broadcastCheck() {
 	LogTrace("broadcastCheck")
 	Map bCastData = atomicState?.appData?.broadcast
 	if(atomicState?.isInstalled && bCastData) {
-		if(bCastData?.msgId != "" && bCastData?.message != "" && atomicState?.lastBroadcastId != bCastData?.msgId && (bCastData?.minVer == "" || bCastData?.minVer != appVersion())) {
+		if(bCastData?.msgId != "" && bCastData?.message != "" && atomicState?.lastBroadcastId && atomicState?.lastBroadcastId != bCastData?.msgId && (bCastData?.minVer == "" || bCastData?.minVer != appVersion())) {
 			if(sendMsg(strCapitalize(bCastData?.type), bCastData?.message.toString(), true, null, null, null, true)) {
 				atomicState?.lastBroadcastId = bCastData?.msgId
 			}
