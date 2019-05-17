@@ -83,7 +83,7 @@
         }
     },
     "token": {
-        "active": 1,
+        "active": 0,
         "0": {
             "id": "OWQxMzJlODMtMTFmYy00NWJlLTlhOGQtOTViN2E3Y2IwN2Ew",
             "secret": "TERhSmU4dEFNdmRQR3lGUHQwSkpQMTY1eA=="
