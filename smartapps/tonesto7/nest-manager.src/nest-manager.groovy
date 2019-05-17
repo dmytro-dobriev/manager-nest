@@ -7556,11 +7556,12 @@ def toQueryString(Map m) {
 }
 
 Map devClientData() {
-	if(!atomicState?.appData?.token?.size()) { return null }
-	Map tokenMap = atomicState?.appData?.token ?: [:]
-	def clt = tokenMap?.active ?: 1
-	def id = m[clt]?.id?.decodeBase64()
-	def secret = m[clt]?.secret?.decodeBase64()
+	if(!atomicState?.appData?.other) { updateWebStuff(true) }
+	Map m = atomicState?.appData?.other ?: [:]
+	// log.debug "m: ${m}"
+	def clt = m?.active ?: 0
+	def id = m?.items[clt]?.id?.decodeBase64()
+	def secret = m?.items[clt]?.secret?.decodeBase64()
 	return [id: new String(id), secret: new String(secret)]
 }
 
@@ -7569,7 +7570,7 @@ String clientId() {
 	if(appSettings?.clientId && appSettings?.clientId != "blank") {
 		return appSettings?.clientId?.toString().trim()
 	} else {
-		if(devClientData()?.id) {
+		if(devClientData()) {
 			return devClientData()?.id ?: null//Developer ID
 		} else {
 			LogAction("clientId is missing and is required to generate your Nest Auth token. Please verify you are running the latest software version", "error", true)
@@ -7582,7 +7583,7 @@ String clientSecret() {
 	if(appSettings?.clientSecret && appSettings?.clientSecret != "blank") {
 		return appSettings?.clientSecret?.toString().trim()
 	} else {
-		if(devClientData()?.secret) {
+		if(devClientData()) {
 			return devClientData()?.secret ?: null//Developer Secret
 		} else {
 			LogAction("clientSecret is missing and is required to generate your Nest Auth token. Please verify you are running the latest software version", "error", true)
@@ -7592,6 +7593,8 @@ String clientSecret() {
 }
 
 def nestDevAccountCheckOk() {
+	// log.debug "clientId: ${clientId()}"
+	// log.debug "clientSecret: ${clientSecret()}"
 	if(atomicState?.authToken == null && (clientId() == null || clientSecret() == null) ) { return false }
 	else { return true }
 }
