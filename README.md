@@ -5,7 +5,7 @@
  The SmartApp and Device Handlers work together to provide integration to the SmartThings ecosystem using Nest's Official API.
 
  ## Author
- * @tonesto7
+ * @dmytro-dobriev
  * @E_sch
 
  ## Contributors
@@ -22,11 +22,4 @@
 
  ## Links
  #### [NST Manager Things that are Smart Wiki](http://thingsthataresmart.wiki/index.php?title=NST_Manager)
- #### [GitHub Project Issues Link](https://github.com/tonesto7/nest-manager/issues)
 
- #### [SmartThings Community Forum Link](https://community.smartthings.com/t/release-nest-manager-4-0/)
-
- #### [SmartThings IDE GitHub Integration Instructions](http://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html)
- _______
- ### Donations
-  * While donations are very much appreciated they are not expected or required.  If you feel the need to do so :smile: here is the ***[donation link](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2CJEVN439EAWS)***
